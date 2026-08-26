@@ -219,7 +219,7 @@ public class PlayerPanel {
     
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height) {
-            scrollY -= amount * 15;
+            scrollY -= verticalAmount * 15;
             Radio radio = NexusPVP.getInstance().getModuleManager().getModule(Radio.class);
             if (radio != null) {
                 List<String> playlist = radio.getPlaylist();

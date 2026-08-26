@@ -1,36 +1,26 @@
 package com.nexuspvp.modules;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import net.minecraft.text.Text;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class ChatTweaks extends Module {
 
-    private final BooleanSetting timestamps = addSetting(new BooleanSetting("Timestamps", true));
+    private final BooleanSetting timestamps = new BooleanSetting("Timestamps", true);
+    private final BooleanSetting infiniteChat = new BooleanSetting("InfiniteChat", true);
 
     public ChatTweaks() {
-        super("ChatTweaks", "Adds timestamps and enhancements to chat messages", Category.HUD);
+        super("ChatTweaks", "Adds timestamps and infinite chat history", Category.MISC, 0);
+        addSetting(timestamps);
+        addSetting(infiniteChat);
     }
 
-    public Text formatMessage(Text message) {
-        if (!isEnabled()) return message;
+    public boolean isInfiniteChat() {
+        return isEnabled() && infiniteChat.isEnabled();
+    }
 
-        if (timestamps.isEnabled()) {
-            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-            String timeStr = "[" + sdf.format(new Date()) + "] ";
-            Text timePrefix = Text.literal(timeStr);
-            timePrefix.setStyle(Style.EMPTY.withColor(Formatting.DARK_GRAY));
-            return timePrefix.append(message);
-        }
+    public Text modifyChatMessage(Text message) {
         return message;
     }
 }

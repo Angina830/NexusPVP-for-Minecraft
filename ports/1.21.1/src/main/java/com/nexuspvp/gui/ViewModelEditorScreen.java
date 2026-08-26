@@ -314,7 +314,7 @@ public class ViewModelEditorScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (showHelp) return false;
         if (viewModel != null) {
-            float step = (float) (amount * 0.05);
+            float step = (float) (verticalAmount * 0.05);
             viewModel.setScaleX(viewModel.getScaleX() + step);
             viewModel.setScaleY(viewModel.getScaleY() + step);
             viewModel.setScaleZ(viewModel.getScaleZ() + step);

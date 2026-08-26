@@ -992,15 +992,15 @@ public class ClickGui extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (currentTab == Tab.PVP || currentTab == Tab.HUD || currentTab == Tab.PLAYER || currentTab == Tab.VISUAL) {
-            scrollY = Math.max(0, scrollY - (int) (amount * 20));
+            scrollY = Math.max(0, scrollY - (int) (verticalAmount * 20));
             savedScrollY = scrollY;
             return true;
         } else if (currentTab == Tab.RADIO) {
-            playlistScrollY = Math.max(0, playlistScrollY - (int) (amount * 16));
+            playlistScrollY = Math.max(0, playlistScrollY - (int) (verticalAmount * 16));
             savedPlaylistScrollY = playlistScrollY;
             return true;
         } else if (currentTab == Tab.CONFIGS) {
-            configScrollY = Math.max(0, configScrollY - (int) (amount * 16));
+            configScrollY = Math.max(0, configScrollY - (int) (verticalAmount * 16));
             savedConfigScrollY = configScrollY;
             return true;
         }
@@ -1020,7 +1020,7 @@ public class ClickGui extends Screen {
         if (searchField != null && searchField.isFocused()) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
                 searchField.setText("");
-                searchField.changeFocus(false);
+                searchField.setFocused(false);
                 return true;
             }
             return searchField.keyPressed(keyCode, scanCode, modifiers);
