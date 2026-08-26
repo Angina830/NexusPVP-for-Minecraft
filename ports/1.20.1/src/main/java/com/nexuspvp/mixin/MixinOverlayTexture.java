@@ -53,7 +53,7 @@ public class MixinOverlayTexture {
             int vanillaColor = (170 << 24) | (0 << 16) | (0 << 8) | 255; // ABGR for red (alpha 170, blue 0, green 0, red 255) in vanilla
             for (int i = 0; i < 16; i++) {
                 // To be safe, check if it's already vanilla to avoid uploading every frame
-                if (image.getPixelColor(i, 3) != vanillaColor) {
+                if (image.getColor(i, 3) != vanillaColor) {
                     image.setColor(i, 3, vanillaColor);
                 }
             }
