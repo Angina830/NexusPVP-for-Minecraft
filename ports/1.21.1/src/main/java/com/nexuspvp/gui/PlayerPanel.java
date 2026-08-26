@@ -118,7 +118,7 @@ public class PlayerPanel {
         
         // Render text field
         if (addTrackField != null) {
-            addTrackField.render(matrices, mouseX, mouseY, delta);
+            
         }
         
         // Render Playlist

@@ -19,7 +19,7 @@ public class MixinChatHud {
         if (instance != null && instance.getModuleManager() != null) {
             ChatTweaks chatTweaks = instance.getModuleManager().getModule(ChatTweaks.class);
             if (chatTweaks != null && chatTweaks.isEnabled()) {
-                return chatTweaks.formatMessage(message);
+                return chatTweaks.modifyChatMessage(message);
             }
         }
         return message;

@@ -236,9 +236,9 @@ public class ClickGui extends Screen {
         if (searchField != null) {
             searchField.setX(windowX + sidebarW + 170);
             searchField.setY(windowY + 4);
-            searchField.render(matrices, mouseX, mouseY, delta);
+            
             if (searchField.getText().isEmpty() && !searchField.isFocused()) {
-                this.client.textRenderer.draw(matrices, LanguageManager.getInstance().isRussian() ? "\u041F\u043E\u0438\u0441\u043A..." : "Search...", searchField.x + 4, searchField.y + 3, 0xFF72767D);
+                Compat.drawText(matrices, LanguageManager.getInstance().isRussian() ? "\u041F\u043E\u0438\u0441\u043A..." : "Search...", searchField.getX() + 4, searchField.getY() + 3, 0xFF72767D);
             }
         }
 
@@ -395,7 +395,7 @@ public class ClickGui extends Screen {
         if (configNameField != null) {
             configNameField.setX(contentX + 16);
             configNameField.setY(createY + 8);
-            configNameField.render(matrices, mouseX, mouseY, delta);
+            
         }
 
         int saveBtnX = contentX + 185;
@@ -615,7 +615,7 @@ public class ClickGui extends Screen {
         if (addTrackField != null) {
             addTrackField.setX(contentX + 16);
             addTrackField.setY(addY + 5);
-            addTrackField.render(matrices, mouseX, mouseY, delta);
+            
         }
 
         int addBtnX = contentX + contentW - 85;
