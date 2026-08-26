@@ -34,7 +34,8 @@ public class RenderUtils {
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        BufferBuilder buffer = tessellator.getBuffer();
+        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
         Matrix4f matrix = matrices.peek().getPositionMatrix();
 
         buffer.vertex(matrix, (float) x1, (float) y2, 0.0F).color(r, g, b, a);
