@@ -6,6 +6,7 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
@@ -93,12 +94,115 @@ public class RenderUtils {
         return entity.getLerpedPos(tickDelta);
     }
 
-    public static void drawBlockOutline3D(BlockPos pos, Color color, float lineWidth, boolean fill, int fillAlpha) {}
-    public static void drawCircle3D(MatrixStack matrices, double x, double y, double z, float radius, Color color, float lineWidth) {}
-    public static void drawBloomCircle3D(Vec3d pos, float radius, int points, Color color, float lineWidth) {}
-    public static void drawTorus3D(MatrixStack matrices, double x, double y, double z, float majorRadius, float minorRadius, Color color) {}
-    public static void drawCone3D(MatrixStack matrices, double x, double y, double z, float radius, float height, Color color) {}
-    public static void drawDisc3D(MatrixStack matrices, double x, double y, double z, float radius, Color color) {}
-    public static void drawLine3D(MatrixStack matrices, double x1, double y1, double z1, double x2, double y2, double z2, Color color, float width) {}
-    public static void drawBox3D(MatrixStack matrices, double minX, double minY, double minZ, double maxX, double maxY, double maxZ, Color color, float lineWidth) {}
+    public static void drawBlockOutline3D(BlockPos pos, Color color, float lineWidth, boolean fill, int fillAlpha) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.world == null || mc.player == null) return;
+        Vec3d cam = mc.gameRenderer.getCamera().getPos();
+        double minX = pos.getX() - cam.x;
+        double minY = pos.getY() - cam.y;
+        double minZ = pos.getZ() - cam.z;
+        double maxX = minX + 1.0;
+        double maxY = minY + 1.0;
+        double maxZ = minZ + 1.0;
+
+        MatrixStack matrices = new MatrixStack();
+        drawBox3D(matrices, minX, minY, minZ, maxX, maxY, maxZ, color, lineWidth);
+    }
+
+    public static void drawBox3D(MatrixStack matrices, double minX, double minY, double minZ, double maxX, double maxY, double maxZ, Color color, float lineWidth) {
+        float r = color.getRed() / 255.0f;
+        float g = color.getGreen() / 255.0f;
+        float b = color.getBlue() / 255.0f;
+        float a = color.getAlpha() / 255.0f;
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.lineWidth(Math.max(1.0f, lineWidth));
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
+        Matrix4f m = matrices.peek().getPositionMatrix();
+
+        float x1 = (float)minX, y1 = (float)minY, z1 = (float)minZ;
+        float x2 = (float)maxX, y2 = (float)maxY, z2 = (float)maxZ;
+
+        // Bottom 4
+        buffer.vertex(m, x1, y1, z1).color(r, g, b, a); buffer.vertex(m, x2, y1, z1).color(r, g, b, a);
+        buffer.vertex(m, x2, y1, z1).color(r, g, b, a); buffer.vertex(m, x2, y1, z2).color(r, g, b, a);
+        buffer.vertex(m, x2, y1, z2).color(r, g, b, a); buffer.vertex(m, x1, y1, z2).color(r, g, b, a);
+        buffer.vertex(m, x1, y1, z2).color(r, g, b, a); buffer.vertex(m, x1, y1, z1).color(r, g, b, a);
+        // Top 4
+        buffer.vertex(m, x1, y2, z1).color(r, g, b, a); buffer.vertex(m, x2, y2, z1).color(r, g, b, a);
+        buffer.vertex(m, x2, y2, z1).color(r, g, b, a); buffer.vertex(m, x2, y2, z2).color(r, g, b, a);
+        buffer.vertex(m, x2, y2, z2).color(r, g, b, a); buffer.vertex(m, x1, y2, z2).color(r, g, b, a);
+        buffer.vertex(m, x1, y2, z2).color(r, g, b, a); buffer.vertex(m, x1, y2, z1).color(r, g, b, a);
+        // Vertical 4
+        buffer.vertex(m, x1, y1, z1).color(r, g, b, a); buffer.vertex(m, x1, y2, z1).color(r, g, b, a);
+        buffer.vertex(m, x2, y1, z1).color(r, g, b, a); buffer.vertex(m, x2, y2, z1).color(r, g, b, a);
+        buffer.vertex(m, x2, y1, z2).color(r, g, b, a); buffer.vertex(m, x2, y2, z2).color(r, g, b, a);
+        buffer.vertex(m, x1, y1, z2).color(r, g, b, a); buffer.vertex(m, x1, y2, z2).color(r, g, b, a);
+
+        BufferRenderer.drawWithGlobalProgram(buffer.end());
+        RenderSystem.disableBlend();
+    }
+
+    public static void drawLine3D(MatrixStack matrices, double x1, double y1, double z1, double x2, double y2, double z2, Color color, float width) {
+        float r = color.getRed() / 255.0f;
+        float g = color.getGreen() / 255.0f;
+        float b = color.getBlue() / 255.0f;
+        float a = color.getAlpha() / 255.0f;
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.lineWidth(Math.max(1.0f, width));
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
+        Matrix4f m = matrices.peek().getPositionMatrix();
+
+        buffer.vertex(m, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
+        buffer.vertex(m, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
+
+        BufferRenderer.drawWithGlobalProgram(buffer.end());
+        RenderSystem.disableBlend();
+    }
+
+    public static void drawCircle3D(MatrixStack matrices, double x, double y, double z, float radius, Color color, float lineWidth) {
+        int segments = 24;
+        for (int i = 0; i < segments; i++) {
+            double angle1 = (i * 2.0 * Math.PI) / segments;
+            double angle2 = ((i + 1) * 2.0 * Math.PI) / segments;
+            double x1 = x + Math.cos(angle1) * radius;
+            double z1 = z + Math.sin(angle1) * radius;
+            double x2 = x + Math.cos(angle2) * radius;
+            double z2 = z + Math.sin(angle2) * radius;
+            drawLine3D(matrices, x1, y, z1, x2, y, z2, color, lineWidth);
+        }
+    }
+
+    public static void drawBloomCircle3D(Vec3d pos, float radius, int points, Color color, float lineWidth) {
+        MatrixStack matrices = new MatrixStack();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.gameRenderer == null) return;
+        Vec3d cam = mc.gameRenderer.getCamera().getPos();
+        drawCircle3D(matrices, pos.x - cam.x, pos.y - cam.y, pos.z - cam.z, radius, color, lineWidth);
+    }
+
+    public static void drawTorus3D(MatrixStack matrices, double x, double y, double z, float majorRadius, float minorRadius, Color color) {
+        drawCircle3D(matrices, x, y, z, majorRadius, color, 2.0f);
+    }
+
+    public static void drawCone3D(MatrixStack matrices, double x, double y, double z, float radius, float height, Color color) {
+        drawCircle3D(matrices, x, y, z, radius, color, 2.0f);
+        drawLine3D(matrices, x - radius, y, z, x, y + height, z, color, 1.5f);
+        drawLine3D(matrices, x + radius, y, z, x, y + height, z, color, 1.5f);
+        drawLine3D(matrices, x, y, z - radius, x, y + height, z, color, 1.5f);
+        drawLine3D(matrices, x, y, z + radius, x, y + height, z, color, 1.5f);
+    }
+
+    public static void drawDisc3D(MatrixStack matrices, double x, double y, double z, float radius, Color color) {
+        drawCircle3D(matrices, x, y, z, radius, color, 2.0f);
+    }
 }

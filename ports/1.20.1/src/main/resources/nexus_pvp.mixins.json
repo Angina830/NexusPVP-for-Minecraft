@@ -18,7 +18,8 @@
     "MixinClientPlayerInteractionManager",
     "MixinKeyboardInput",
     "MixinLivingEntity",
-    "MixinBackgroundRenderer"
+    "MixinBackgroundRenderer",
+    "MixinDrawContext"
   ],
   "injectors": {
     "defaultRequire": 1

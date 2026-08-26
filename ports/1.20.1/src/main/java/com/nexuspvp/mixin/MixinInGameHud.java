@@ -1,6 +1,8 @@
 package com.nexuspvp.mixin;
 
 import com.nexuspvp.NexusPVP;
+import com.nexuspvp.modules.Crosshair;
+import com.nexuspvp.modules.ItemCooldowns;
 import com.nexuspvp.util.Compat;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
@@ -18,6 +20,10 @@ public class MixinInGameHud {
         if (instance != null && instance.getModuleManager() != null) {
             Compat.setContext(context);
             instance.getModuleManager().onRender2D(context.getMatrices(), tickDelta);
+            ItemCooldowns cd = instance.getModuleManager().getModule(ItemCooldowns.class);
+            if (cd != null && cd.isEnabled()) {
+                cd.renderHotbarCooldowns(context);
+            }
             Compat.setContext(null);
         }
     }
@@ -26,9 +32,12 @@ public class MixinInGameHud {
     private void onRenderCrosshair(DrawContext context, CallbackInfo ci) {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null) {
-            com.nexuspvp.modules.Crosshair crosshair = instance.getModuleManager().getModule(com.nexuspvp.modules.Crosshair.class);
+            Crosshair crosshair = instance.getModuleManager().getModule(Crosshair.class);
             if (crosshair != null && crosshair.isEnabled()) {
                 ci.cancel();
+                Compat.setContext(context);
+                crosshair.onRender2D(context.getMatrices(), 0.0f);
+                Compat.setContext(null);
             }
         }
     }

@@ -1,6 +1,4 @@
 package com.nexuspvp.modules;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
@@ -8,6 +6,7 @@ import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.ColorSetting;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
+import com.nexuspvp.util.Compat;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.util.math.MatrixStack;
 
@@ -43,15 +42,14 @@ public class Crosshair extends Module {
         int cx = screenW / 2;
         int cy = screenH / 2;
 
-        int c = color.getColor().getRGB();
-        float sz = size.getFloatValue();
-        float gp = gap.getFloatValue();
-        float th = thickness.getFloatValue();
-        int halfTh = (int) Math.max(1, th / 2);
+        int c = color.getColor().getRGB() | 0xFF000000;
+        int sz = (int) size.getFloatValue();
+        int gp = (int) gap.getFloatValue();
+        int th = Math.max(1, (int) thickness.getFloatValue());
+        int halfTh = th / 2;
 
         String currentStyle = style.getValue();
 
-        // If not set to OnlyHitmarker and not None style, draw custom crosshair
         if (!onlyHitmarker.isEnabled() && !currentStyle.equals("None")) {
             if (currentStyle.equals("Dot") || dot.isEnabled()) {
                 RenderUtils.drawRect(matrices, cx - 1, cy - 1, 2, 2, c);
@@ -59,22 +57,21 @@ public class Crosshair extends Module {
 
             if (currentStyle.equals("Cross")) {
                 // Top
-                RenderUtils.drawRect(matrices, cx - halfTh, cy - gp - sz, (int)th, (int)sz, c);
+                RenderUtils.drawRect(matrices, cx - halfTh, cy - gp - sz, th, sz, c);
                 // Bottom
-                RenderUtils.drawRect(matrices, cx - halfTh, cy + gp, (int)th, (int)sz, c);
+                RenderUtils.drawRect(matrices, cx - halfTh, cy + gp, th, sz, c);
                 // Left
-                RenderUtils.drawRect(matrices, cx - gp - sz, cy - halfTh, (int)sz, (int)th, c);
+                RenderUtils.drawRect(matrices, cx - gp - sz, cy - halfTh, sz, th, c);
                 // Right
-                RenderUtils.drawRect(matrices, cx + gp, cy - halfTh, (int)sz, (int)th, c);
+                RenderUtils.drawRect(matrices, cx + gp, cy - halfTh, sz, th, c);
             } else if (currentStyle.equals("Circle")) {
-                RenderUtils.drawRect(matrices, cx - halfTh, cy - sz, (int)th, 2, c);
-                RenderUtils.drawRect(matrices, cx - halfTh, cy + sz - 2, (int)th, 2, c);
-                RenderUtils.drawRect(matrices, cx - sz, cy - halfTh, 2, (int)th, c);
-                RenderUtils.drawRect(matrices, cx + sz - 2, cy - halfTh, 2, (int)th, c);
+                RenderUtils.drawRect(matrices, cx - sz, cy - sz, sz * 2, 1, c);
+                RenderUtils.drawRect(matrices, cx - sz, cy + sz, sz * 2, 1, c);
+                RenderUtils.drawRect(matrices, cx - sz, cy - sz, 1, sz * 2, c);
+                RenderUtils.drawRect(matrices, cx + sz, cy - sz, 1, sz * 2, c);
             }
         }
 
-        // Render Call of Duty / Apex Hitmarker X on hit!
         if (hitmarker.isEnabled() && (System.currentTimeMillis() - lastHitTime < 300)) {
             float fade = 1.0f - ((System.currentTimeMillis() - lastHitTime) / 300.0f);
             int alpha = (int) (fade * 255);
@@ -82,18 +79,14 @@ public class Crosshair extends Module {
             int hmSize = 6;
             int hmGap = 4;
 
-            // 4 diagonals (Top-Left, Top-Right, Bottom-Left, Bottom-Right)
             RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy - hmGap - hmSize, hmSize, 1, hmColor);
             RenderUtils.drawRect(matrices, cx - hmGap - 1, cy - hmGap - hmSize, 1, hmSize, hmColor);
-
             RenderUtils.drawRect(matrices, cx + hmGap, cy - hmGap - hmSize, hmSize, 1, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap, cy - hmGap - hmSize, 1, hmSize, hmColor);
-
+            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1, cy - hmGap - hmSize, 1, hmSize, hmColor);
             RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy + hmGap + hmSize - 1, hmSize, 1, hmColor);
             RenderUtils.drawRect(matrices, cx - hmGap - 1, cy + hmGap, 1, hmSize, hmColor);
-
             RenderUtils.drawRect(matrices, cx + hmGap, cy + hmGap + hmSize - 1, hmSize, 1, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap, cy + hmGap, 1, hmSize, hmColor);
+            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1, cy + hmGap, 1, hmSize, hmColor);
         }
     }
 }

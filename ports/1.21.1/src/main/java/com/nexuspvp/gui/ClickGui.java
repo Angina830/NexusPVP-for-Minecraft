@@ -110,9 +110,10 @@ public class ClickGui extends Screen {
         int windowX = (this.width - windowW) / 2;
         int windowY = (this.height - windowH) / 2;
         
-        searchField = new TextFieldWidget(this.client.textRenderer, windowX + sidebarW + 180, windowY + 4, 130, 14, Text.literal("Search..."));
+        searchField = new TextFieldWidget(this.client.textRenderer, windowX + sidebarW + 170, windowY + 4, 150, 14, Text.literal("Search..."));
         searchField.setMaxLength(32);
         searchField.setDrawsBackground(true);
+        this.addDrawableChild(searchField);
 
         String placeholder = LanguageManager.getInstance().get("Add Track...");
         addTrackField = new TextFieldWidget(this.client.textRenderer, windowX + sidebarW + 16, windowY + titleBarH + 130, 240, 16, Text.literal(placeholder));
@@ -749,13 +750,18 @@ public class ClickGui extends Screen {
                 }
             }
 
-            Category cat;
-            if (currentTab == Tab.PVP) cat = Category.PVP;
-            else if (currentTab == Tab.HUD) cat = Category.HUD;
-            else if (currentTab == Tab.PLAYER) cat = Category.PLAYER;
-            else cat = Category.VISUAL;
+            List<ModuleButton> cards = new ArrayList<>();
+            if (currentTab == Tab.PVP) {
+                if (moduleCards.get(Category.PVP) != null) cards.addAll(moduleCards.get(Category.PVP));
+            } else if (currentTab == Tab.HUD) {
+                if (moduleCards.get(Category.HUD) != null) cards.addAll(moduleCards.get(Category.HUD));
+            } else if (currentTab == Tab.PLAYER) {
+                if (moduleCards.get(Category.PLAYER) != null) cards.addAll(moduleCards.get(Category.PLAYER));
+            } else if (currentTab == Tab.VISUAL) {
+                if (moduleCards.get(Category.VISUAL) != null) cards.addAll(moduleCards.get(Category.VISUAL));
+                if (moduleCards.get(Category.RENDER) != null) cards.addAll(moduleCards.get(Category.RENDER));
+            }
 
-            List<ModuleButton> cards = moduleCards.get(cat);
             if (cards != null) {
                 for (ModuleButton card : cards) {
                     if (card.mouseClicked(mouseX, mouseY, button)) {
