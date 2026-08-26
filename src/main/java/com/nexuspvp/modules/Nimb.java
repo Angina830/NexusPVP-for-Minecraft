@@ -44,10 +44,10 @@ public class Nimb extends Module {
 
         matrices.push();
         matrices.translate(px, py, pz);
-        matrices.multiply(net.minecraft.client.util.math.Vector3f.POSITIVE_X.getDegreesQuaternion(12.0f));
+        matrices.multiply(net.minecraft.util.math.Vec3f.POSITIVE_X.getDegreesQuaternion(12.0f));
 
         float rot = (System.currentTimeMillis() % 4000) / 11.1f;
-        matrices.multiply(net.minecraft.client.util.math.Vector3f.POSITIVE_Y.getDegreesQuaternion(rot));
+        matrices.multiply(net.minecraft.util.math.Vec3f.POSITIVE_Y.getDegreesQuaternion(rot));
 
         RenderUtils.drawCircle3D(matrices, 0, 0, 0, r, c, 3.0f);
         if (glow.isEnabled()) {

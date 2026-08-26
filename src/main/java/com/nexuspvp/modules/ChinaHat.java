@@ -56,7 +56,7 @@ public class ChinaHat extends Module {
 
         if (rotate.isEnabled()) {
             float rot = (System.currentTimeMillis() % 3600) / 10.0f;
-            matrices.multiply(net.minecraft.client.util.math.Vector3f.POSITIVE_Y.getDegreesQuaternion(rot));
+            matrices.multiply(net.minecraft.util.math.Vec3f.POSITIVE_Y.getDegreesQuaternion(rot));
         }
 
         int segments = 36;
