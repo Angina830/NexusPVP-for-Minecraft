@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.nexuspvp.mixin",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_17",
   "client": [
     "MixinGameRenderer",
     "MixinInGameHud",
@@ -20,11 +20,7 @@
     "MixinClientPlayerInteractionManager",
     "MixinKeyboardInput",
     "MixinLivingEntity",
-    
-    
-    
-    "MixinBackgroundRenderer",
-    "MixinChatHud"
+    "MixinBackgroundRenderer"
   ],
   "injectors": {
     "defaultRequire": 1
