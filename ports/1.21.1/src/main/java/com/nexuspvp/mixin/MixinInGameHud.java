@@ -1,6 +1,7 @@
 package com.nexuspvp.mixin;
 
 import com.nexuspvp.NexusPVP;
+import com.nexuspvp.util.Compat;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.render.RenderTickCounter;
@@ -16,7 +17,9 @@ public class MixinInGameHud {
     private void onRender(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null) {
+            Compat.setContext(context);
             instance.getModuleManager().onRender2D(context.getMatrices(), tickCounter.getTickDelta(false));
+            Compat.setContext(null);
         }
     }
 

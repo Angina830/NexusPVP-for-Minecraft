@@ -156,7 +156,7 @@ public class DamageIndicator extends Module {
 
             int tw = mc.textRenderer.getWidth(text);
             RenderUtils.drawRoundedRect(matrices, -tw / 2 - 3, -5, tw + 6, 12, 3, (alphaInt / 2 << 24) | 0x00111214);
-            Compat.drawText(matrices, text, -tw / 2, -3, finalColor);
+            mc.textRenderer.draw(text, -tw / 2.0f, -3.0f, finalColor, false, matrices.peek().getPositionMatrix(), mc.getBufferBuilders().getEntityVertexConsumers(), net.minecraft.client.font.TextRenderer.TextLayerType.SEE_THROUGH, 0, 0xF000F0);
 
             matrices.pop();
         }

@@ -199,6 +199,7 @@ public class ClickGui extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        Compat.setContext(context);
         MatrixStack matrices = context.getMatrices();
         RenderUtils.drawRect(matrices, 0, 0, (this.width)-(0), (this.height)-(0), 0xC0111214);
 
@@ -277,7 +278,11 @@ public class ClickGui extends Screen {
         RenderUtils.drawRect(matrices, windowX, userBarY, sidebarW, 34, 0xFF232428);
         RenderUtils.drawRoundedRect(matrices, windowX, userBarY + 32, sidebarW, 2, 2, 0xFF232428);
 
-        RenderUtils.drawRoundedRect(matrices, windowX + 8, userBarY + 6, 20, 20, 10, accent);
+        if (this.client.player != null) {
+            Compat.drawSkinHead(matrices, this.client.player.getSkinTextures().texture(), windowX + 8, userBarY + 6, 20);
+        } else {
+            RenderUtils.drawRoundedRect(matrices, windowX + 8, userBarY + 6, 20, 20, 10, accent);
+        }
         RenderUtils.drawRoundedRect(matrices, windowX + 22, userBarY + 20, 7, 7, 4, 0xFF23A55A);
 
         String playerName = this.client.player != null ? this.client.player.getName().getString() : "Player";
@@ -1055,6 +1060,11 @@ public class ClickGui extends Screen {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public void renderInGameBackground(DrawContext context) {
+        // Disable 1.21 post-processing background blur shader
     }
 
     public void close() {

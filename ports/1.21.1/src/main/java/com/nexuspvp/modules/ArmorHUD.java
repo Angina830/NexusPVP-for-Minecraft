@@ -86,8 +86,8 @@ public class ArmorHUD extends Module {
             }
 
             RenderUtils.drawRoundedRect(matrices, ix - 1, iy - 1, itemSize + 2, itemSize + 2, 3, 0xBB1E1F22);
-            // mc.getItemRenderer().renderInGui(stack, ix + 1, iy + 1);
-            // mc.getItemRenderer().renderGuiItemOverlay(mc.textRenderer, stack, ix + 1, iy + 1);
+            Compat.drawItem(matrices, stack, ix + 1, iy + 1);
+            
 
             if (showDurability.isEnabled() && stack.isDamageable()) {
                 int barW = itemSize;
@@ -116,7 +116,7 @@ public class ArmorHUD extends Module {
                 int tx = startX + totalW + 4;
                 int ty = startY;
                 RenderUtils.drawRoundedRect(matrices, tx, ty, 38, itemSize, 4, 0xEE1E1F22);
-                // mc.getItemRenderer().renderInGui(new ItemStack(Items.TOTEM_OF_UNDYING), tx + 1, ty + 1);
+                Compat.drawItem(matrices, new ItemStack(Items.TOTEM_OF_UNDYING), tx + 1, ty + 1);
                 Compat.drawText(matrices, "x" + totems, tx + 19, ty + 5, 0xFFFFD700);
             }
         }
@@ -127,7 +127,7 @@ public class ArmorHUD extends Module {
                 int ax = startX - 42;
                 int ay = startY;
                 RenderUtils.drawRoundedRect(matrices, ax, ay, 38, itemSize, 4, 0xEE1E1F22);
-                // mc.getItemRenderer().renderInGui(new ItemStack(Items.ARROW), ax + 1, ay + 1);
+                Compat.drawItem(matrices, new ItemStack(Items.ARROW), ax + 1, ay + 1);
                 Compat.drawText(matrices, "x" + arrows, ax + 19, ay + 5, 0xFFDBDEE1);
             }
         }

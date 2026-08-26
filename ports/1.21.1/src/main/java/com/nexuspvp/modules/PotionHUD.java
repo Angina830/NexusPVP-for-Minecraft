@@ -61,7 +61,10 @@ public class PotionHUD extends Module {
                 name += " " + (effect.getAmplifier() + 1);
             }
 
-            String duration = "1:00";
+            int totalSeconds = curDuration / 20;
+            int mins = totalSeconds / 60;
+            int secs = totalSeconds % 60;
+            String duration = String.format("%d:%02d", mins, secs);
             String fullText = name + " (" + duration + ")";
 
             int textW = mc.textRenderer.getWidth(fullText);
