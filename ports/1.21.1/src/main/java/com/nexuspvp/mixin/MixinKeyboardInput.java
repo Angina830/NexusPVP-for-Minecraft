@@ -1,6 +1,4 @@
 package com.nexuspvp.mixin;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.SmartSprint;
@@ -15,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinKeyboardInput {
 
     @Inject(method = "tick", at = @At("RETURN"))
-    private void onInputTick(boolean slowDown, CallbackInfo ci) {
+    private void onInputTick(boolean slowDown, float f, CallbackInfo ci) {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance == null || instance.getModuleManager() == null) return;
         SmartSprint smartSprint = instance.getModuleManager().getModule(SmartSprint.class);
