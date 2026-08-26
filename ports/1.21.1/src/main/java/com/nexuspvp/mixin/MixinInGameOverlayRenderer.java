@@ -17,7 +17,7 @@ public class MixinInGameOverlayRenderer {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance == null || instance.getModuleManager() == null) return;
         LowFire lowFire = instance.getModuleManager().getModule(LowFire.class);
-        if (lowFire != null && lowFire.isEnabled() && !lowFire.showOverlay()) {
+        if (lowFire != null && lowFire.isEnabled()) {
             ci.cancel();
         }
     }
