@@ -118,7 +118,7 @@ public class PlayerPanel {
         
         // Render text field
         if (addTrackField != null) {
-            addTrackField.render(matrices, mouseX, mouseY, delta);
+            
         }
         
         // Render Playlist
@@ -200,7 +200,7 @@ public class PlayerPanel {
             int listHeight = height - 85 - 5;
             if (mouseX >= x + 5 && mouseX <= x + width - 5 && mouseY >= listY && mouseY <= listY + listHeight) {
                 if (button == 0) { // left click
-                    int clickedIndex = mouseY - listY + scrollY / 15;
+                    int clickedIndex = (int)(mouseY - listY + scrollY / 15);
                     List<String> playlist = radio.getPlaylist();
                     if (playlist != null && clickedIndex >= 0 && clickedIndex < playlist.size()) {
                         radio.playTrack(clickedIndex);

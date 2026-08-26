@@ -145,7 +145,7 @@ public class CommandKeybindsScreen extends Screen {
             commandField.setX(listX + 102);
             commandField.setY(addY + 4);
             commandField.setWidth(180);
-            commandField.render(matrices, mouseX, mouseY, delta);
+            
         }
 
         // Add Button
