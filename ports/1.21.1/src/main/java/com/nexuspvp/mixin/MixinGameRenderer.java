@@ -26,4 +26,9 @@ public class MixinGameRenderer {
             cir.setReturnValue(cir.getReturnValue() / zoom.getZoomFactor());
         }
     }
+
+    @Inject(method = "renderBlur", at = @At("HEAD"), cancellable = true)
+    private void onRenderBlur(float tickDelta, CallbackInfo ci) {
+        ci.cancel();
+    }
 }
