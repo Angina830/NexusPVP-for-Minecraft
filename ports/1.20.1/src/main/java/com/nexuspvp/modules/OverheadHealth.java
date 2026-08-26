@@ -109,13 +109,13 @@ public class OverheadHealth extends Module {
         if (mc.textRenderer.getWidth(name) > 42) {
             name = name.substring(0, Math.min(name.length(), 6)) + "..";
         }
-        Compat.drawText(matrices, name, -halfW + 4, -cardH / 2 + 2, 0xFFF2F3F5);
+        mc.textRenderer.draw(name, -halfW + 4.0f, -cardH / 2.0f + 2.0f, 0xFFF2F3F5, false, matrices.peek().getPositionMatrix(), mc.getBufferBuilders().getEntityVertexConsumers(), net.minecraft.client.font.TextRenderer.TextLayerType.NORMAL, 0, 0xF000F0);
 
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         String hpText = String.format("%.1f", currentHp);
         int hpW = mc.textRenderer.getWidth(hpText);
-        Compat.drawText(matrices, hpText, halfW - hpW - 4, -cardH / 2 + 2, 0xFF22C55E);
+        mc.textRenderer.draw(hpText, halfW - hpW - 4.0f, -cardH / 2.0f + 2.0f, 0xFF22C55E, false, matrices.peek().getPositionMatrix(), mc.getBufferBuilders().getEntityVertexConsumers(), net.minecraft.client.font.TextRenderer.TextLayerType.NORMAL, 0, 0xF000F0);
 
         // Dota 2 Animated Health Bar
         int barX = -halfW + 3;

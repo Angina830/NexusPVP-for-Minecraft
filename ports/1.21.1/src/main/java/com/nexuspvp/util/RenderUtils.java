@@ -15,10 +15,15 @@ import java.awt.Color;
 public class RenderUtils {
 
     public static void drawRect(MatrixStack matrices, double x, double y, double width, double height, int color) {
-        int x2 = (int)(x + width);
-        int y2 = (int)(y + height);
-        int x1 = (int)x;
-        int y1 = (int)y;
+        if (Compat.getContext() != null) {
+            Compat.getContext().fill((int) x, (int) y, (int) (x + width), (int) (y + height), color);
+            return;
+        }
+
+        int x2 = (int) (x + width);
+        int y2 = (int) (y + height);
+        int x1 = (int) x;
+        int y1 = (int) y;
         float a = (float) (color >> 24 & 255) / 255.0F;
         float r = (float) (color >> 16 & 255) / 255.0F;
         float g = (float) (color >> 8 & 255) / 255.0F;
@@ -46,6 +51,10 @@ public class RenderUtils {
     }
 
     public static void drawGradientRect(MatrixStack matrices, double x, double y, double width, double height, int startColor, int endColor) {
+        if (Compat.getContext() != null) {
+            Compat.getContext().fillGradient((int) x, (int) y, (int) (x + width), (int) (y + height), startColor, endColor);
+            return;
+        }
         drawRect(matrices, x, y, width, height, startColor);
     }
 
@@ -54,6 +63,10 @@ public class RenderUtils {
     }
 
     public static void startScissor(int x, int y, int width, int height) {
+        if (Compat.getContext() != null) {
+            Compat.getContext().enableScissor(x, y, x + width, y + height);
+            return;
+        }
         MinecraftClient mc = MinecraftClient.getInstance();
         double scale = mc.getWindow().getScaleFactor();
         int sx = (int) (x * scale);
@@ -68,6 +81,10 @@ public class RenderUtils {
     }
 
     public static void endScissor() {
+        if (Compat.getContext() != null) {
+            Compat.getContext().disableScissor();
+            return;
+        }
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
