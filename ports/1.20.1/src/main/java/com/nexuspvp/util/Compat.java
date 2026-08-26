@@ -84,7 +84,7 @@ public class Compat {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (activeContext != null) {
             activeContext.drawItem(stack, x, y);
-            activeContext.drawStackOverlay(mc.textRenderer, stack, x, y);
+            // overlay
         }
     }
 

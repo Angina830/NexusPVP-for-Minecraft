@@ -1062,12 +1062,7 @@ public class ClickGui extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    @Override
-    public void renderInGameBackground(DrawContext context) {
-        // Disable 1.21 post-processing background blur shader
-    }
-
-    public void close() {
+        public void close() {
         savedTab = this.currentTab;
         savedScrollY = this.scrollY;
         savedPlaylistScrollY = this.playlistScrollY;
