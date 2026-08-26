@@ -42,7 +42,7 @@ public class HudModule extends Module {
     public void onRender2D(MatrixStack matrices, float tickDelta) {
         if (mc.player == null) return;
 
-        int accent = rainbow.isEnabled() ? com.nexuspvp.util.ColorUtils.getRainbow(0) : color.getColor().getRGB();
+        int accent = rainbow.isEnabled() ? com.nexuspvp.util.ColorUtils.rainbow(0).getRGB() : color.getColor().getRGB();
 
         if (watermark.isEnabled()) {
             Compat.drawText(matrices, "NexusPVP", 4, 4, accent);
@@ -73,7 +73,7 @@ public class HudModule extends Module {
                 String name = m.getName();
                 int textWidth = mc.textRenderer.getWidth(name);
                 int x = right ? screenWidth - textWidth - 4 : 4;
-                int modColor = rainbow.isEnabled() ? com.nexuspvp.util.ColorUtils.getRainbow(i * 100) : accent;
+                int modColor = rainbow.isEnabled() ? com.nexuspvp.util.ColorUtils.rainbow(i * 100L).getRGB() : accent;
 
                 if (background.isEnabled()) {
                     RenderUtils.drawRect(matrices, x - 2, y - 1, textWidth + 4, 10, 0x80000000);
