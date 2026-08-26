@@ -138,7 +138,7 @@ public class CategoryPanel {
 
     public void mouseScrolled(double mouseX, double mouseY, double amount) {
         if (expanded && isHovered(mouseX, mouseY)) {
-            scrollOffset += (int)(verticalAmount * 10);
+            scrollOffset += (int)(amount * 10);
             // simple clamp could go here
         }
     }
