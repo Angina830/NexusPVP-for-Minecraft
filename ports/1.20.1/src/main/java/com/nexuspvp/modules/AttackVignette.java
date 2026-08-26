@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.module.Category;
@@ -55,8 +57,8 @@ public class AttackVignette extends Module {
         }
 
         float progress = mc.player.getAttackCooldownProgress(tickDelta);
-        int screenW = mc.getWindow().getScaledWidth();
-        int screenH = mc.getWindow().getScaledHeight();
+        int screenW = Compat.getScaledWidth();
+        int screenH = Compat.getScaledHeight();
 
         // Calculate smooth color from Red (0.0) -> Orange -> Yellow -> Green (1.0)
         float r, g, b;

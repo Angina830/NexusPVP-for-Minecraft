@@ -1,4 +1,6 @@
 package com.nexuspvp.gui.components;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.gui.ModuleButton;
@@ -26,9 +28,9 @@ public class SliderComponent extends SettingComponent {
         String translatedName = com.nexuspvp.gui.LanguageManager.getInstance().get(numSetting.getName());
         String valStr = String.valueOf(numSetting.getFloatValue());
         
-        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, translatedName, x + 4, y + 2, 0xFFDBDEE1);
+        Compat.drawWithShadow(null, matrices, translatedName, x + 4, y + 2, 0xFFDBDEE1);
         int valW = MinecraftClient.getInstance().textRenderer.getWidth(valStr);
-        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, valStr, x + width - valW - 14, y + 2, 0xFF949BA4);
+        Compat.drawWithShadow(null, matrices, valStr, x + width - valW - 14, y + 2, 0xFF949BA4);
         
         int sliderX = x + 4;
         int sliderY = y + 14;

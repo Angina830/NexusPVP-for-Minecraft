@@ -1,4 +1,9 @@
 package com.nexuspvp.gui.styles;
+import com.nexuspvp.util.Compat;
+
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.util.math.MatrixStack;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.gui.ClickGui;
@@ -10,7 +15,6 @@ import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -56,7 +60,7 @@ public class ClassicGuiScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        MatrixStack matrices = context.getMatrices(); {
+        MatrixStack matrices = context.getMatrices();
         RenderUtils.drawRect(matrices, 0, 0, width, height, 0x77000000);
 
         int btnW = 120;
@@ -69,13 +73,13 @@ public class ClassicGuiScreen extends Screen {
         RenderUtils.drawRoundedRect(matrices, btnX, btnY, btnW, btnH, 4, btnHover ? accent : 0xEE1E1F22);
         String switchText = "Themes / Styles";
         int stw = textRenderer.getWidth(switchText);
-        context.drawTextWithShadow(textRenderer, switchText, btnX + (btnW - stw) / 2, btnY + 6, 0xFFFFFFFF);
+        Compat.drawWithShadow(null, matrices, switchText, btnX + (btnW - stw) / 2, btnY + 6, 0xFFFFFFFF);
 
         for (ClassicPanel panel : panels) {
             panel.render(matrices, mouseX, mouseY, delta);
         }
 
-        super.render(matrices, mouseX, mouseY, delta);
+        super.render(context, mouseX, mouseY, delta);
     }
 
     @Override
@@ -87,7 +91,7 @@ public class ClassicGuiScreen extends Screen {
         if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH) {
             if (client != null) {
                 ClickGui gui = new ClickGui();
-                client.openScreen(gui);
+                Compat.setScreen(client, gui);
                 gui.switchTab(ClickGui.Tab.THEMES);
             }
             return true;
@@ -138,14 +142,13 @@ public class ClassicGuiScreen extends Screen {
             }
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) {
-            onClose();
+            close();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    @Override
-    public boolean isPauseScreen() {
+    public boolean shouldPause() {
         return false;
     }
 
@@ -160,8 +163,8 @@ public class ClassicGuiScreen extends Screen {
 
         ClassicPanel(String title, int x, int y, int width, List<Module> modules) {
             this.title = title;
-            this.x = x;
-            this.y = y;
+            this.x = (x);
+            this.y = (y);
             this.width = width;
             for (Module m : modules) {
                 entries.add(new ClassicModuleEntry(m));
@@ -170,8 +173,8 @@ public class ClassicGuiScreen extends Screen {
 
         void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
             if (dragging) {
-                this.x = mouseX - dragOffsetX;
-                this.y = mouseY - dragOffsetY;
+                this.x = (mouseX - dragOffsetX);
+                this.y = (mouseY - dragOffsetY);
             }
 
             int accent = ThemeManager.getInstance().getAccentColor().getRGB();
@@ -179,9 +182,9 @@ public class ClassicGuiScreen extends Screen {
             RenderUtils.drawRoundedRect(matrices, x, y, width, headerHeight, 3, 0xFF18191C);
             RenderUtils.drawRect(matrices, x, y + headerHeight - 2, width, 2, accent);
 
-            MinecraftClient.getInstance().context.drawTextWithShadow(textRenderer, title, x + 8, y + 6, 0xFFF2F3F5);
+            Compat.drawWithShadow(null, matrices, title, x + 8, y + 6, 0xFFF2F3F5);
             String icon = collapsed ? "+" : "-";
-            MinecraftClient.getInstance().context.drawTextWithShadow(textRenderer, icon, x + width - 14, y + 6, accent);
+            Compat.drawWithShadow(null, matrices, icon, x + width - 14, y + 6, accent);
 
             if (!collapsed) {
                 int curY = y + headerHeight;
@@ -271,12 +274,12 @@ public class ClassicGuiScreen extends Screen {
 
             String name = module.getName();
             int nameCol = enabled ? accent : (hovered ? 0xFFFFFFFF : 0xFFDBDEE1);
-            MinecraftClient.getInstance().context.drawTextWithShadow(textRenderer, name, x + 6, y + 5, nameCol);
+            Compat.drawWithShadow(null, matrices, name, x + 6, y + 5, nameCol);
 
             String rightIcon = binding ? "..." : (module.getKeyBind() > 0 ? "[" + GLFW.glfwGetKeyName(module.getKeyBind(), 0) + "]" : (!module.getSettings().isEmpty() ? (expanded ? "v" : ">") : ""));
             if (rightIcon != null && !rightIcon.isEmpty()) {
                 int rw = MinecraftClient.getInstance().textRenderer.getWidth(rightIcon);
-                MinecraftClient.getInstance().context.drawTextWithShadow(textRenderer, rightIcon, x + width - rw - 5, y + 5, binding ? accent : 0xFF949BA4);
+                Compat.drawWithShadow(null, matrices, rightIcon, x + width - rw - 5, y + 5, binding ? accent : 0xFF949BA4);
             }
 
             // Render rich interactive inline settings if expanded!
@@ -290,12 +293,12 @@ public class ClassicGuiScreen extends Screen {
                         // Checkbox
                         RenderUtils.drawRoundedRect(matrices, x + 6, sY + 4, 10, 10, 2, bs.isEnabled() ? accent : 0xFF35373C);
                         if (bs.isEnabled()) {
-                            MinecraftClient.getInstance().context.drawTextWithShadow(textRenderer, "\u2714", x + 8, sY + 5, 0xFFFFFFFF);
+                            Compat.drawWithShadow(null, matrices, "\u2714", x + 8, sY + 5, 0xFFFFFFFF);
                         }
 
                         String sName = s.getName();
                         if (sName.length() > 14) sName = sName.substring(0, 12) + "..";
-                        MinecraftClient.getInstance().context.drawTextWithShadow(textRenderer, sName, x + 20, sY + 5, bs.isEnabled() ? 0xFFFFFFFF : 0xFF949BA4);
+                        Compat.drawWithShadow(null, matrices, sName, x + 20, sY + 5, bs.isEnabled() ? 0xFFFFFFFF : 0xFF949BA4);
                         sY += 18;
                     } else if (s instanceof NumberSetting) {
                         NumberSetting ns = (NumberSetting) s;
@@ -303,7 +306,7 @@ public class ClassicGuiScreen extends Screen {
 
                         String sName = s.getName() + ": " + String.format("%.1f", ns.getValue());
                         if (sName.length() > 18) sName = sName.substring(0, 16) + "..";
-                        MinecraftClient.getInstance().context.drawTextWithShadow(textRenderer, sName, x + 6, sY + 3, accent);
+                        Compat.drawWithShadow(null, matrices, sName, x + 6, sY + 3, accent);
 
                         int sliderX = x + 6;
                         int sliderY = sY + 14;
@@ -324,13 +327,13 @@ public class ClassicGuiScreen extends Screen {
 
                         String sText = s.getName() + ": " + ms.getValue();
                         if (sText.length() > 16) sText = sText.substring(0, 14) + "..";
-                        MinecraftClient.getInstance().context.drawTextWithShadow(textRenderer, sText, x + 6, sY + 5, accent);
+                        Compat.drawWithShadow(null, matrices, sText, x + 6, sY + 5, accent);
                         sY += 18;
                     } else if (s instanceof ColorSetting) {
                         ColorSetting cs = (ColorSetting) s;
                         RenderUtils.drawRect(matrices, x, sY, width, 18, 0xEE141518);
 
-                        MinecraftClient.getInstance().context.drawTextWithShadow(textRenderer, s.getName(), x + 6, sY + 5, 0xFFDBDEE1);
+                        Compat.drawWithShadow(null, matrices, s.getName(), x + 6, sY + 5, 0xFFDBDEE1);
                         RenderUtils.drawRoundedRect(matrices, x + width - 20, sY + 4, 14, 10, 2, cs.getColor().getRGB());
                         sY += 18;
                     }

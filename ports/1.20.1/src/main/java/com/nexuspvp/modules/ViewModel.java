@@ -4,6 +4,8 @@ import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
+import com.nexuspvp.util.Compat;
+import net.minecraft.util.Hand;
 
 public class ViewModel extends Module {
 

@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -101,8 +103,8 @@ public class RadioSyncManager {
                                 }
                             }
                             
-                            rt.x = x;
-                            rt.y = y;
+                            // rt.setX(x);
+                            // rt.setY(y);
                             rt.z = z;
                             rt.lastUpdateTime = System.currentTimeMillis();
                             

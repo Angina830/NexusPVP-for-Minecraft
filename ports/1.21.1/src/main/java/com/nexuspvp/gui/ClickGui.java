@@ -1,4 +1,9 @@
 package com.nexuspvp.gui;
+import com.nexuspvp.util.Compat;
+
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.util.math.MatrixStack;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.config.ConfigManager;
@@ -11,7 +16,6 @@ import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -195,8 +199,8 @@ public class ClickGui extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        MatrixStack matrices = context.getMatrices(); {
-        fill(matrices, 0, 0, this.width, this.height, 0xC0111214);
+        MatrixStack matrices = context.getMatrices();
+        RenderUtils.drawRect(matrices, 0, 0, (this.width)-(0), (this.height)-(0), 0xC0111214);
 
         // Smooth window pop-in spring physics
         long elapsed = System.currentTimeMillis() - openTime;
@@ -227,11 +231,11 @@ public class ClickGui extends Screen {
 
         // App Accent Logo Pill
         RenderUtils.drawRoundedRect(matrices, windowX + 8, windowY + 6, 10, 10, 5, accent);
-        context.drawTextWithShadow(this.textRenderer, "NexusPVP", windowX + 22, windowY + 7, 0xFFF2F3F5);
+        Compat.drawText(matrices, "NexusPVP", windowX + 22, windowY + 7, 0xFFF2F3F5);
 
         if (searchField != null) {
-            searchField.x = windowX + sidebarW + 170;
-            searchField.y = windowY + 4;
+            searchField.setX(windowX + sidebarW + 170);
+            searchField.setY(windowY + 4);
             searchField.render(matrices, mouseX, mouseY, delta);
             if (searchField.getText().isEmpty() && !searchField.isFocused()) {
                 this.client.textRenderer.draw(matrices, LanguageManager.getInstance().isRussian() ? "\u041F\u043E\u0438\u0441\u043A..." : "Search...", searchField.x + 4, searchField.y + 3, 0xFF72767D);
@@ -239,14 +243,14 @@ public class ClickGui extends Screen {
         }
 
         int closeBtnX = windowX + windowW - 18;
-        context.drawTextWithShadow(this.textRenderer, "X", closeBtnX, windowY + 6, mouseX >= closeBtnX && mouseX <= closeBtnX + 12 && mouseY >= windowY && mouseY <= windowY + titleBarH ? 0xFFED4245 : 0xFF949BA4);
+        Compat.drawText(matrices, "X", closeBtnX, windowY + 6, mouseX >= closeBtnX && mouseX <= closeBtnX + 12 && mouseY >= windowY && mouseY <= windowY + titleBarH ? 0xFFED4245 : 0xFF949BA4);
 
         int bodyY = windowY + titleBarH;
         int mainBodyH = windowH - titleBarH;
         int sidebarBodyH = mainBodyH - 36;
 
         RenderUtils.drawRect(matrices, windowX, bodyY, sidebarW, sidebarBodyH, 0xFF2B2D31);
-        context.drawTextWithShadow(this.textRenderer, LanguageManager.getInstance().get("CATEGORIES"), windowX + 12, bodyY + 8, 0xFF949BA4);
+        Compat.drawText(matrices, LanguageManager.getInstance().get("CATEGORIES"), windowX + 12, bodyY + 8, 0xFF949BA4);
 
         int tabY = bodyY + 22;
         int tabH = 22;
@@ -264,7 +268,7 @@ public class ClickGui extends Screen {
 
             int textColor = isSelected ? 0xFFFFFFFF : (isHovered ? 0xFFDBDEE1 : 0xFF949BA4);
             String tabName = tab.getIcon() + " " + LanguageManager.getInstance().get(tab.getTitle());
-            context.drawTextWithShadow(this.textRenderer, tabName, windowX + 14, tabY + 6, textColor);
+            Compat.drawText(matrices, tabName, windowX + 14, tabY + 6, textColor);
 
             tabY += tabH + 2;
         }
@@ -276,12 +280,12 @@ public class ClickGui extends Screen {
         RenderUtils.drawRoundedRect(matrices, windowX + 8, userBarY + 6, 20, 20, 10, accent);
         RenderUtils.drawRoundedRect(matrices, windowX + 22, userBarY + 20, 7, 7, 4, 0xFF23A55A);
 
-        String playerName = this.client.player != null ? this.client.player.getName().asString() : "Player";
+        String playerName = this.client.player != null ? this.client.player.getName().getString() : "Player";
         if (this.client.textRenderer.getWidth(playerName) > 60) {
             playerName = playerName.substring(0, Math.min(playerName.length(), 8)) + "..";
         }
-        context.drawTextWithShadow(this.textRenderer, playerName, windowX + 32, userBarY + 7, 0xFFF2F3F5);
-        context.drawTextWithShadow(this.textRenderer, LanguageManager.getInstance().get("Online"), windowX + 32, userBarY + 17, 0xFF949BA4);
+        Compat.drawText(matrices, playerName, windowX + 32, userBarY + 7, 0xFFF2F3F5);
+        Compat.drawText(matrices, LanguageManager.getInstance().get("Online"), windowX + 32, userBarY + 17, 0xFF949BA4);
 
         int langBtnW = 26;
         int langBtnH = 16;
@@ -292,7 +296,7 @@ public class ClickGui extends Screen {
         RenderUtils.drawRoundedRect(matrices, langBtnX, langBtnY, langBtnW, langBtnH, 4, langBg);
         String langText = LanguageManager.getInstance().isRussian() ? "RU" : "EN";
         int ltw = this.client.textRenderer.getWidth(langText);
-        context.drawTextWithShadow(this.textRenderer, langText, langBtnX + (langBtnW - ltw) / 2, langBtnY + 4, 0xFFFFFFFF);
+        Compat.drawText(matrices, langText, langBtnX + (langBtnW - ltw) / 2, langBtnY + 4, 0xFFFFFFFF);
 
         int contentX = windowX + sidebarW;
         int contentW = windowW - sidebarW;
@@ -303,7 +307,7 @@ public class ClickGui extends Screen {
         boolean isSearching = !searchQuery.isEmpty();
 
         String headerTitle = isSearching ? "[?] " + (LanguageManager.getInstance().isRussian() ? "\u041F\u043E\u0438\u0441\u043A: " : "Search: ") + searchQuery : currentTab.getIcon() + " " + LanguageManager.getInstance().get(currentTab.getTitle());
-        context.drawTextWithShadow(this.textRenderer, headerTitle, contentX + 12, bodyY + 8, 0xFFF2F3F5);
+        Compat.drawText(matrices, headerTitle, contentX + 12, bodyY + 8, 0xFFF2F3F5);
         RenderUtils.drawRect(matrices, contentX + 8, bodyY + 25, contentW - 16, 1, 0xFF232428);
 
         int contentBodyY = bodyY + 28;
@@ -349,7 +353,7 @@ public class ClickGui extends Screen {
                     RenderUtils.drawRoundedRect(matrices, btnX, btnY, btnW, btnH, 4, btnHover ? accent : 0xFF2B2D31);
                     String btnText = LanguageManager.getInstance().isRussian() ? "\u22BE \u041D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0440\u0430\u0441\u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435 HUD (Drag & Drop)" : "\u22BE Customize HUD Layout (Drag & Drop)";
                     int btw = this.client.textRenderer.getWidth(btnText);
-                    context.drawTextWithShadow(this.textRenderer, btnText, btnX + (btnW - btw) / 2, btnY + 6, 0xFFFFFFFF);
+                    Compat.drawText(matrices, btnText, btnX + (btnW - btw) / 2, btnY + 6, 0xFFFFFFFF);
 
                     cardY += btnH + 8;
                 }
@@ -371,7 +375,7 @@ public class ClickGui extends Screen {
         }
 
         matrices.pop();
-        super.render(matrices, mouseX, mouseY, delta);
+        super.render(context, mouseX, mouseY, delta);
     }
 
     private void renderConfigsTab(MatrixStack matrices, int contentX, int bodyY, int contentW, int bodyH, int mouseX, int mouseY, float delta) {
@@ -381,16 +385,16 @@ public class ClickGui extends Screen {
         int startY = bodyY + 6 - configScrollY;
         int accent = ThemeManager.getInstance().getAccentColor().getRGB();
 
-        context.drawTextWithShadow(this.textRenderer, LanguageManager.getInstance().isRussian() ? "\u041F\u0420\u041E\u0424\u0418\u041B\u0418 \u0418 \u041A\u041E\u041D\u0424\u0418\u0413\u0423\u0420\u0410\u0426\u0418\u0418" : "CONFIG PROFILES", contentX + 12, startY, 0xFFFFFFFF);
+        Compat.drawText(matrices, LanguageManager.getInstance().isRussian() ? "\u041F\u0420\u041E\u0424\u0418\u041B\u0418 \u0418 \u041A\u041E\u041D\u0424\u0418\u0413\u0423\u0420\u0410\u0426\u0418\u0418" : "CONFIG PROFILES", contentX + 12, startY, 0xFFFFFFFF);
         String sub = LanguageManager.getInstance().isRussian() ? "\u0412\u0441\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E\u0442\u0441\u044F \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438." : "All settings save automatically.";
-        context.drawTextWithShadow(this.textRenderer, sub, contentX + 12, startY + 12, 0xFF949BA4);
+        Compat.drawText(matrices, sub, contentX + 12, startY + 12, 0xFF949BA4);
 
         int createY = startY + 30;
         RenderUtils.drawRoundedRect(matrices, contentX + 10, createY, contentW - 20, 32, 4, 0xFF2B2D31);
 
         if (configNameField != null) {
-            configNameField.x = contentX + 16;
-            configNameField.y = createY + 8;
+            configNameField.setX(contentX + 16);
+            configNameField.setY(createY + 8);
             configNameField.render(matrices, mouseX, mouseY, delta);
         }
 
@@ -402,10 +406,10 @@ public class ClickGui extends Screen {
         RenderUtils.drawRoundedRect(matrices, saveBtnX, saveBtnY, saveBtnW, saveBtnH, 4, saveHover ? 0xFF4752C4 : accent);
         String saveText = LanguageManager.getInstance().get("Save Config");
         int stw = this.client.textRenderer.getWidth(saveText);
-        context.drawTextWithShadow(this.textRenderer, saveText, saveBtnX + (saveBtnW - stw) / 2, saveBtnY + 5, 0xFFFFFFFF);
+        Compat.drawText(matrices, saveText, saveBtnX + (saveBtnW - stw) / 2, saveBtnY + 5, 0xFFFFFFFF);
 
         int listY = createY + 40;
-        context.drawTextWithShadow(this.textRenderer, (LanguageManager.getInstance().isRussian() ? "\u0421\u041E\u0425\u0420\u0410\u041D\u0415\u041D\u041D\u042B\u0415 \u041A\u041E\u041D\u0424\u0418\u0413\u0418" : "SAVED CONFIGS") + " (" + cm.getAvailableConfigs().size() + "):", contentX + 12, listY, 0xFF949BA4);
+        Compat.drawText(matrices, (LanguageManager.getInstance().isRussian() ? "\u0421\u041E\u0425\u0420\u0410\u041D\u0415\u041D\u041D\u042B\u0415 \u041A\u041E\u041D\u0424\u0418\u0413\u0418" : "SAVED CONFIGS") + " (" + cm.getAvailableConfigs().size() + "):", contentX + 12, listY, 0xFF949BA4);
 
         int rowY = listY + 14;
         String currentCfg = cm.getCurrentConfigName();
@@ -420,7 +424,7 @@ public class ClickGui extends Screen {
             }
 
             String nameText = (isCurrent ? "* " : "  ") + cfg + (isCurrent ? " (Active)" : "");
-            context.drawTextWithShadow(this.textRenderer, nameText, contentX + 16, rowY + 7, isCurrent ? accent : 0xFFF2F3F5);
+            Compat.drawText(matrices, nameText, contentX + 16, rowY + 7, isCurrent ? accent : 0xFFF2F3F5);
 
             int loadBtnX = contentX + contentW - 130;
             int loadBtnY = rowY + 4;
@@ -430,7 +434,7 @@ public class ClickGui extends Screen {
             RenderUtils.drawRoundedRect(matrices, loadBtnX, loadBtnY, loadBtnW, loadBtnH, 3, loadHover ? 0xFF23A55A : 0xFF35373C);
             String loadText = LanguageManager.getInstance().get("Load");
             int ltw = this.client.textRenderer.getWidth(loadText);
-            context.drawTextWithShadow(this.textRenderer, loadText, loadBtnX + (loadBtnW - ltw) / 2, loadBtnY + 4, 0xFFFFFFFF);
+            Compat.drawText(matrices, loadText, loadBtnX + (loadBtnW - ltw) / 2, loadBtnY + 4, 0xFFFFFFFF);
 
             if (!cfg.equalsIgnoreCase("default")) {
                 int delBtnX = contentX + contentW - 72;
@@ -441,7 +445,7 @@ public class ClickGui extends Screen {
                 RenderUtils.drawRoundedRect(matrices, delBtnX, delBtnY, delBtnW, delBtnH, 3, delHover ? 0xFFDA373C : 0xFF35373C);
                 String delText = LanguageManager.getInstance().get("Delete");
                 int dtw = this.client.textRenderer.getWidth(delText);
-                context.drawTextWithShadow(this.textRenderer, delText, delBtnX + (delBtnW - dtw) / 2, delBtnY + 4, 0xFFFFFFFF);
+                Compat.drawText(matrices, delText, delBtnX + (delBtnW - dtw) / 2, delBtnY + 4, 0xFFFFFFFF);
             }
 
             rowY += rowH + 4;
@@ -456,8 +460,8 @@ public class ClickGui extends Screen {
 
         // 1. GUI Layout Styles Section
         int startY = bodyY + 6;
-        context.drawTextWithShadow(this.textRenderer, LanguageManager.getInstance().isRussian() ? "СТИЛИ И РАСКЛАДКИ ИНТЕРФЕЙСА" : "GUI LAYOUT STYLES", contentX + 12, startY, 0xFFFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, LanguageManager.getInstance().isRussian() ? "Выберите архитектуру и дизайн меню:" : "Choose overall menu layout and architecture:", contentX + 12, startY + 11, 0xFF949BA4);
+        Compat.drawText(matrices, LanguageManager.getInstance().isRussian() ? "СТИЛИ И РАСКЛАДКИ ИНТЕРФЕЙСА" : "GUI LAYOUT STYLES", contentX + 12, startY, 0xFFFFFFFF);
+        Compat.drawText(matrices, LanguageManager.getInstance().isRussian() ? "Выберите архитектуру и дизайн меню:" : "Choose overall menu layout and architecture:", contentX + 12, startY + 11, 0xFF949BA4);
 
         int styleY = startY + 24;
         GuiStyle[] styles = GuiStyle.values();
@@ -481,13 +485,13 @@ public class ClickGui extends Screen {
                 RenderUtils.drawRoundedRect(matrices, sx + 2, sy + 4, 3, sCardH - 8, 2, accent);
             }
 
-            context.drawTextWithShadow(this.textRenderer, s.getIcon() + " " + s.getDisplayName(), sx + (active ? 8 : 6), sy + 5, active ? 0xFFFFFFFF : 0xFFDBDEE1);
-            context.drawTextWithShadow(this.textRenderer, s.getDescription(), sx + (active ? 8 : 6), sy + 18, 0xFF888F9A);
+            Compat.drawText(matrices, s.getIcon() + " " + s.getDisplayName(), sx + (active ? 8 : 6), sy + 5, active ? 0xFFFFFFFF : 0xFFDBDEE1);
+            Compat.drawText(matrices, s.getDescription(), sx + (active ? 8 : 6), sy + 18, 0xFF888F9A);
         }
 
         // 2. Color Palettes Section
         int colorSecY = styleY + 2 * (sCardH + 6) + 8;
-        context.drawTextWithShadow(this.textRenderer, LanguageManager.getInstance().isRussian() ? "ЦВЕТОВЫЕ АКЦЕНТЫ" : "COLOR PALETTES", contentX + 12, colorSecY, 0xFFFFFFFF);
+        Compat.drawText(matrices, LanguageManager.getInstance().isRussian() ? "ЦВЕТОВЫЕ АКЦЕНТЫ" : "COLOR PALETTES", contentX + 12, colorSecY, 0xFFFFFFFF);
 
         int gridY = colorSecY + 16;
         int gridX = contentX + 10;
@@ -514,7 +518,7 @@ public class ClickGui extends Screen {
             RenderUtils.drawRoundedRect(matrices, tx + 6, ty + 4, 14, 14, 7, tAccent.getRGB());
 
             String transTheme = LanguageManager.getInstance().get(themeName);
-            context.drawTextWithShadow(this.textRenderer, transTheme, tx + 26, ty + 7, isCurrent ? 0xFFFFFFFF : 0xFFDBDEE1);
+            Compat.drawText(matrices, transTheme, tx + 26, ty + 7, isCurrent ? 0xFFFFFFFF : 0xFFDBDEE1);
 
             idx++;
         }
@@ -528,16 +532,16 @@ public class ClickGui extends Screen {
         RenderUtils.drawRoundedRect(matrices, contentX + 10, bodyY + 4, contentW - 20, playerCardH, 6, 0xFF2B2D31);
         RenderUtils.drawRoundedRect(matrices, contentX + 10, bodyY + 4, contentW - 20, 3, 2, 0xFFFF5500);
 
-        context.drawTextWithShadow(this.textRenderer, "\u266B SOUNDCLOUD RADIO & PROXIMITY SYNC", contentX + 18, bodyY + 12, 0xFFFF7700);
+        Compat.drawText(matrices, "\u266B SOUNDCLOUD RADIO & PROXIMITY SYNC", contentX + 18, bodyY + 12, 0xFFFF7700);
 
         String title = radio.getCurrentTrackTitle();
         if (this.client.textRenderer.getWidth(title) > 280) {
             title = title.substring(0, Math.min(title.length(), 40)) + "...";
         }
-        context.drawTextWithShadow(this.textRenderer, title, contentX + 18, bodyY + 24, 0xFFFFFFFF);
+        Compat.drawText(matrices, title, contentX + 18, bodyY + 24, 0xFFFFFFFF);
 
         String status = radio.getStatusText();
-        context.drawTextWithShadow(this.textRenderer, status, contentX + 18, bodyY + 36, 0xFF949BA4);
+        Compat.drawText(matrices, status, contentX + 18, bodyY + 36, 0xFF949BA4);
 
         int btnW = 65;
         int btnH = 18;
@@ -549,7 +553,7 @@ public class ClickGui extends Screen {
 
         String btnLabel = radio.isPlaying() ? "|| " + LanguageManager.getInstance().get("Pause") : "> " + LanguageManager.getInstance().get("Play");
         int bw = this.client.textRenderer.getWidth(btnLabel);
-        context.drawTextWithShadow(this.textRenderer, btnLabel, btnX + (btnW - bw) / 2, btnY + 5, 0xFFFFFFFF);
+        Compat.drawText(matrices, btnLabel, btnX + (btnW - bw) / 2, btnY + 5, 0xFFFFFFFF);
 
         int nextBtnX = btnX + btnW + 6;
         int nextBtnW = 55;
@@ -557,12 +561,12 @@ public class ClickGui extends Screen {
         RenderUtils.drawRoundedRect(matrices, nextBtnX, btnY, nextBtnW, btnH, 4, nextHover ? 0xFF404249 : 0xFF35373C);
         String nextLabel = ">> " + LanguageManager.getInstance().get("Next");
         int nbw = this.client.textRenderer.getWidth(nextLabel);
-        context.drawTextWithShadow(this.textRenderer, nextLabel, nextBtnX + (nextBtnW - nbw) / 2, btnY + 5, 0xFFFFFFFF);
+        Compat.drawText(matrices, nextLabel, nextBtnX + (nextBtnW - nbw) / 2, btnY + 5, 0xFFFFFFFF);
 
         int volX = nextBtnX + nextBtnW + 14;
         int volY = btnY + 3;
         int volW = 90;
-        context.drawTextWithShadow(this.textRenderer, "\u266A " + (int)(radio.getVolume() * 100) + "%", volX, volY - 11, 0xFFDBDEE1);
+        Compat.drawText(matrices, "\u266A " + (int)(radio.getVolume() * 100) + "%", volX, volY - 11, 0xFFDBDEE1);
         RenderUtils.drawRoundedRect(matrices, volX, volY + 2, volW, 5, 2, 0xFF1E1F22);
         int volFill = (int) (volW * radio.getVolume());
         if (volFill > 0) {
@@ -581,7 +585,7 @@ public class ClickGui extends Screen {
         RenderUtils.drawRoundedRect(matrices, bcBtnX, row2Y, bcBtnW, bcBtnH, 4, bcBg);
         String bcText = LanguageManager.getInstance().isRussian() ? (bcOn ? "\u0412\u0435\u0449\u0430\u043D\u0438\u0435: \u0412\u041A\u041B" : "\u0412\u0435\u0449\u0430\u043D\u0438\u0435: \u0412\u042B\u041A\u041B") : (bcOn ? "Share: ON" : "Share: OFF");
         int bcTw = this.client.textRenderer.getWidth(bcText);
-        context.drawTextWithShadow(this.textRenderer, bcText, bcBtnX + (bcBtnW - bcTw) / 2, row2Y + 5, 0xFFFFFFFF);
+        Compat.drawText(matrices, bcText, bcBtnX + (bcBtnW - bcTw) / 2, row2Y + 5, 0xFFFFFFFF);
 
         int stBtnX = bcBtnX + bcBtnW + 6;
         int stBtnW = 95;
@@ -591,12 +595,12 @@ public class ClickGui extends Screen {
         String stLabel = stName.equals("MyPlaylist") ? (LanguageManager.getInstance().isRussian() ? "\u041F\u043B\u0435\u0439\u043B\u0438\u0441\u0442" : "Playlist") : (stName.equals("LocalFolder") ? (LanguageManager.getInstance().isRussian() ? "\u041F\u0430\u043F\u043A\u0430" : "Folder") : (LanguageManager.getInstance().isRussian() ? "\u0421\u043B\u0443\u0448\u0430\u0442\u044C" : "Listen"));
         String stFull = LanguageManager.getInstance().isRussian() ? "\u0420\u0435\u0436\u0438\u043C: " + stLabel : "Mode: " + stLabel;
         int stTw = this.client.textRenderer.getWidth(stFull);
-        context.drawTextWithShadow(this.textRenderer, stFull, stBtnX + (stBtnW - stTw) / 2, row2Y + 5, 0xFFDBDEE1);
+        Compat.drawText(matrices, stFull, stBtnX + (stBtnW - stTw) / 2, row2Y + 5, 0xFFDBDEE1);
 
         int wVolX = stBtnX + stBtnW + 10;
         int wVolY = row2Y + 3;
         int wVolW = 65;
-        context.drawTextWithShadow(this.textRenderer, "3D: " + (int)(radio.getWorldVolume() * 100) + "%", wVolX, wVolY - 11, 0xFF949BA4);
+        Compat.drawText(matrices, "3D: " + (int)(radio.getWorldVolume() * 100) + "%", wVolX, wVolY - 11, 0xFF949BA4);
         RenderUtils.drawRoundedRect(matrices, wVolX, wVolY + 2, wVolW, 5, 2, 0xFF1E1F22);
         int wVolFill = (int) (wVolW * radio.getWorldVolume());
         if (wVolFill > 0) {
@@ -609,8 +613,8 @@ public class ClickGui extends Screen {
         RenderUtils.drawRoundedRect(matrices, contentX + 10, addY, contentW - 20, 26, 4, 0xFF2B2D31);
 
         if (addTrackField != null) {
-            addTrackField.x = contentX + 16;
-            addTrackField.y = addY + 5;
+            addTrackField.setX(contentX + 16);
+            addTrackField.setY(addY + 5);
             addTrackField.render(matrices, mouseX, mouseY, delta);
         }
 
@@ -622,11 +626,11 @@ public class ClickGui extends Screen {
         RenderUtils.drawRoundedRect(matrices, addBtnX, addBtnY, addBtnW, addBtnH, 4, addHover ? 0xFFFF7700 : 0xFFFF5500);
         String addLabel = "+ " + LanguageManager.getInstance().get("Add Track");
         int alw = this.client.textRenderer.getWidth(addLabel);
-        context.drawTextWithShadow(this.textRenderer, addLabel, addBtnX + (addBtnW - alw) / 2, addBtnY + 5, 0xFFFFFFFF);
+        Compat.drawText(matrices, addLabel, addBtnX + (addBtnW - alw) / 2, addBtnY + 5, 0xFFFFFFFF);
 
         // Playlist Queue Header
         int listY = addY + 32;
-        context.drawTextWithShadow(this.textRenderer, LanguageManager.getInstance().isRussian() ? "\u041E\u0427\u0415\u0420\u0415\u0414\u042C \u0422\u0420\u0415\u041A\u041E\u0412:" : "PLAYLIST QUEUE:", contentX + 12, listY, 0xFF949BA4);
+        Compat.drawText(matrices, LanguageManager.getInstance().isRussian() ? "\u041E\u0427\u0415\u0420\u0415\u0414\u042C \u0422\u0420\u0415\u041A\u041E\u0412:" : "PLAYLIST QUEUE:", contentX + 12, listY, 0xFF949BA4);
 
         // Scissored scrollable track queue (NO MORE BLEEDING OVER PLAYER CARD!)
         int queueStartY = listY + 12;
@@ -654,7 +658,7 @@ public class ClickGui extends Screen {
                     if (this.client.textRenderer.getWidth(trackName) > contentW - 60) {
                         trackName = trackName.substring(0, Math.min(trackName.length(), 38)) + "...";
                     }
-                    context.drawTextWithShadow(this.textRenderer, trackName, contentX + 16, trackRowY + 5, isCur ? 0xFFFF9933 : 0xFFDBDEE1);
+                    Compat.drawText(matrices, trackName, contentX + 16, trackRowY + 5, isCur ? 0xFFFF9933 : 0xFFDBDEE1);
                 }
 
                 trackRowY += rowH + 3;
@@ -671,7 +675,7 @@ public class ClickGui extends Screen {
 
         int closeBtnX = windowX + windowW - 18;
         if (mouseX >= closeBtnX && mouseX <= closeBtnX + 12 && mouseY >= windowY && mouseY <= windowY + titleBarH) {
-            this.onClose();
+            this.close();
             return true;
         }
 
@@ -734,7 +738,7 @@ public class ClickGui extends Screen {
                 int btnY = contentBodyY + 4 - scrollY;
                 if (mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH && button == 0) {
                     if (this.client != null) {
-                        this.client.openScreen(new HudEditorScreen(this));
+                        Compat.setScreen(client, new HudEditorScreen(this));
                     }
                     return true;
                 }
@@ -1047,14 +1051,13 @@ public class ClickGui extends Screen {
         }
 
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            this.onClose();
+            this.close();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    @Override
-    public void onClose() {
+    public void close() {
         savedTab = this.currentTab;
         savedScrollY = this.scrollY;
         savedPlaylistScrollY = this.playlistScrollY;
@@ -1066,7 +1069,7 @@ public class ClickGui extends Screen {
         }
 
         if (this.client != null) {
-            this.client.openScreen(null);
+            Compat.setScreen(client, null);
         }
         if (NexusPVP.getInstance().getConfigManager() != null) {
             NexusPVP.getInstance().getConfigManager().saveConfig();
@@ -1101,18 +1104,17 @@ public class ClickGui extends Screen {
         net.minecraft.client.MinecraftClient mc = net.minecraft.client.MinecraftClient.getInstance();
         GuiStyle style = ThemeManager.getInstance().getCurrentStyle();
         if (style == GuiStyle.CLASSIC_WINDOWS) {
-            mc.openScreen(new com.nexuspvp.gui.styles.ClassicGuiScreen());
+            Compat.setScreen(mc, new com.nexuspvp.gui.styles.ClassicGuiScreen());
         } else if (style == GuiStyle.GLASS_DASHBOARD) {
-            mc.openScreen(new com.nexuspvp.gui.styles.GlassDashboardScreen());
+            Compat.setScreen(mc, new com.nexuspvp.gui.styles.GlassDashboardScreen());
         } else if (style == GuiStyle.COMPACT_LIST) {
-            mc.openScreen(new com.nexuspvp.gui.styles.CompactListScreen());
+            Compat.setScreen(mc, new com.nexuspvp.gui.styles.CompactListScreen());
         } else {
-            mc.openScreen(new ClickGui());
+            Compat.setScreen(mc, new ClickGui());
         }
     }
 
-    @Override
-    public boolean isPauseScreen() {
+    public boolean shouldPause() {
         return false;
     }
 }

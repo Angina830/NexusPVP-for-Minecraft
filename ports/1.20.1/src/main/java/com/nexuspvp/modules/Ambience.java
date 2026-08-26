@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
@@ -62,9 +64,9 @@ public class Ambience extends Module {
         }
         if (mc.options != null && isEnabled()) {
             if (fullbright.isEnabled()) {
-                mc.options.gamma = 15.0;
+                mc.options.getGamma().setValue((double)(15.0));
             } else if (brightness.getFloatValue() != 1.0f) {
-                mc.options.gamma = (double) brightness.getFloatValue();
+                mc.options.getGamma().setValue((double)((double) brightness.getFloatValue()));
             }
         }
     }
@@ -72,7 +74,7 @@ public class Ambience extends Module {
     @Override
     public void onDisable() {
         if (mc.options != null) {
-            mc.options.gamma = 1.0;
+            mc.options.getGamma().setValue((double)(1.0));
         }
     }
 }

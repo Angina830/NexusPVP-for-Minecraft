@@ -1,4 +1,6 @@
 package com.nexuspvp.gui;
+import com.nexuspvp.util.Compat;
+
 
 import java.util.HashMap;
 import java.util.Map;

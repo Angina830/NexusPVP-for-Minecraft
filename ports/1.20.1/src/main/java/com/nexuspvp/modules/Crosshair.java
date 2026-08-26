@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
@@ -36,8 +38,8 @@ public class Crosshair extends Module {
     public void onRender2D(MatrixStack matrices, float tickDelta) {
         if (mc.player == null) return;
 
-        int screenW = mc.getWindow().getScaledWidth();
-        int screenH = mc.getWindow().getScaledHeight();
+        int screenW = Compat.getScaledWidth();
+        int screenH = Compat.getScaledHeight();
         int cx = screenW / 2;
         int cy = screenH / 2;
 
@@ -57,18 +59,18 @@ public class Crosshair extends Module {
 
             if (currentStyle.equals("Cross")) {
                 // Top
-                RenderUtils.drawRect(matrices, cx - halfTh, (int)(cy - gp - sz), (int)th, (int)sz, c);
+                RenderUtils.drawRect(matrices, cx - halfTh, cy - gp - sz, (int)th, (int)sz, c);
                 // Bottom
-                RenderUtils.drawRect(matrices, cx - halfTh, (int)(cy + gp), (int)th, (int)sz, c);
+                RenderUtils.drawRect(matrices, cx - halfTh, cy + gp, (int)th, (int)sz, c);
                 // Left
-                RenderUtils.drawRect(matrices, (int)(cx - gp - sz), cy - halfTh, (int)sz, (int)th, c);
+                RenderUtils.drawRect(matrices, cx - gp - sz, cy - halfTh, (int)sz, (int)th, c);
                 // Right
-                RenderUtils.drawRect(matrices, (int)(cx + gp), cy - halfTh, (int)sz, (int)th, c);
+                RenderUtils.drawRect(matrices, cx + gp, cy - halfTh, (int)sz, (int)th, c);
             } else if (currentStyle.equals("Circle")) {
-                RenderUtils.drawRect(matrices, cx - halfTh, (int)(cy - sz), (int)th, 2, c);
-                RenderUtils.drawRect(matrices, cx - halfTh, (int)(cy + sz - 2), (int)th, 2, c);
-                RenderUtils.drawRect(matrices, (int)(cx - sz), cy - halfTh, 2, (int)th, c);
-                RenderUtils.drawRect(matrices, (int)(cx + sz - 2), cy - halfTh, 2, (int)th, c);
+                RenderUtils.drawRect(matrices, cx - halfTh, cy - sz, (int)th, 2, c);
+                RenderUtils.drawRect(matrices, cx - halfTh, cy + sz - 2, (int)th, 2, c);
+                RenderUtils.drawRect(matrices, cx - sz, cy - halfTh, 2, (int)th, c);
+                RenderUtils.drawRect(matrices, cx + sz - 2, cy - halfTh, 2, (int)th, c);
             }
         }
 

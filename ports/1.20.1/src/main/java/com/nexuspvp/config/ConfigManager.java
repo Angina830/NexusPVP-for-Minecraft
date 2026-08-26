@@ -1,4 +1,6 @@
 package com.nexuspvp.config;
+import com.nexuspvp.util.Compat;
+
 
 import com.google.gson.*;
 import com.nexuspvp.NexusPVP;

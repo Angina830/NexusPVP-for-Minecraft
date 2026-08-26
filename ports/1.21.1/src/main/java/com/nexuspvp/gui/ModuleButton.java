@@ -1,4 +1,6 @@
 package com.nexuspvp.gui;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.gui.components.*;
 import com.nexuspvp.module.Module;
@@ -103,14 +105,14 @@ public class ModuleButton {
         
         String translatedName = LanguageManager.getInstance().get(module.getName());
         int textX = x + (int) (8 + 3 * toggleAnim);
-        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, translatedName, textX, y + 4, 0xFFF2F3F5);
+        Compat.drawWithShadow(null, matrices, translatedName, textX, y + 4, 0xFFF2F3F5);
         
         String desc = LanguageManager.getInstance().get(module.getDescription());
         if (desc != null && !desc.isEmpty()) {
             if (MinecraftClient.getInstance().textRenderer.getWidth(desc) > width - 110) {
                 desc = desc.substring(0, Math.min(desc.length(), 28)) + "...";
             }
-            MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, desc, textX, y + 15, 0xFF949BA4);
+            Compat.drawWithShadow(null, matrices, desc, textX, y + 15, 0xFF949BA4);
         }
 
         // 1. In-Card Interactive Keybind Button
@@ -125,7 +127,7 @@ public class ModuleButton {
         String keyText = binding ? "..." : getKeyName(module.getKeyBind());
         int ktw = MinecraftClient.getInstance().textRenderer.getWidth(keyText);
         int keyCol = binding ? 0xFFFFFFFF : (module.getKeyBind() > 0 ? accent : 0xFF949BA4);
-        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, keyText, bindX + (bindW - ktw) / 2, bindY + 3, keyCol);
+        Compat.drawWithShadow(null, matrices, keyText, bindX + (bindW - ktw) / 2, bindY + 3, keyCol);
         
         // 2. Toggle Switch
         int toggleW = 20;
@@ -152,7 +154,7 @@ public class ModuleButton {
             int chevronY = y + 9;
             String chevron = expanded ? "v" : ">";
             int chCol = expanded ? accent : 0xFF949BA4;
-            MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, chevron, chevronX, chevronY, chCol);
+            Compat.drawWithShadow(null, matrices, chevron, chevronX, chevronY, chCol);
         }
         
         // 4. Render expanded settings
@@ -273,9 +275,9 @@ public class ModuleButton {
 
     public Module getModule() { return module; }
     public int getX() { return x; }
-    public void setX(int x) { this.x = x; }
+    public void setX(int x) { this.x = (x); }
     public int getY() { return y; }
-    public void setY(int y) { this.y = y; }
+    public void setY(int y) { this.y = (y); }
     public boolean isExpanded() { return expanded; }
     public void setExpanded(boolean expanded) { this.expanded = expanded; }
 

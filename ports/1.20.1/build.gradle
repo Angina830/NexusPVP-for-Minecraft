@@ -48,3 +48,7 @@ jar {
         rename { "${it}_${project.archivesBaseName}" }
     }
 }
+
+remapJar {
+    destinationDirectory = file("build/libs")
+}

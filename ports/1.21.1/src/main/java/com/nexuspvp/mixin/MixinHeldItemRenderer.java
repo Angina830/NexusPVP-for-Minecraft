@@ -1,4 +1,6 @@
 package com.nexuspvp.mixin;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.SwingAnimations;
@@ -11,7 +13,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3f;
+import org.joml.Vector3f;
+import net.minecraft.util.math.RotationAxis;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -29,9 +32,9 @@ public class MixinHeldItemRenderer {
         if (viewModel != null && viewModel.isEnabled()) {
             if (!viewModel.isOnlyMainHand() || hand == Hand.MAIN_HAND) {
                 matrices.translate(viewModel.getTranslateX(), viewModel.getTranslateY(), viewModel.getTranslateZ());
-                matrices.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(viewModel.getRotateX()));
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(viewModel.getRotateY()));
-                matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(viewModel.getRotateZ()));
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(viewModel.getRotateX()));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(viewModel.getRotateY()));
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(viewModel.getRotateZ()));
                 matrices.scale(viewModel.getScaleX(), viewModel.getScaleY(), viewModel.getScaleZ());
             }
         }
@@ -55,43 +58,43 @@ public class MixinHeldItemRenderer {
             if (style.equalsIgnoreCase("1.7")) {
                 // Classic 1.7.10 Block-Hit Slash
                 matrices.translate((float) i * -0.15F * f1, 0.08F * f, 0.05F * f1);
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * (45.0F + f * -20.0F)));
-                matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion((float) i * f1 * -20.0F));
-                matrices.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(f1 * -80.0F));
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * -45.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * (45.0F + f * -20.0F)));
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((float) i * f1 * -20.0F));
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -80.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
             } else if (style.equalsIgnoreCase("Smooth")) {
                 // Smooth diagonal arc
                 matrices.translate((float) i * -0.1F * f1, 0.04F * f, -0.05F * f1);
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * (45.0F + f * -25.0F)));
-                matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion((float) i * f1 * -25.0F));
-                matrices.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(f1 * -75.0F));
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * -45.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * (45.0F + f * -25.0F)));
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((float) i * f1 * -25.0F));
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -75.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
             } else if (style.equalsIgnoreCase("Sigma")) {
                 // Sigma style sharp dynamic slash
                 matrices.translate((float) i * -0.15F * f1, -0.05F * f, 0.1F * f1);
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * (45.0F + f * -30.0F)));
-                matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion((float) i * f1 * -35.0F));
-                matrices.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(f1 * -65.0F));
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * -45.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * (45.0F + f * -30.0F)));
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((float) i * f1 * -35.0F));
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -65.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
             } else if (style.equalsIgnoreCase("Spin")) {
                 // 360 Spin along blade axis
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * 45.0F));
-                matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion((float) i * progress * 360.0F));
-                matrices.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(f1 * -50.0F));
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * -45.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * 45.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((float) i * progress * 360.0F));
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -50.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
             } else if (style.equalsIgnoreCase("Push")) {
                 // Forward shield punch / push
                 matrices.translate((float) i * -0.05F * f, 0.0F, -0.3F * f);
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * (45.0F + f * -15.0F)));
-                matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion((float) i * f1 * -10.0F));
-                matrices.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(f1 * -50.0F));
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * -45.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * (45.0F + f * -15.0F)));
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((float) i * f1 * -10.0F));
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -50.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
             } else if (style.equalsIgnoreCase("Down")) {
                 // Heavy vertical downward chop
                 matrices.translate(0.0F, -0.18F * f1, 0.0F);
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * 45.0F));
-                matrices.multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(f1 * -90.0F));
-                matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float) i * -45.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * 45.0F));
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -90.0F));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
             }
             ci.cancel();
         }

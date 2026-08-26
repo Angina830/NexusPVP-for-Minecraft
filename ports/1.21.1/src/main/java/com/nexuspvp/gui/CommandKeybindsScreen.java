@@ -1,4 +1,9 @@
 package com.nexuspvp.gui;
+import com.nexuspvp.util.Compat;
+
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.util.math.MatrixStack;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.CommandKeybinds;
@@ -7,7 +12,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -43,16 +47,15 @@ public class CommandKeybindsScreen extends Screen {
         commandField.setText("/feed");
     }
 
-    @Override
-    public boolean isPauseScreen() {
+    public boolean shouldPause() {
         return false;
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        MatrixStack matrices = context.getMatrices(); {
+        MatrixStack matrices = context.getMatrices();
         // Dark backdrop
-        fill(matrices, 0, 0, this.width, this.height, 0xC0111214);
+        RenderUtils.drawRect(matrices, 0, 0, (this.width)-(0), (this.height)-(0), 0xC0111214);
 
         int modalW = 420;
         int modalH = 250;
@@ -67,13 +70,13 @@ public class CommandKeybindsScreen extends Screen {
         RenderUtils.drawRoundedRect(matrices, modalX, modalY, modalW, 26, 6, 0xFF1E1F22);
         RenderUtils.drawRoundedRect(matrices, modalX, modalY, 4, 26, 2, 0xFF5865F2);
         String header = "⌨ " + (LanguageManager.getInstance().isRussian() ? "БИНДЫ КОМАНД СЕРВЕРА" : "COMMAND KEYBINDS MANAGER");
-        this.context.drawTextWithShadow(textRenderer, header, modalX + 14, modalY + 8, 0xFFFFFFFF);
+        Compat.drawText(matrices, header, modalX + 14, modalY + 8, 0xFFFFFFFF);
 
         // Back button
         boolean backHover = mouseX >= modalX + modalW - 65 && mouseX <= modalX + modalW - 10 && mouseY >= modalY + 4 && mouseY <= modalY + 22;
         RenderUtils.drawRoundedRect(matrices, modalX + modalW - 65, modalY + 4, 55, 18, 4, backHover ? 0xFF5865F2 : 0xFF2B2D31);
         String backText = LanguageManager.getInstance().get("Back");
-        this.context.drawTextWithShadow(textRenderer, backText, modalX + modalW - 65 + (55 - this.textRenderer.getWidth(backText)) / 2, modalY + 8, 0xFFFFFFFF);
+        Compat.drawText(matrices, backText, modalX + modalW - 65 + (55 - this.textRenderer.getWidth(backText)) / 2, modalY + 8, 0xFFFFFFFF);
 
         // Binds List Area
         int listX = modalX + 12;
@@ -89,7 +92,7 @@ public class CommandKeybindsScreen extends Screen {
 
             if (binds.isEmpty()) {
                 String empty = LanguageManager.getInstance().isRussian() ? "Список биндов пуст. Добавьте бинд ниже!" : "No keybinds configured. Add one below!";
-                this.context.drawTextWithShadow(textRenderer, empty, listX + 12, listY + 20, 0xFF949BA4);
+                Compat.drawText(matrices, empty, listX + 12, listY + 20, 0xFF949BA4);
             } else {
                 List<Map.Entry<Integer, String>> entries = new ArrayList<>(binds.entrySet());
                 for (Map.Entry<Integer, String> entry : entries) {
@@ -104,17 +107,17 @@ public class CommandKeybindsScreen extends Screen {
                         // Key badge
                         RenderUtils.drawRoundedRect(matrices, listX + 10, rowY + 2, 45, 14, 2, 0xFF5865F2);
                         int kw = this.textRenderer.getWidth(keyName);
-                        this.context.drawTextWithShadow(textRenderer, keyName, listX + 10 + (45 - kw) / 2, rowY + 5, 0xFFFFFFFF);
+                        Compat.drawText(matrices, keyName, listX + 10 + (45 - kw) / 2, rowY + 5, 0xFFFFFFFF);
 
                         // Command text
-                        this.context.drawTextWithShadow(textRenderer, "->  " + cmd, listX + 62, rowY + 5, 0xFFDBDEE1);
+                        Compat.drawText(matrices, "->  " + cmd, listX + 62, rowY + 5, 0xFFDBDEE1);
 
                         // Delete (X) button
                         int delX = listX + listW - 32;
                         int delY = rowY + 2;
                         boolean delHover = mouseX >= delX && mouseX <= delX + 20 && mouseY >= delY && mouseY <= delY + 14;
                         RenderUtils.drawRoundedRect(matrices, delX, delY, 20, 14, 2, delHover ? 0xFFDA373C : 0xFF35373C);
-                        this.context.drawTextWithShadow(textRenderer, "X", delX + 6, delY + 3, 0xFFFFFFFF);
+                        Compat.drawText(matrices, "X", delX + 6, delY + 3, 0xFFFFFFFF);
                     }
                     rowY += 22;
                 }
@@ -135,12 +138,12 @@ public class CommandKeybindsScreen extends Screen {
         RenderUtils.drawRoundedRect(matrices, keyBtnX, keyBtnY, keyBtnW, keyBtnH, 4, keyBg);
         String keyLabel = listeningForKey ? "..." : (selectedKey == -1 ? "Клавиша" : getKeyName(selectedKey));
         int klw = this.textRenderer.getWidth(keyLabel);
-        this.context.drawTextWithShadow(textRenderer, keyLabel, keyBtnX + (keyBtnW - klw) / 2, keyBtnY + 6, 0xFFFFFFFF);
+        Compat.drawText(matrices, keyLabel, keyBtnX + (keyBtnW - klw) / 2, keyBtnY + 6, 0xFFFFFFFF);
 
         // Command TextField
         if (commandField != null) {
-            commandField.x = listX + 102;
-            commandField.y = addY + 4;
+            commandField.setX(listX + 102);
+            commandField.setY(addY + 4);
             commandField.setWidth(180);
             commandField.render(matrices, mouseX, mouseY, delta);
         }
@@ -154,9 +157,9 @@ public class CommandKeybindsScreen extends Screen {
         RenderUtils.drawRoundedRect(matrices, addBtnX, addBtnY, addBtnW, addBtnH, 4, addHover ? 0xFF23A55A : 0xFF2B2D31);
         String addText = "+ " + (LanguageManager.getInstance().isRussian() ? "Добавить" : "Add");
         int atw = this.textRenderer.getWidth(addText);
-        this.context.drawTextWithShadow(textRenderer, addText, addBtnX + (addBtnW - atw) / 2, addBtnY + 6, 0xFFFFFFFF);
+        Compat.drawText(matrices, addText, addBtnX + (addBtnW - atw) / 2, addBtnY + 6, 0xFFFFFFFF);
 
-        super.render(matrices, mouseX, mouseY, delta);
+        super.render(context, mouseX, mouseY, delta);
     }
 
     private String getKeyName(int keyCode) {
@@ -177,7 +180,7 @@ public class CommandKeybindsScreen extends Screen {
 
         // Back button
         if (mouseX >= modalX + modalW - 65 && mouseX <= modalX + modalW - 10 && mouseY >= modalY + 4 && mouseY <= modalY + 22 && button == 0) {
-            this.client.openScreen(parent);
+            Compat.setScreen(client, parent);
             return true;
         }
 
@@ -258,7 +261,7 @@ public class CommandKeybindsScreen extends Screen {
         }
 
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            this.client.openScreen(parent);
+            Compat.setScreen(client, parent);
             return true;
         }
 

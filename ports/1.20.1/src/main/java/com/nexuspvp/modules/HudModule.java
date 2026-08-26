@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.module.Category;
@@ -41,8 +43,8 @@ public class HudModule extends Module {
     public void onRender2D(MatrixStack matrices, float tickDelta) {
         if (mc.options.hudHidden) return;
 
-        int width = mc.getWindow().getScaledWidth();
-        int height = mc.getWindow().getScaledHeight();
+        int width = Compat.getScaledWidth();
+        int height = Compat.getScaledHeight();
 
         Color baseColor = color.getColor();
         if (rainbow.isEnabled()) {
@@ -56,34 +58,34 @@ public class HudModule extends Module {
             int x = width / 2 - textWidth / 2;
             int y = 20; 
             
-            net.minecraft.client.gui.DrawableHelper.fill(matrices, x - 4, y - 4, x + textWidth + 4, y + mc.textRenderer.fontHeight + 4, 0x80000000);
-            mc.textRenderer.drawWithShadow(matrices, text, x, y, 0xFF00FFFF); 
+            RenderUtils.drawRect(matrices, x - 4, y - 4, (x + textWidth + 4)-(x - 4), (y + mc.textRenderer.fontHeight + 4)-(y - 4), 0x80000000);
+            Compat.drawText(matrices, text, x, y, 0xFF00FFFF); 
         } else if (Radio.currentTrackName != null && !Radio.currentTrackName.isEmpty()) {
             String text = "Now Playing: " + Radio.currentTrackName;
             int textWidth = mc.textRenderer.getWidth(text);
             int x = width / 2 - textWidth / 2;
             int y = 20;
             
-            net.minecraft.client.gui.DrawableHelper.fill(matrices, x - 4, y - 4, x + textWidth + 4, y + mc.textRenderer.fontHeight + 4, 0x80000000);
-            mc.textRenderer.drawWithShadow(matrices, text, x, y, 0xFF00FF00); 
+            RenderUtils.drawRect(matrices, x - 4, y - 4, (x + textWidth + 4)-(x - 4), (y + mc.textRenderer.fontHeight + 4)-(y - 4), 0x80000000);
+            Compat.drawText(matrices, text, x, y, 0xFF00FF00); 
         }
 
         int yOffset = 2;
         if (watermark.isEnabled()) {
             String text = "NexusPVP";
             if (background.isEnabled()) {
-                net.minecraft.client.gui.DrawableHelper.fill(matrices, 2, yOffset, 2 + mc.textRenderer.getWidth(text) + 2, yOffset + mc.textRenderer.fontHeight + 2, 0x80000000);
+                RenderUtils.drawRect(matrices, 2, yOffset, (2 + mc.textRenderer.getWidth(text) + 2)-(2), (yOffset + mc.textRenderer.fontHeight + 2)-(yOffset), 0x80000000);
             }
-            mc.textRenderer.drawWithShadow(matrices, text, 4, yOffset + 2, baseColor.getRGB());
+            Compat.drawText(matrices, text, 4, yOffset + 2, baseColor.getRGB());
             yOffset += mc.textRenderer.fontHeight + 4;
         }
 
         if (fps.isEnabled()) {
             String text = "FPS: " + mc.fpsDebugString.split(" ")[0];
             if (background.isEnabled()) {
-                net.minecraft.client.gui.DrawableHelper.fill(matrices, 2, yOffset, 2 + mc.textRenderer.getWidth(text) + 2, yOffset + mc.textRenderer.fontHeight + 2, 0x80000000);
+                RenderUtils.drawRect(matrices, 2, yOffset, (2 + mc.textRenderer.getWidth(text) + 2)-(2), (yOffset + mc.textRenderer.fontHeight + 2)-(yOffset), 0x80000000);
             }
-            mc.textRenderer.drawWithShadow(matrices, text, 4, yOffset + 2, baseColor.getRGB());
+            Compat.drawText(matrices, text, 4, yOffset + 2, baseColor.getRGB());
         }
 
         if (coords.isEnabled() && mc.player != null) {
@@ -91,9 +93,9 @@ public class HudModule extends Module {
             int textWidth = mc.textRenderer.getWidth(text);
             int y = height - mc.textRenderer.fontHeight - 4;
             if (background.isEnabled()) {
-                net.minecraft.client.gui.DrawableHelper.fill(matrices, 2, y, 2 + textWidth + 2, y + mc.textRenderer.fontHeight + 2, 0x80000000);
+                RenderUtils.drawRect(matrices, 2, y, (2 + textWidth + 2)-(2), (y + mc.textRenderer.fontHeight + 2)-(y), 0x80000000);
             }
-            mc.textRenderer.drawWithShadow(matrices, text, 4, y + 2, baseColor.getRGB());
+            Compat.drawText(matrices, text, 4, y + 2, baseColor.getRGB());
         }
 
         if (arrayList.isEnabled()) {
@@ -117,9 +119,9 @@ public class HudModule extends Module {
                 }
 
                 if (background.isEnabled()) {
-                    net.minecraft.client.gui.DrawableHelper.fill(matrices, x - 2, y, x + textWidth + 2, y + mc.textRenderer.fontHeight + 2, 0x80000000);
+                    RenderUtils.drawRect(matrices, x - 2, y, (x + textWidth + 2)-(x - 2), (y + mc.textRenderer.fontHeight + 2)-(y), 0x80000000);
                 }
-                mc.textRenderer.drawWithShadow(matrices, text, x, y + 2, c.getRGB());
+                Compat.drawText(matrices, text, x, y + 2, c.getRGB());
                 y += mc.textRenderer.fontHeight + 2;
                 index++;
             }

@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.module.Category;
@@ -14,14 +16,14 @@ public class ClickGuiModule extends Module {
     @Override
     public void onEnable() {
         if (mc.currentScreen == null) {
-            mc.openScreen(new com.nexuspvp.gui.ClickGui());
+            Compat.setScreen(mc, new com.nexuspvp.gui.ClickGui());
         }
     }
 
     @Override
     public void onDisable() {
         if (mc.currentScreen instanceof com.nexuspvp.gui.ClickGui) {
-            mc.openScreen(null);
+            Compat.setScreen(mc, null);
         }
     }
 }

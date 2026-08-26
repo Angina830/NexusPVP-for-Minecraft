@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
@@ -25,7 +27,7 @@ public class ChatTweaks extends Module {
         if (timestamps.isEnabled()) {
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
             String timeStr = "[" + sdf.format(new Date()) + "] ";
-            LiteralText timePrefix = Text.literal(timeStr);
+            Text timePrefix = Text.literal(timeStr);
             timePrefix.setStyle(Style.EMPTY.withColor(Formatting.DARK_GRAY));
             return timePrefix.append(message);
         }

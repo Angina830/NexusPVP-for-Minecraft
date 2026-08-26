@@ -1,4 +1,6 @@
 package com.nexuspvp.module;
+import com.nexuspvp.util.Compat;
+
 
 public enum Category {
     PVP("PvP"),

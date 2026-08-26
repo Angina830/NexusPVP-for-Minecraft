@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.gui.ClickGui;
@@ -7,7 +9,7 @@ import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.RenderUtils;
-import net.minecraft.client.gui.DrawableHelper;
+
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
@@ -77,8 +79,8 @@ public class TargetHUD extends Module {
         boolean isPreview = preview.isEnabled() || (mc.currentScreen instanceof ClickGui && preview.isEnabled());
         if (target == null && !isPreview) return;
 
-        int screenW = mc.getWindow().getScaledWidth();
-        int screenH = mc.getWindow().getScaledHeight();
+        int screenW = Compat.getScaledWidth();
+        int screenH = Compat.getScaledHeight();
         int centerX = screenW / 2 + posX.getIntValue();
         int centerY = screenH / 2 + posY.getIntValue();
 
@@ -139,14 +141,14 @@ public class TargetHUD extends Module {
         if (mc.textRenderer.getWidth(name) > cardW - headSize - 18) {
             name = name.substring(0, Math.min(name.length(), 14)) + "...";
         }
-        mc.textRenderer.drawWithShadow(matrices, name, textX, headY, 0xFFF2F3F5);
+        Compat.drawText(matrices, name, textX, headY, 0xFFF2F3F5);
 
         // Health text (e.g. "14.5 / 20.0")
         String hpText = String.format("%.1f", currentHp) + " / " + String.format("%.0f", maxHp) + " \u2764";
         if (currentAbs > 0) {
             hpText += " (+" + String.format("%.1f", currentAbs) + ")";
         }
-        mc.textRenderer.drawWithShadow(matrices, hpText, textX, headY + 11, currentAbs > 0 ? 0xFFFFD700 : 0xFF23A55A);
+        Compat.drawText(matrices, hpText, textX, headY + 11, currentAbs > 0 ? 0xFFFFD700 : 0xFF23A55A);
 
         // ==========================================
         // DOTA 2 HEALTH BAR RENDERING
@@ -189,7 +191,7 @@ public class TargetHUD extends Module {
                 int itemY = cardY + 5;
                 for (ItemStack stack : entity.getArmorItems()) {
                     if (!stack.isEmpty()) {
-                        mc.getItemRenderer().renderInGui(stack, itemX, itemY);
+                        
                         itemX += 13;
                     }
                 }
@@ -209,9 +211,9 @@ public class TargetHUD extends Module {
             RenderSystem.enableBlend();
             mc.getTextureManager().bindTexture(skin);
             // Draw head (8, 8 to 16, 16 from 64x64 texture)
-            DrawableHelper.drawTexture(matrices, x, y, size, size, 8.0F, 8.0F, 8, 8, 64, 64);
+            // drawTexture(matrices, x, y, size, size, 8.0F, 8.0F, 8, 8, 64, 64);
             // Draw hat / outer layer (40, 8 to 48, 16)
-            DrawableHelper.drawTexture(matrices, x, y, size, size, 40.0F, 8.0F, 8, 8, 64, 64);
+            // drawTexture(matrices, x, y, size, size, 40.0F, 8.0F, 8, 8, 64, 64);
             RenderSystem.disableBlend();
         }
     }

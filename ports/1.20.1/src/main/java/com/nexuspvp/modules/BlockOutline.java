@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.gui.ThemeManager;
 import com.nexuspvp.module.Category;

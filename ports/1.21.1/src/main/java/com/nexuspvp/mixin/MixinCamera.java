@@ -1,4 +1,6 @@
 package com.nexuspvp.mixin;
+import com.nexuspvp.util.Compat;
+
 
 import net.minecraft.client.render.Camera;
 import org.spongepowered.asm.mixin.Mixin;

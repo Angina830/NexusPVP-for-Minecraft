@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.gui.ThemeManager;
@@ -58,7 +60,7 @@ public class ItemCooldowns extends Module {
             matrices.scale(sc, sc, 1.0f);
             matrices.translate(-cx, -cy, 0);
 
-            mc.textRenderer.drawWithShadow(matrices, secText, x + 8 - tw / 2.0f, y + 4.5f, 0xFFFFFFFF);
+            Compat.drawText(matrices, secText, x + 8 - tw / 2.0f, y + 4.5f, 0xFFFFFFFF);
             matrices.pop();
         }
 

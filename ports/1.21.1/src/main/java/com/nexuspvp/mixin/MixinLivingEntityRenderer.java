@@ -1,4 +1,6 @@
 package com.nexuspvp.mixin;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.HitColor;
@@ -45,7 +47,7 @@ public abstract class MixinLivingEntityRenderer<T extends LivingEntity, M extend
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null) {
             HitColor hitColor = instance.getModuleManager().getModule(HitColor.class);
-            if (hitColor != null && hitColor.isEnabled() && (hitColor.isEntityHit(entity.getEntityId()) || entity.hurtTime > 0)) {
+            if (hitColor != null && hitColor.isEnabled() && (hitColor.isEntityHit(entity.getId()) || entity.hurtTime > 0)) {
                 cir.setReturnValue(OverlayTexture.DEFAULT_UV);
             }
         }
@@ -56,9 +58,9 @@ public abstract class MixinLivingEntityRenderer<T extends LivingEntity, M extend
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null && currentRenderEntity != null) {
             HitColor hitColor = instance.getModuleManager().getModule(HitColor.class);
-            if (hitColor != null && hitColor.isEnabled() && (hitColor.isEntityHit(currentRenderEntity.getEntityId()) || currentRenderEntity.hurtTime > 0)) {
+            if (hitColor != null && hitColor.isEnabled() && (hitColor.isEntityHit(currentRenderEntity.getId()) || currentRenderEntity.hurtTime > 0)) {
                 Color c = hitColor.getColor();
-                float hitAlpha = hitColor.getHitAlpha(currentRenderEntity.getEntityId());
+                float hitAlpha = hitColor.getHitAlpha(currentRenderEntity.getId());
                 if (hitAlpha <= 0) hitAlpha = hitColor.getOpacity() / 255.0f;
                 
                 float targetR = c.getRed() / 255.0f;

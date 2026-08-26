@@ -1,4 +1,6 @@
 package com.nexuspvp.gui.components;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.gui.ModuleButton;
@@ -27,7 +29,7 @@ public class ColorComponent extends SettingComponent {
     @Override
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
         String translatedName = com.nexuspvp.gui.LanguageManager.getInstance().get(colorSetting.getName());
-        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, translatedName, x + 4, y + 3, 0xFFDBDEE1);
+        Compat.drawWithShadow(null, matrices, translatedName, x + 4, y + 3, 0xFFDBDEE1);
         
         int boxW = 12;
         int boxH = 10;
@@ -46,15 +48,15 @@ public class ColorComponent extends SettingComponent {
             
             // Hue slider
             RenderUtils.drawRoundedRect(matrices, x + 4, y + 16, sliderW, 5, 2, 0xFF1E1F22);
-            RenderUtils.drawRoundedRect(matrices, x + 4, y + 16, (int)(sliderW * hsb[0]), 5, 2, Color.HSBtoRGB(hsb[0], 1.0f, 1.0f));
+            RenderUtils.drawRoundedRect(matrices, x + 4, y + 16, sliderW * hsb[0], 5, 2, Color.HSBtoRGB(hsb[0], 1.0f, 1.0f));
             
             // Saturation slider
             RenderUtils.drawRoundedRect(matrices, x + 4, y + 26, sliderW, 5, 2, 0xFF1E1F22);
-            RenderUtils.drawRoundedRect(matrices, x + 4, y + 26, (int)(sliderW * hsb[1]), 5, 2, Color.HSBtoRGB(hsb[0], hsb[1], 1.0f));
+            RenderUtils.drawRoundedRect(matrices, x + 4, y + 26, sliderW * hsb[1], 5, 2, Color.HSBtoRGB(hsb[0], hsb[1], 1.0f));
             
             // Brightness slider
             RenderUtils.drawRoundedRect(matrices, x + 4, y + 36, sliderW, 5, 2, 0xFF1E1F22);
-            RenderUtils.drawRoundedRect(matrices, x + 4, y + 36, (int)(sliderW * hsb[2]), 5, 2, Color.HSBtoRGB(hsb[0], hsb[1], hsb[2]));
+            RenderUtils.drawRoundedRect(matrices, x + 4, y + 36, sliderW * hsb[2], 5, 2, Color.HSBtoRGB(hsb[0], hsb[1], hsb[2]));
 
             if (draggingMode > 0) {
                 updateValue(mouseX);

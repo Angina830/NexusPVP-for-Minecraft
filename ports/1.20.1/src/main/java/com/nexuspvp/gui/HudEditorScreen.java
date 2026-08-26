@@ -1,11 +1,15 @@
 package com.nexuspvp.gui;
+import com.nexuspvp.util.Compat;
+
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.util.math.MatrixStack;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.*;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -109,15 +113,15 @@ public class HudEditorScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        MatrixStack matrices = context.getMatrices(); {
+        MatrixStack matrices = context.getMatrices();
         // Dark grid background
-        fill(matrices, 0, 0, this.width, this.height, 0x88111214);
+        RenderUtils.drawRect(matrices, 0, 0, (this.width)-(0), (this.height)-(0), 0x88111214);
 
         int accent = ThemeManager.getInstance().getAccentColor().getRGB();
 
         // Alignment guides (center vertical and horizontal)
-        fill(matrices, this.width / 2, 0, this.width / 2 + 1, this.height, 0x33FFFFFF);
-        fill(matrices, 0, this.height / 2, this.width, this.height / 2 + 1, 0x33FFFFFF);
+        RenderUtils.drawRect(matrices, this.width / 2, 0, (this.width / 2 + 1)-(this.width / 2), (this.height)-(0), 0x33FFFFFF);
+        RenderUtils.drawRect(matrices, 0, this.height / 2, (this.width)-(0), (this.height / 2 + 1)-(this.height / 2), 0x33FFFFFF);
 
         // Top Header Banner
         RenderUtils.drawRoundedRect(matrices, this.width / 2 - 160, 8, 320, 32, 6, 0xEE1E1F22);
@@ -125,11 +129,11 @@ public class HudEditorScreen extends Screen {
 
         String title = LanguageManager.getInstance().isRussian() ? "\u22BE \u0420\u0415\u0414\u0410\u041A\u0422\u041E\u0420 \u0420\u0410\u0421\u041F\u041E\u041B\u041E\u0416\u0415\u041D\u0418\u042F HUD" : "\u22BE HUD LAYOUT EDITOR";
         int tw = this.client.textRenderer.getWidth(title);
-        context.drawTextWithShadow(this.textRenderer, title, this.width / 2 - tw / 2, 13, 0xFFF2F3F5);
+        Compat.drawText(matrices, title, this.width / 2 - tw / 2, 13, 0xFFF2F3F5);
 
         String sub = LanguageManager.getInstance().isRussian() ? "\u041F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u0439\u0442\u0435 \u0432\u0438\u0434\u0436\u0435\u0442\u044B \u043C\u044B\u0448\u043A\u043E\u0439 \u2022 ESC \u0434\u043B\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F" : "Drag widgets with mouse \u2022 Press ESC to save & exit";
         int stw = this.client.textRenderer.getWidth(sub);
-        context.drawTextWithShadow(this.textRenderer, sub, this.width / 2 - stw / 2, 25, 0xFF949BA4);
+        Compat.drawText(matrices, sub, this.width / 2 - stw / 2, 25, 0xFF949BA4);
 
         // Save & Exit button
         int saveBtnW = 100;
@@ -140,7 +144,7 @@ public class HudEditorScreen extends Screen {
         RenderUtils.drawRoundedRect(matrices, saveBtnX, saveBtnY, saveBtnW, saveBtnH, 4, saveHover ? 0xFF4752C4 : accent);
         String saveText = LanguageManager.getInstance().isRussian() ? "\u2714 \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C" : "\u2714 Save & Exit";
         int stwt = this.client.textRenderer.getWidth(saveText);
-        context.drawTextWithShadow(this.textRenderer, saveText, saveBtnX + (saveBtnW - stwt) / 2, saveBtnY + 6, 0xFFFFFFFF);
+        Compat.drawText(matrices, saveText, saveBtnX + (saveBtnW - stwt) / 2, saveBtnY + 6, 0xFFFFFFFF);
 
         // Render each Draggable HUD Box
         for (HudBox box : hudBoxes) {
@@ -161,10 +165,10 @@ public class HudEditorScreen extends Screen {
 
             String label = box.name;
             int lw = this.client.textRenderer.getWidth(label);
-            context.drawTextWithShadow(this.textRenderer, label, bx + (bw - lw) / 2, by + (bh - 8) / 2, 0xFFFFFFFF);
+            Compat.drawText(matrices, label, bx + (bw - lw) / 2, by + (bh - 8) / 2, 0xFFFFFFFF);
         }
 
-        super.render(matrices, mouseX, mouseY, delta);
+        super.render(context, mouseX, mouseY, delta);
     }
 
     @Override
@@ -174,7 +178,7 @@ public class HudEditorScreen extends Screen {
         int saveBtnX = this.width / 2 - saveBtnW / 2;
         int saveBtnY = this.height - 30;
         if (mouseX >= saveBtnX && mouseX <= saveBtnX + saveBtnW && mouseY >= saveBtnY && mouseY <= saveBtnY + saveBtnH && button == 0) {
-            this.onClose();
+            this.close();
             return true;
         }
 
@@ -220,24 +224,22 @@ public class HudEditorScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            this.onClose();
+            this.close();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    @Override
-    public void onClose() {
+    public void close() {
         if (NexusPVP.getInstance().getConfigManager() != null) {
             NexusPVP.getInstance().getConfigManager().saveConfig();
         }
         if (this.client != null) {
-            this.client.openScreen(parent);
+            Compat.setScreen(client, parent);
         }
     }
 
-    @Override
-    public boolean isPauseScreen() {
+    public boolean shouldPause() {
         return false;
     }
 

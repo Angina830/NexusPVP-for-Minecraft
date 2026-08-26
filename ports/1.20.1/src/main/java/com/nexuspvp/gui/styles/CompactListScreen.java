@@ -1,4 +1,9 @@
 package com.nexuspvp.gui.styles;
+import com.nexuspvp.util.Compat;
+
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.util.math.MatrixStack;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.gui.ClickGui;
@@ -9,7 +14,6 @@ import com.nexuspvp.setting.*;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -42,7 +46,7 @@ public class CompactListScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        MatrixStack matrices = context.getMatrices(); {
+        MatrixStack matrices = context.getMatrices();
         int accent = ThemeManager.getInstance().getAccentColor().getRGB();
 
         RenderUtils.drawRect(matrices, 0, 0, width, height, 0x88111214);
@@ -59,8 +63,8 @@ public class CompactListScreen extends Screen {
         // Header (Logo + Tabs)
         int headerH = 26;
         RenderUtils.drawRect(matrices, winX, winY, winW, headerH, 0xFF121315);
-        context.drawTextWithShadow(textRenderer, "GLEBKA", winX + 10, winY + 9, accent);
-        context.drawTextWithShadow(textRenderer, "LIST", winX + 54, winY + 9, 0xFFFFFFFF);
+        Compat.drawWithShadow(null, matrices, "GLEBKA", winX + 10, winY + 9, accent);
+        Compat.drawWithShadow(null, matrices, "LIST", winX + 54, winY + 9, 0xFFFFFFFF);
 
         // Category Filter Pills
         String[] cats = new String[]{"ALL", "PVP", "HUD", "PLAYER", "RENDER", "THEMES"};
@@ -76,7 +80,7 @@ public class CompactListScreen extends Screen {
             int bg = active ? accent : (hovered ? 0xFF2B2D31 : 0xFF1E1F22);
             RenderUtils.drawRoundedRect(matrices, tx, ty, tabW, 16, 2, bg);
             int tw = textRenderer.getWidth(c);
-            context.drawTextWithShadow(textRenderer, c, tx + (tabW - tw) / 2, ty + 4, active ? 0xFFFFFFFF : 0xFF949BA4);
+            Compat.drawWithShadow(null, matrices, c, tx + (tabW - tw) / 2, ty + 4, active ? 0xFFFFFFFF : 0xFF949BA4);
         }
 
         // Module Rows Area
@@ -116,22 +120,22 @@ public class CompactListScreen extends Screen {
                 int chkY = ry + 6;
                 RenderUtils.drawRoundedRect(matrices, chkX, chkY, 10, 10, 2, enabled ? accent : 0xFF35373C);
                 if (enabled) {
-                    context.drawTextWithShadow(textRenderer, "\u2714", chkX + 2, chkY + 1, 0xFFFFFFFF);
+                    Compat.drawWithShadow(null, matrices, "\u2714", chkX + 2, chkY + 1, 0xFFFFFFFF);
                 }
 
                 // Module name
-                context.drawTextWithShadow(textRenderer, m.getName(), winX + 28, ry + 7, enabled ? 0xFFFFFFFF : 0xFFDBDEE1);
+                Compat.drawWithShadow(null, matrices, m.getName(), winX + 28, ry + 7, enabled ? 0xFFFFFFFF : 0xFFDBDEE1);
 
                 // Settings gear
                 int gearX = winX + listW - 40;
-                context.drawTextWithShadow(textRenderer, "\u2699", gearX, ry + 7, isSelected ? accent : 0xFF8A93A4);
+                Compat.drawWithShadow(null, matrices, "\u2699", gearX, ry + 7, isSelected ? accent : 0xFF8A93A4);
 
                 // Keybind badge
                 boolean isBindingThis = (bindingModule == m);
                 String keyText = isBindingThis ? "..." : (m.getKeyBind() > 0 ? "[" + GLFW.glfwGetKeyName(m.getKeyBind(), 0) + "]" : "[-]");
                 int kw = textRenderer.getWidth(keyText);
                 int kx = winX + listW - kw - 12;
-                context.drawTextWithShadow(textRenderer, keyText, kx, ry + 7, isBindingThis ? accent : 0xFF949BA4);
+                Compat.drawWithShadow(null, matrices, keyText, kx, ry + 7, isBindingThis ? accent : 0xFF949BA4);
             }
         }
 
@@ -148,36 +152,36 @@ public class CompactListScreen extends Screen {
             RenderUtils.drawRect(matrices, drawX, drawY, 1, drawH, 0x33FFFFFF);
 
             // Drawer Header
-            context.drawTextWithShadow(textRenderer, selectedModule.getName(), drawX + 8, drawY + 8, accent);
-            context.drawTextWithShadow(textRenderer, "X", drawX + drawW - 14, drawY + 8, 0xFFED4245);
+            Compat.drawWithShadow(null, matrices, selectedModule.getName(), drawX + 8, drawY + 8, accent);
+            Compat.drawWithShadow(null, matrices, "X", drawX + drawW - 14, drawY + 8, 0xFFED4245);
 
             RenderUtils.startScissor(drawX, drawY + 22, drawW, drawH - 24);
             int curY = drawY + 24 + drawerScrollY;
 
             List<Setting<?>> settings = selectedModule.getSettings();
             if (settings.isEmpty()) {
-                context.drawTextWithShadow(textRenderer, "No settings", drawX + 10, drawY + 30, 0xFF8A93A4);
+                Compat.drawWithShadow(null, matrices, "No settings", drawX + 10, drawY + 30, 0xFF8A93A4);
             } else {
                 for (Setting<?> s : settings) {
                     if (s instanceof BooleanSetting) {
                         BooleanSetting bs = (BooleanSetting) s;
                         RenderUtils.drawRoundedRect(matrices, drawX + 6, curY, drawW - 12, 20, 3, 0xFF1E212A);
-                        context.drawTextWithShadow(textRenderer, s.getName(), drawX + 10, curY + 6, 0xFFDBDEE1);
+                        Compat.drawWithShadow(null, matrices, s.getName(), drawX + 10, curY + 6, 0xFFDBDEE1);
 
                         int chkX = drawX + drawW - 22;
                         RenderUtils.drawRoundedRect(matrices, chkX, curY + 5, 10, 10, 2, bs.isEnabled() ? accent : 0xFF35373C);
                         if (bs.isEnabled()) {
-                            context.drawTextWithShadow(textRenderer, "\u2714", chkX + 2, curY + 5, 0xFFFFFFFF);
+                            Compat.drawWithShadow(null, matrices, "\u2714", chkX + 2, curY + 5, 0xFFFFFFFF);
                         }
                         curY += 24;
                     } else if (s instanceof NumberSetting) {
                         NumberSetting ns = (NumberSetting) s;
                         RenderUtils.drawRoundedRect(matrices, drawX + 6, curY, drawW - 12, 30, 3, 0xFF1E212A);
-                        context.drawTextWithShadow(textRenderer, s.getName(), drawX + 10, curY + 4, 0xFFDBDEE1);
+                        Compat.drawWithShadow(null, matrices, s.getName(), drawX + 10, curY + 4, 0xFFDBDEE1);
 
                         String valStr = String.format("%.1f", ns.getValue());
                         int vw = textRenderer.getWidth(valStr);
-                        context.drawTextWithShadow(textRenderer, valStr, drawX + drawW - vw - 12, curY + 4, accent);
+                        Compat.drawWithShadow(null, matrices, valStr, drawX + drawW - vw - 12, curY + 4, accent);
 
                         int sliderX = drawX + 10;
                         int sliderY = curY + 18;
@@ -194,12 +198,12 @@ public class CompactListScreen extends Screen {
                     } else if (s instanceof ModeSetting) {
                         ModeSetting ms = (ModeSetting) s;
                         RenderUtils.drawRoundedRect(matrices, drawX + 6, curY, drawW - 12, 22, 3, 0xFF1E212A);
-                        context.drawTextWithShadow(textRenderer, s.getName() + ": " + ms.getValue(), drawX + 10, curY + 7, accent);
+                        Compat.drawWithShadow(null, matrices, s.getName() + ": " + ms.getValue(), drawX + 10, curY + 7, accent);
                         curY += 26;
                     } else if (s instanceof ColorSetting) {
                         ColorSetting cs = (ColorSetting) s;
                         RenderUtils.drawRoundedRect(matrices, drawX + 6, curY, drawW - 12, 20, 3, 0xFF1E212A);
-                        context.drawTextWithShadow(textRenderer, s.getName(), drawX + 10, curY + 6, 0xFFDBDEE1);
+                        Compat.drawWithShadow(null, matrices, s.getName(), drawX + 10, curY + 6, 0xFFDBDEE1);
                         RenderUtils.drawRoundedRect(matrices, drawX + drawW - 24, curY + 5, 14, 10, 2, cs.getColor().getRGB());
                         curY += 24;
                     }
@@ -208,11 +212,11 @@ public class CompactListScreen extends Screen {
             RenderUtils.endScissor();
         }
 
-        super.render(matrices, mouseX, mouseY, delta);
+        super.render(context, mouseX, mouseY, delta);
     }
 
     private void renderStyleSelector(MatrixStack matrices, int x, int y, int w, int mouseX, int mouseY) {
-        context.drawTextWithShadow(textRenderer, "SELECT GUI STYLE:", x + 4, y + 4, 0xFFFFFFFF);
+        Compat.drawWithShadow(null, matrices, "SELECT GUI STYLE:", x + 4, y + 4, 0xFFFFFFFF);
 
         com.nexuspvp.gui.GuiStyle[] styles = com.nexuspvp.gui.GuiStyle.values();
         int btnH = 34;
@@ -225,7 +229,7 @@ public class CompactListScreen extends Screen {
             int accent = ThemeManager.getInstance().getAccentColor().getRGB();
 
             RenderUtils.drawRoundedRect(matrices, x, by, w, btnH, 3, active ? accent : (hovered ? 0xFF2B2D31 : 0xFF1E1F22));
-            context.drawTextWithShadow(textRenderer, s.getIcon() + " " + s.getDisplayName() + " - " + s.getDescription(), x + 8, by + 12, active ? 0xFFFFFFFF : 0xFFD8DEE9);
+            Compat.drawWithShadow(null, matrices, s.getIcon() + " " + s.getDisplayName() + " - " + s.getDescription(), x + 8, by + 12, active ? 0xFFFFFFFF : 0xFFD8DEE9);
         }
     }
 
@@ -404,14 +408,13 @@ public class CompactListScreen extends Screen {
         }
 
         if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) {
-            onClose();
+            close();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    @Override
-    public boolean isPauseScreen() {
+    public boolean shouldPause() {
         return false;
     }
 }

@@ -1,4 +1,6 @@
 package com.nexuspvp;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.config.ConfigManager;
 import com.nexuspvp.gui.ClickGui;

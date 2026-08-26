@@ -20,9 +20,9 @@
     "MixinClientPlayerInteractionManager",
     "MixinKeyboardInput",
     "MixinLivingEntity",
-    "MixinItemRenderer",
-    "MixinScreen",
-    "MixinShaderEffect",
+    
+    
+    
     "MixinBackgroundRenderer",
     "MixinChatHud"
   ],

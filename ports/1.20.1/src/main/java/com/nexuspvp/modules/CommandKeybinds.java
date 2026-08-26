@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
@@ -92,7 +94,7 @@ public class CommandKeybinds extends Module {
             if (!cmd.startsWith("/")) {
                 cmd = "/" + cmd;
             }
-            mc.player.sendChatMessage(cmd);
+            Compat.sendChat(cmd);
 
             if (showToast.isEnabled()) {
                 mc.player.sendMessage(Text.literal("\u00a7b[NexusPVP]\u00a7f \u041a\u043e\u043c\u0430\u043d\u0434\u0430 \u00a7e" + cmd + "\u00a7f \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0430!"), true);

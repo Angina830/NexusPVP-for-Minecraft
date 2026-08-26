@@ -1,4 +1,6 @@
 package com.nexuspvp.mixin;
+import com.nexuspvp.util.Compat;
+
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.NexusPVP;
@@ -31,7 +33,7 @@ public abstract class MixinItemRenderer {
             ItemCooldowns cooldowns = instance.getModuleManager().getModule(ItemCooldowns.class);
             if (cooldowns != null && cooldowns.isEnabled() && alpha == 127) {
                 // Cancel only vanilla cooldown quad (alpha 127) and restore OpenGL texture/depth state
-                RenderSystem.enableTexture();
+                
                 RenderSystem.enableDepthTest();
                 return;
             }

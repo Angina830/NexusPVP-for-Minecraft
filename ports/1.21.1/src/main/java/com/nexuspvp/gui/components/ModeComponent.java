@@ -1,4 +1,6 @@
 package com.nexuspvp.gui.components;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.gui.ModuleButton;
@@ -24,13 +26,13 @@ public class ModeComponent extends SettingComponent {
         String translatedName = com.nexuspvp.gui.LanguageManager.getInstance().get(modeSetting.getName());
         String translatedValue = com.nexuspvp.gui.LanguageManager.getInstance().get(modeSetting.getValue());
         
-        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, translatedName, x + 4, y + 3, 0xFFDBDEE1);
+        Compat.drawWithShadow(null, matrices, translatedName, x + 4, y + 3, 0xFFDBDEE1);
         
         int badgeW = MinecraftClient.getInstance().textRenderer.getWidth(translatedValue) + 8;
         int badgeX = x + width - badgeW - 14;
         RenderUtils.drawRoundedRect(matrices, badgeX, y + 1, badgeW, 12, 3, 0xFF1E1F22);
         int accentColor = ThemeManager.getInstance().getAccentColor().getRGB();
-        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, translatedValue, badgeX + 4, y + 3, accentColor);
+        Compat.drawWithShadow(null, matrices, translatedValue, badgeX + 4, y + 3, accentColor);
     }
 
     @Override

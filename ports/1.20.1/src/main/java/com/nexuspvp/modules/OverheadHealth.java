@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
@@ -41,7 +43,7 @@ public class OverheadHealth extends Module {
                 float currentHealth = living.getHealth();
                 float currentAbs = living.getAbsorptionAmount();
 
-                EntityHpData data = hpMap.computeIfAbsent(e.getEntityId(), id -> new EntityHpData(currentHealth, currentAbs));
+                EntityHpData data = hpMap.computeIfAbsent(e.getId(), id -> new EntityHpData(currentHealth, currentAbs));
 
                 if (currentHealth < data.prevHealth) {
                     data.lastDamageTime = now;
@@ -74,7 +76,7 @@ public class OverheadHealth extends Module {
         double distSq = entity.squaredDistanceTo(mc.player);
         if (distSq > range.getValue() * range.getValue()) return;
 
-        EntityHpData data = hpMap.computeIfAbsent(entity.getEntityId(), id -> new EntityHpData(entity.getHealth(), entity.getAbsorptionAmount()));
+        EntityHpData data = hpMap.computeIfAbsent(entity.getId(), id -> new EntityHpData(entity.getHealth(), entity.getAbsorptionAmount()));
 
         float userScale = scale.getFloatValue();
         float yOff = yOffset.getFloatValue();
@@ -103,17 +105,17 @@ public class OverheadHealth extends Module {
         RenderUtils.drawRoundedRect(matrices, -halfW, -cardH / 2, cardW, cardH, 3, 0xEE1E1F22);
 
         // Entity Name & HP Number
-        String name = entity.getName().asString();
+        String name = entity.getName().getString();
         if (mc.textRenderer.getWidth(name) > 42) {
             name = name.substring(0, Math.min(name.length(), 6)) + "..";
         }
-        mc.textRenderer.drawWithShadow(matrices, name, -halfW + 4, -cardH / 2 + 2, 0xFFF2F3F5);
+        Compat.drawText(matrices, name, -halfW + 4, -cardH / 2 + 2, 0xFFF2F3F5);
 
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         String hpText = String.format("%.1f", currentHp);
         int hpW = mc.textRenderer.getWidth(hpText);
-        mc.textRenderer.drawWithShadow(matrices, hpText, halfW - hpW - 4, -cardH / 2 + 2, 0xFF22C55E);
+        Compat.drawText(matrices, hpText, halfW - hpW - 4, -cardH / 2 + 2, 0xFF22C55E);
 
         // Dota 2 Animated Health Bar
         int barX = -halfW + 3;

@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 import java.io.InputStream;
 public class TestStream3 {
     public static void main(String[] args) throws Exception {
