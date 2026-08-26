@@ -24,13 +24,13 @@ import java.awt.Color;
 public class BlockOutline extends Module {
 
     private final ModeSetting style = addSetting(new ModeSetting("Style", "Theme", "Theme", "Custom", "Rainbow"));
-    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(88, 101, 242)));
-    private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 2.5, 1.0, 6.0, 0.5));
+    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(0, 230, 255)));
+    private final BooleanSetting bloom = addSetting(new BooleanSetting("NeonBloom", true));
     private final BooleanSetting fill = addSetting(new BooleanSetting("Fill", true));
     private final NumberSetting fillAlpha = addSetting(new NumberSetting("FillAlpha", 35, 0, 150, 5));
 
     public BlockOutline() {
-        super("BlockOutline", "Custom glowing block selection outline", Category.VISUAL);
+        super("BlockOutline", "Stunning neon bloom block selection outline", Category.VISUAL);
     }
 
     @Override
@@ -65,6 +65,10 @@ public class BlockOutline extends Module {
             c = ThemeManager.getInstance().getAccentColor();
         }
 
-        RenderUtils.drawBox3D(matrices, minX, minY, minZ, maxX, maxY, maxZ, c, lineWidth.getFloatValue());
+        if (bloom.isEnabled()) {
+            RenderUtils.drawNeonBox3D(matrices, minX, minY, minZ, maxX, maxY, maxZ, c, fill.isEnabled(), fillAlpha.getIntValue());
+        } else {
+            RenderUtils.drawBox3D(matrices, minX, minY, minZ, maxX, maxY, maxZ, c, 2.0f);
+        }
     }
 }

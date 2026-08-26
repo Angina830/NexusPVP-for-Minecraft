@@ -44,12 +44,7 @@ public class ModuleManager {
         register(new TNTTimer());
         register(new ClearWater());
         register(new ChatTweaks());
-        register(new ChinaHat());
-        register(new Nimb());
-        register(new JumpCircles());
-        register(new Trails());
-        register(new JumpParticles());
-        register(new DebugLogger());
+                                                register(new DebugLogger());
     }
 
     private void register(Module module) {

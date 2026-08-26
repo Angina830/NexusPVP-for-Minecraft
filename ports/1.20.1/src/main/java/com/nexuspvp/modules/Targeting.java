@@ -17,14 +17,13 @@ import java.awt.Color;
 
 public class Targeting extends Module {
 
-    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 60, 60, 220)));
+    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(0, 240, 255, 230)));
     private final NumberSetting range = addSetting(new NumberSetting("Range", 5.0, 2.0, 12.0, 0.5));
-    private final ModeSetting style = addSetting(new ModeSetting("Style", "Circle", "Circle", "Box", "Diamond"));
-    private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 2.5, 1.0, 5.0, 0.5));
+    private final ModeSetting style = addSetting(new ModeSetting("Style", "NeonCircle", "NeonCircle", "NeonBox", "Diamond"));
     private final BooleanSetting animate = addSetting(new BooleanSetting("Animate", true));
 
     public Targeting() {
-        super("Targeting", "Highlights targeted entity with visual effects", Category.VISUAL);
+        super("Targeting", "Highlights targeted entity with neon bloom visual effects", Category.VISUAL);
     }
 
     @Override
@@ -40,27 +39,25 @@ public class Targeting extends Module {
         double z = MathHelper.lerp(tickDelta, entity.lastRenderZ, entity.getZ()) - cam.z;
 
         Color c = color.getColor();
-        float lw = lineWidth.getFloatValue();
         float width = entity.getWidth();
         float height = entity.getHeight();
 
         String s = style.getValue();
-        if (s.equals("Circle")) {
+        if (s.equals("NeonCircle")) {
             float rot = animate.isEnabled() ? (System.currentTimeMillis() % 3600) / 10.0f : 0.0f;
             matrices.push();
             matrices.translate(x, y + 0.05, z);
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(rot));
-            RenderUtils.drawCircle3D(matrices, 0, 0, 0, width * 0.75f, c, lw);
-            RenderUtils.drawCircle3D(matrices, 0, 0, 0, width * 0.95f, new Color(c.getRed(), c.getGreen(), c.getBlue(), 120), lw * 0.6f);
+            RenderUtils.drawNeonCircle3D(matrices, 0, 0, 0, width * 0.75f, c);
             matrices.pop();
-        } else if (s.equals("Box")) {
-            RenderUtils.drawBox3D(matrices, x - width / 2, y, z - width / 2, x + width / 2, y + height, z + width / 2, c, lw);
+        } else if (s.equals("NeonBox")) {
+            RenderUtils.drawNeonBox3D(matrices, x - width / 2, y, z - width / 2, x + width / 2, y + height, z + width / 2, c, true, 25);
         } else if (s.equals("Diamond")) {
             matrices.push();
             matrices.translate(x, y + height + 0.4, z);
             matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
             float anim = (float) Math.sin(System.currentTimeMillis() / 200.0) * 0.05f;
-            RenderUtils.drawCircle3D(matrices, 0, 0, 0, 0.25f + anim, c, lw);
+            RenderUtils.drawNeonCircle3D(matrices, 0, 0, 0, 0.22f + anim, c);
             matrices.pop();
         }
     }
