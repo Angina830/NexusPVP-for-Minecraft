@@ -12,17 +12,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Keyboard.class)
 public class MixinKeyboard {
+
     @Inject(method = "onKey", at = @At("HEAD"))
     private void onKey(long window, int key, int scancode, int action, int modifiers, CallbackInfo ci) {
-        if (action == 1) { // 1 = GLFW_PRESS
-            MinecraftClient mc = MinecraftClient.getInstance();
-            if (key == GLFW.GLFW_KEY_RIGHT_SHIFT && mc.currentScreen == null) {
-                ClickGui.openCurrentStyleScreen();
-                return;
-            }
+        if (action == 1) { // GLFW_PRESS
             NexusPVP instance = NexusPVP.getInstance();
             if (instance != null && instance.getModuleManager() != null) {
-                if (mc.currentScreen == null) {
+                if (key == GLFW.GLFW_KEY_RIGHT_SHIFT) {
+                    if (MinecraftClient.getInstance().currentScreen == null) {
+                        ClickGui.openCurrentStyleScreen();
+                    }
+                } else {
                     instance.getModuleManager().onKeyPress(key);
                 }
             }

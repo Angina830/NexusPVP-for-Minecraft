@@ -1,7 +1,10 @@
 package com.nexuspvp.mixin;
 
 import com.nexuspvp.NexusPVP;
+import com.nexuspvp.gui.ClickGui;
 import net.minecraft.client.Keyboard;
+import net.minecraft.client.MinecraftClient;
+import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,7 +18,13 @@ public class MixinKeyboard {
         if (action == 1) { // GLFW_PRESS
             NexusPVP instance = NexusPVP.getInstance();
             if (instance != null && instance.getModuleManager() != null) {
-                // key event handling
+                if (key == GLFW.GLFW_KEY_RIGHT_SHIFT) {
+                    if (MinecraftClient.getInstance().currentScreen == null) {
+                        ClickGui.openCurrentStyleScreen();
+                    }
+                } else {
+                    instance.getModuleManager().onKeyPress(key);
+                }
             }
         }
     }
