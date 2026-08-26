@@ -722,8 +722,14 @@ public class ClickGui extends Screen {
         String searchQuery = (searchField != null) ? searchField.getText().trim().toLowerCase() : "";
         boolean isSearching = !searchQuery.isEmpty();
 
-        if (searchField != null && searchField.mouseClicked(mouseX, mouseY, button)) {
-            return true;
+        if (searchField != null) {
+            if (mouseX >= searchField.getX() - 4 && mouseX <= searchField.getX() + searchField.getWidth() + 4 &&
+                mouseY >= searchField.getY() - 4 && mouseY <= searchField.getY() + searchField.getHeight() + 4) {
+                searchField.setFocused(true);
+                return true;
+            } else if (button == 0) {
+                searchField.setFocused(false);
+            }
         }
 
         if (isSearching) {
@@ -1119,15 +1125,7 @@ public class ClickGui extends Screen {
     public static void openCurrentStyleScreen() {
         net.minecraft.client.MinecraftClient mc = net.minecraft.client.MinecraftClient.getInstance();
         GuiStyle style = ThemeManager.getInstance().getCurrentStyle();
-        if (style == GuiStyle.CLASSIC_WINDOWS) {
-            Compat.setScreen(mc, new com.nexuspvp.gui.styles.ClassicGuiScreen());
-        } else if (style == GuiStyle.GLASS_DASHBOARD) {
-            Compat.setScreen(mc, new com.nexuspvp.gui.styles.GlassDashboardScreen());
-        } else if (style == GuiStyle.COMPACT_LIST) {
-            Compat.setScreen(mc, new com.nexuspvp.gui.styles.CompactListScreen());
-        } else {
-            Compat.setScreen(mc, new ClickGui());
-        }
+        mc.setScreen(new ClickGui());
     }
 
     public boolean shouldPause() {

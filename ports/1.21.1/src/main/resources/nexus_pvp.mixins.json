@@ -19,7 +19,8 @@
     "MixinKeyboardInput",
     "MixinLivingEntity",
     "MixinBackgroundRenderer",
-    "MixinDrawContext"
+    "MixinDrawContext",
+    "MixinHandledScreen"
   ],
   "injectors": {
     "defaultRequire": 1

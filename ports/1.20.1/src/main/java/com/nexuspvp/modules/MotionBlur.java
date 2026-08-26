@@ -1,10 +1,9 @@
 package com.nexuspvp.modules;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.NumberSetting;
+import net.minecraft.util.Identifier;
 
 public class MotionBlur extends Module {
 
@@ -12,6 +11,24 @@ public class MotionBlur extends Module {
 
     public MotionBlur() {
         super("MotionBlur", "Smooth cinematic camera motion blur effect", Category.RENDER);
+    }
+
+    @Override
+    public void onEnable() {
+        if (mc.gameRenderer != null) {
+            try {
+                mc.gameRenderer.loadPostProcessor(Identifier.of("minecraft", "shaders/post/phosphor.json"));
+            } catch (Throwable ignored) {}
+        }
+    }
+
+    @Override
+    public void onDisable() {
+        if (mc.gameRenderer != null) {
+            try {
+                mc.gameRenderer.disablePostProcessor();
+            } catch (Throwable ignored) {}
+        }
     }
 
     public float getStrength() {
