@@ -532,7 +532,7 @@ public class GlassDashboardScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (selectedModule != null) {
             modalScrollY += (int) (amount * 16);
             if (modalScrollY > 0) modalScrollY = 0;

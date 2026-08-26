@@ -48,7 +48,7 @@ public class ShulkerPreview extends Module {
         NbtList tagList = blockEntityTag.getList("Items", 10);
         for (int i = 0; i < tagList.size(); i++) {
             NbtCompound itemTag = tagList.getCompound(i);
-            items.add(ItemStack.fromNbt(itemTag));
+            
         }
         return items;
     }

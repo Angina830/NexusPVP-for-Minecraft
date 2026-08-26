@@ -48,7 +48,7 @@ public abstract class MixinItemRenderer {
         PlayerEntity player = mc.player;
         if (player == null) return;
 
-        float progress = player.getItemCooldownManager().getCooldownProgress(stack.getItem(), mc.getTickDelta());
+        float progress = player.getItemCooldownManager().getCooldownProgress(stack.getItem(), mc.getRenderTickCounter().getTickDelta(false));
         if (progress > 0.0f) {
             NexusPVP instance = NexusPVP.getInstance();
             if (instance != null && instance.getModuleManager() != null) {

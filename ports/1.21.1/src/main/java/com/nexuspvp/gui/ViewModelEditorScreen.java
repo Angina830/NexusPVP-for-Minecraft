@@ -311,7 +311,7 @@ public class ViewModelEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (showHelp) return false;
         if (viewModel != null) {
             float step = (float) (amount * 0.05);
@@ -320,7 +320,7 @@ public class ViewModelEditorScreen extends Screen {
             viewModel.setScaleZ(viewModel.getScaleZ() + step);
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, amount);
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
     @Override

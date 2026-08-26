@@ -990,7 +990,7 @@ public class ClickGui extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (currentTab == Tab.PVP || currentTab == Tab.HUD || currentTab == Tab.PLAYER || currentTab == Tab.VISUAL) {
             scrollY = Math.max(0, scrollY - (int) (amount * 20));
             savedScrollY = scrollY;
@@ -1004,7 +1004,7 @@ public class ClickGui extends Screen {
             savedConfigScrollY = configScrollY;
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, amount);
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
     @Override

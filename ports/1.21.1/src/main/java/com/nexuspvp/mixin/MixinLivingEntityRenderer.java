@@ -71,10 +71,10 @@ public abstract class MixinLivingEntityRenderer<T extends LivingEntity, M extend
                 float blendedG = green * (1.0f - hitAlpha) + targetG * hitAlpha;
                 float blendedB = blue * (1.0f - hitAlpha) + targetB * hitAlpha;
                 
-                model.render(matrices, vertices, light, overlay, blendedR, blendedG, blendedB, alpha);
+                model.render(matrices, vertices, light, overlay, 0xFFFFFFFF);
                 return;
             }
         }
-        model.render(matrices, vertices, light, overlay, red, green, blue, alpha);
+        model.render(matrices, vertices, light, overlay, 0xFFFFFFFF);
     }
 }

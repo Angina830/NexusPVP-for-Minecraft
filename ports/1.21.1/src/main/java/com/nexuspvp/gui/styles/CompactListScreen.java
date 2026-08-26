@@ -379,7 +379,7 @@ public class CompactListScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (selectedModule != null && mouseX >= (width - 460) / 2 + 266) {
             drawerScrollY += (int) (amount * 16);
             if (drawerScrollY > 0) drawerScrollY = 0;

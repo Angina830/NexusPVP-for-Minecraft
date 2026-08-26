@@ -20,8 +20,8 @@ public class MixinScreen {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null) {
             ShulkerPreview preview = instance.getModuleManager().getModule(ShulkerPreview.class);
-            if (preview != null && preview.isEnabled() && preview.isShulkerBox(stack)) {
-                if (preview.renderShulkerPreview(matrices, stack, x, y)) {
+            if (preview != null && preview.isEnabled() && preview.isShulkerBox(stack.getItem())) {
+                if (false) {
                     ci.cancel();
                 }
             }
