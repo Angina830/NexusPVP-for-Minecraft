@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "nexus_pvp",
+  "version": "${version}",
+  "name": "NexusPVP",
+  "description": "Visual enhancements mod for Minecraft - beautiful particles, trails, animations and HUD customization",
+  "authors": ["NexusPVP"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/nexus_pvp/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.nexuspvp.NexusPVP"]
+  },
+  "mixins": ["nexus_pvp.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": ">=1.20.1",
+    "java": ">=17"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.nexuspvp.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+    "MixinGameRenderer",
+    "MixinInGameHud",
+    "MixinLivingEntityRenderer",
+    "MixinHeldItemRenderer",
+    "MixinClientPlayerEntity",
+    "MixinLightmapTextureManager",
+    "MixinMinecraftClient",
+    "MixinPlayerEntityRenderer",
+    "MixinCamera",
+    "MixinKeyboard",
+    "MixinWorldRenderer",
+    "MixinInGameOverlayRenderer",
+    "MixinAbstractClientPlayerEntity",
+    "MixinClientPlayerInteractionManager",
+    "MixinKeyboardInput",
+    "MixinLivingEntity",
+    "MixinItemRenderer",
+    "MixinScreen",
+    "MixinShaderEffect",
+    "MixinBackgroundRenderer",
+    "MixinChatHud"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
