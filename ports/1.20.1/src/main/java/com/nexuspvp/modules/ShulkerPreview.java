@@ -71,8 +71,7 @@ public class ShulkerPreview extends Module {
 
             RenderUtils.drawRoundedRect(context.getMatrices(), slotX, slotY, 18, 18, 2, 0xFF2B2D31);
             if (!item.isEmpty()) {
-                context.drawItem(item, slotX + 1, slotY + 1);
-                context.drawItemOverlay(mc.textRenderer, item, slotX + 1, slotY + 1);
+                context.drawItemInSlot(mc.textRenderer, item, slotX + 1, slotY + 1);
             }
             idx++;
         }
