@@ -44,10 +44,10 @@ public class Nimb extends Module {
 
         matrices.push();
         matrices.translate(px, py, pz);
-        matrices.multiply(RotationAxis.POSITIVE_X.getDegreesQuaternion(12.0f));
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(12.0f));
 
         float rot = (System.currentTimeMillis() % 4000) / 11.1f;
-        matrices.multiply(RotationAxis.POSITIVE_Y.getDegreesQuaternion(rot));
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(rot));
 
         RenderUtils.drawCircle3D(matrices, 0, 0, 0, r, c, 3.0f);
         if (glow.isEnabled()) {

@@ -56,7 +56,7 @@ public class ChinaHat extends Module {
 
         if (rotate.isEnabled()) {
             float rot = (System.currentTimeMillis() % 3600) / 10.0f;
-            matrices.multiply(RotationAxis.POSITIVE_Y.getDegreesQuaternion(rot));
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(rot));
         }
 
         int segments = 36;
