@@ -23,6 +23,17 @@ import java.awt.Color;
 import java.util.*;
 
 public class ClickGui extends Screen {
+    private float menuAlpha = 1.0f;
+
+    private static int applyAlpha(int color, float alpha) {
+        int a = (color >> 24) & 0xFF;
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        int newA = Math.max(8, (int) (a * Math.max(0.12f, alpha)));
+        return (newA << 24) | (r << 16) | (g << 8) | b;
+    }
+
 
     public enum Tab {
         PVP("PvP & Combat", "Damage, TargetHUD & Hit feedback", "\u2694"),
@@ -201,8 +212,24 @@ public class ClickGui extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         Compat.setContext(context);
+        // Smooth see-through transparency when adjusting ViewModel / Hand positioning sliders
+        boolean draggingViewModel = false;
+        for (List<ModuleButton> list : moduleCards.values()) {
+            for (ModuleButton mb : list) {
+                if (mb.getModule() instanceof ViewModel && mb.isDraggingSlider()) {
+                    draggingViewModel = true;
+                    break;
+                }
+            }
+            if (draggingViewModel) break;
+        }
+
+        float targetAlpha = draggingViewModel ? 0.15f : 1.0f;
+        menuAlpha += (targetAlpha - menuAlpha) * 0.20f;
+        if (Math.abs(targetAlpha - menuAlpha) < 0.005f) menuAlpha = targetAlpha;
+
         MatrixStack matrices = context.getMatrices();
-        RenderUtils.drawRect(matrices, 0, 0, (this.width)-(0), (this.height)-(0), 0xC0111214);
+        RenderUtils.drawRect(matrices, 0, 0, (this.width)-(0), (this.height)-(0), applyAlpha(0xC0111214, menuAlpha));
 
         // Smooth window pop-in spring physics
         long elapsed = System.currentTimeMillis() - openTime;
@@ -225,11 +252,11 @@ public class ClickGui extends Screen {
             matrices.translate(-cx, -cy, 0);
         }
 
-        RenderUtils.drawRoundedRect(matrices, windowX - 1, windowY - 1, windowW + 2, windowH + 2, 7, 0xFF111214);
-        RenderUtils.drawRoundedRect(matrices, windowX, windowY, windowW, windowH, 6, 0xFF313338);
+        RenderUtils.drawRoundedRect(matrices, windowX - 1, windowY - 1, windowW + 2, windowH + 2, 7, applyAlpha(0xFF111214, menuAlpha));
+        RenderUtils.drawRoundedRect(matrices, windowX, windowY, windowW, windowH, 6, applyAlpha(0xFF313338, menuAlpha));
 
-        RenderUtils.drawRoundedRect(matrices, windowX, windowY, windowW, titleBarH, 6, 0xFF1E1F22);
-        RenderUtils.drawRect(matrices, windowX, windowY + titleBarH - 3, windowW, 3, 0xFF1E1F22);
+        RenderUtils.drawRoundedRect(matrices, windowX, windowY, windowW, titleBarH, 6, applyAlpha(0xFF1E1F22, menuAlpha));
+        RenderUtils.drawRect(matrices, windowX, windowY + titleBarH - 3, windowW, 3, applyAlpha(0xFF1E1F22, menuAlpha));
 
         // App Accent Logo Pill
         RenderUtils.drawRoundedRect(matrices, windowX + 8, windowY + 6, 10, 10, 5, accent);
@@ -251,7 +278,7 @@ public class ClickGui extends Screen {
         int mainBodyH = windowH - titleBarH;
         int sidebarBodyH = mainBodyH - 36;
 
-        RenderUtils.drawRect(matrices, windowX, bodyY, sidebarW, sidebarBodyH, 0xFF2B2D31);
+        RenderUtils.drawRect(matrices, windowX, bodyY, sidebarW, sidebarBodyH, applyAlpha(0xFF2B2D31, menuAlpha));
         Compat.drawText(matrices, LanguageManager.getInstance().get("CATEGORIES"), windowX + 12, bodyY + 8, 0xFF949BA4);
 
         int tabY = bodyY + 22;
@@ -276,8 +303,8 @@ public class ClickGui extends Screen {
         }
 
         int userBarY = windowY + windowH - 34;
-        RenderUtils.drawRect(matrices, windowX, userBarY, sidebarW, 34, 0xFF232428);
-        RenderUtils.drawRoundedRect(matrices, windowX, userBarY + 32, sidebarW, 2, 2, 0xFF232428);
+        RenderUtils.drawRect(matrices, windowX, userBarY, sidebarW, 34, applyAlpha(0xFF232428, menuAlpha));
+        RenderUtils.drawRoundedRect(matrices, windowX, userBarY + 32, sidebarW, 2, 2, applyAlpha(0xFF232428, menuAlpha));
 
         if (this.client.player != null) {
             Compat.drawSkinHead(matrices, this.client.player.getSkinTextures().texture(), windowX + 8, userBarY + 6, 20);
@@ -298,7 +325,7 @@ public class ClickGui extends Screen {
         int langBtnX = windowX + sidebarW - langBtnW - 6;
         int langBtnY = userBarY + 8;
         boolean langHovered = mouseX >= langBtnX && mouseX <= langBtnX + langBtnW && mouseY >= langBtnY && mouseY <= langBtnY + langBtnH;
-        int langBg = langHovered ? accent : 0xFF313338;
+        int langBg = langHovered ? accent : applyAlpha(0xFF313338, menuAlpha);
         RenderUtils.drawRoundedRect(matrices, langBtnX, langBtnY, langBtnW, langBtnH, 4, langBg);
         String langText = LanguageManager.getInstance().isRussian() ? "RU" : "EN";
         int ltw = this.client.textRenderer.getWidth(langText);
@@ -307,14 +334,14 @@ public class ClickGui extends Screen {
         int contentX = windowX + sidebarW;
         int contentW = windowW - sidebarW;
 
-        RenderUtils.drawRect(matrices, contentX, bodyY, contentW, 26, 0xFF313338);
+        RenderUtils.drawRect(matrices, contentX, bodyY, contentW, 26, applyAlpha(0xFF313338, menuAlpha));
         
         String searchQuery = (searchField != null) ? searchField.getText().trim().toLowerCase() : "";
         boolean isSearching = !searchQuery.isEmpty();
 
         String headerTitle = isSearching ? "[?] " + (LanguageManager.getInstance().isRussian() ? "\u041F\u043E\u0438\u0441\u043A: " : "Search: ") + searchQuery : currentTab.getIcon() + " " + LanguageManager.getInstance().get(currentTab.getTitle());
         Compat.drawText(matrices, headerTitle, contentX + 12, bodyY + 8, 0xFFF2F3F5);
-        RenderUtils.drawRect(matrices, contentX + 8, bodyY + 25, contentW - 16, 1, 0xFF232428);
+        RenderUtils.drawRect(matrices, contentX + 8, bodyY + 25, contentW - 16, 1, applyAlpha(0xFF232428, menuAlpha));
 
         int contentBodyY = bodyY + 28;
         int contentBodyH = mainBodyH - 32;
@@ -356,7 +383,7 @@ public class ClickGui extends Screen {
                     int btnY = cardY;
                     boolean btnHover = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH;
 
-                    RenderUtils.drawRoundedRect(matrices, btnX, btnY, btnW, btnH, 4, btnHover ? accent : 0xFF2B2D31);
+                    RenderUtils.drawRoundedRect(matrices, btnX, btnY, btnW, btnH, 4, btnHover ? accent : applyAlpha(0xFF2B2D31, menuAlpha));
                     String btnText = LanguageManager.getInstance().isRussian() ? "\u22BE \u041D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0440\u0430\u0441\u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435 HUD (Drag & Drop)" : "\u22BE Customize HUD Layout (Drag & Drop)";
                     int btw = this.client.textRenderer.getWidth(btnText);
                     Compat.drawText(matrices, btnText, btnX + (btnW - btw) / 2, btnY + 6, 0xFFFFFFFF);
@@ -396,7 +423,7 @@ public class ClickGui extends Screen {
         Compat.drawText(matrices, sub, contentX + 12, startY + 12, 0xFF949BA4);
 
         int createY = startY + 30;
-        RenderUtils.drawRoundedRect(matrices, contentX + 10, createY, contentW - 20, 32, 4, 0xFF2B2D31);
+        RenderUtils.drawRoundedRect(matrices, contentX + 10, createY, contentW - 20, 32, 4, applyAlpha(0xFF2B2D31, menuAlpha));
 
         if (configNameField != null) {
             configNameField.setX(contentX + 16);
@@ -424,7 +451,7 @@ public class ClickGui extends Screen {
             boolean isCurrent = cfg.equalsIgnoreCase(currentCfg);
             int rowH = 24;
 
-            RenderUtils.drawRoundedRect(matrices, contentX + 10, rowY, contentW - 20, rowH, 4, isCurrent ? 0xFF404249 : 0xFF2B2D31);
+            RenderUtils.drawRoundedRect(matrices, contentX + 10, rowY, contentW - 20, rowH, 4, isCurrent ? 0xFF404249 : applyAlpha(0xFF2B2D31, menuAlpha));
             if (isCurrent) {
                 RenderUtils.drawRoundedRect(matrices, contentX + 10, rowY, 3, rowH, 2, accent);
             }
@@ -484,7 +511,7 @@ public class ClickGui extends Screen {
             boolean active = tm.getCurrentStyle() == s;
             boolean hovered = mouseX >= sx && mouseX <= sx + sCardW && mouseY >= sy && mouseY <= sy + sCardH;
 
-            RenderUtils.drawRoundedRect(matrices, sx, sy, sCardW, sCardH, 4, active ? 0xFF35373C : (hovered ? 0xFF2E3035 : 0xFF232428));
+            RenderUtils.drawRoundedRect(matrices, sx, sy, sCardW, sCardH, 4, active ? 0xFF35373C : (hovered ? 0xFF2E3035 : applyAlpha(0xFF232428, menuAlpha)));
             if (active) {
                 RenderUtils.drawRoundedRect(matrices, sx - 1, sy - 1, sCardW + 2, sCardH + 2, 5, accent);
                 RenderUtils.drawRoundedRect(matrices, sx, sy, sCardW, sCardH, 4, 0xFF35373C);
@@ -515,7 +542,7 @@ public class ClickGui extends Screen {
             boolean isHovered = mouseX >= tx && mouseX <= tx + themeBtnW && mouseY >= ty && mouseY <= ty + themeBtnH;
 
             Color tAccent = tm.getThemeAccent(themeName);
-            RenderUtils.drawRoundedRect(matrices, tx, ty, themeBtnW, themeBtnH, 4, isCurrent ? 0xFF35373C : (isHovered ? 0xFF2E3035 : 0xFF232428));
+            RenderUtils.drawRoundedRect(matrices, tx, ty, themeBtnW, themeBtnH, 4, isCurrent ? 0xFF35373C : (isHovered ? 0xFF2E3035 : applyAlpha(0xFF232428, menuAlpha)));
             if (isCurrent) {
                 RenderUtils.drawRoundedRect(matrices, tx - 1, ty - 1, themeBtnW + 2, themeBtnH + 2, 5, tAccent.getRGB());
                 RenderUtils.drawRoundedRect(matrices, tx, ty, themeBtnW, themeBtnH, 4, 0xFF35373C);
@@ -535,7 +562,7 @@ public class ClickGui extends Screen {
         if (radio == null) return;
 
         int playerCardH = 100;
-        RenderUtils.drawRoundedRect(matrices, contentX + 10, bodyY + 4, contentW - 20, playerCardH, 6, 0xFF2B2D31);
+        RenderUtils.drawRoundedRect(matrices, contentX + 10, bodyY + 4, contentW - 20, playerCardH, 6, applyAlpha(0xFF2B2D31, menuAlpha));
         RenderUtils.drawRoundedRect(matrices, contentX + 10, bodyY + 4, contentW - 20, 3, 2, 0xFFFF5500);
 
         Compat.drawText(matrices, "\u266B SOUNDCLOUD RADIO & PROXIMITY SYNC", contentX + 18, bodyY + 12, 0xFFFF7700);
@@ -573,7 +600,7 @@ public class ClickGui extends Screen {
         int volY = btnY + 3;
         int volW = 90;
         Compat.drawText(matrices, "\u266A " + (int)(radio.getVolume() * 100) + "%", volX, volY - 11, 0xFFDBDEE1);
-        RenderUtils.drawRoundedRect(matrices, volX, volY + 2, volW, 5, 2, 0xFF1E1F22);
+        RenderUtils.drawRoundedRect(matrices, volX, volY + 2, volW, 5, 2, applyAlpha(0xFF1E1F22, menuAlpha));
         int volFill = (int) (volW * radio.getVolume());
         if (volFill > 0) {
             RenderUtils.drawRoundedRect(matrices, volX, volY + 2, volFill, 5, 2, 0xFFFF7700);
@@ -607,7 +634,7 @@ public class ClickGui extends Screen {
         int wVolY = row2Y + 3;
         int wVolW = 65;
         Compat.drawText(matrices, "3D: " + (int)(radio.getWorldVolume() * 100) + "%", wVolX, wVolY - 11, 0xFF949BA4);
-        RenderUtils.drawRoundedRect(matrices, wVolX, wVolY + 2, wVolW, 5, 2, 0xFF1E1F22);
+        RenderUtils.drawRoundedRect(matrices, wVolX, wVolY + 2, wVolW, 5, 2, applyAlpha(0xFF1E1F22, menuAlpha));
         int wVolFill = (int) (wVolW * radio.getWorldVolume());
         if (wVolFill > 0) {
             RenderUtils.drawRoundedRect(matrices, wVolX, wVolY + 2, wVolFill, 5, 2, 0xFF5865F2);
@@ -616,7 +643,7 @@ public class ClickGui extends Screen {
 
         // Add track row
         int addY = bodyY + playerCardH + 10;
-        RenderUtils.drawRoundedRect(matrices, contentX + 10, addY, contentW - 20, 26, 4, 0xFF2B2D31);
+        RenderUtils.drawRoundedRect(matrices, contentX + 10, addY, contentW - 20, 26, 4, applyAlpha(0xFF2B2D31, menuAlpha));
 
         if (addTrackField != null) {
             addTrackField.setX(contentX + 16);
@@ -655,7 +682,7 @@ public class ClickGui extends Screen {
                 int rowH = 18;
 
                 if (trackRowY + rowH >= queueStartY && trackRowY <= queueStartY + queueH) {
-                    RenderUtils.drawRoundedRect(matrices, contentX + 10, trackRowY, contentW - 20, rowH, 3, isCur ? 0xFF404249 : 0xFF2B2D31);
+                    RenderUtils.drawRoundedRect(matrices, contentX + 10, trackRowY, contentW - 20, rowH, 3, isCur ? 0xFF404249 : applyAlpha(0xFF2B2D31, menuAlpha));
                     if (isCur) {
                         RenderUtils.drawRoundedRect(matrices, contentX + 10, trackRowY, 3, rowH, 1, 0xFFFF7700);
                     }

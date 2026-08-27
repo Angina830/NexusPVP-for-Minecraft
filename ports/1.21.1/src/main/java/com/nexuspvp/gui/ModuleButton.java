@@ -16,6 +16,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ModuleButton {
+    public boolean isDraggingSlider() {
+        for (SettingComponent s : settingComponents) {
+            if (s instanceof SliderComponent && ((SliderComponent) s).isDragging()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     private final Module module;
     private final CategoryPanel parent;

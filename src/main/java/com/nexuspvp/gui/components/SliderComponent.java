@@ -13,6 +13,11 @@ import java.math.RoundingMode;
 
 public class SliderComponent extends SettingComponent {
 
+    public boolean isDragging() {
+        return dragging;
+    }
+
+
     private final NumberSetting numSetting;
     private boolean dragging = false;
 
