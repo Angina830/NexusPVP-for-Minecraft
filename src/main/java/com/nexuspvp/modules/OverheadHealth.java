@@ -36,6 +36,10 @@ public class OverheadHealth extends Module {
         setEnabled(true);
     }
 
+    public int getTrackedEntitiesCount() {
+        return trackers.size();
+    }
+
     public void renderOverhead(LivingEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, int light) {
         if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisible()) return;
         if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
@@ -99,12 +103,12 @@ public class OverheadHealth extends Module {
         matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
         float scale = 0.020F;
-        matrices.scale(-scale, -scale, scale);
+        matrices.scale(scale, -scale, scale);
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(false);
+        RenderSystem.depthMask(true);
 
         // 1. Blurple border
         RenderUtils.drawRect(matrices, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
@@ -137,6 +141,7 @@ public class OverheadHealth extends Module {
         }
 
         float textY = cardY + 3;
+        int fullLight = 0xF000F0;
 
         mc.textRenderer.draw(
             name,
@@ -148,7 +153,7 @@ public class OverheadHealth extends Module {
             vertexConsumers,
             false,
             0,
-            light
+            fullLight
         );
 
         float hpTextX = cardX + cardW - hpTextW - 4;
@@ -162,8 +167,12 @@ public class OverheadHealth extends Module {
             vertexConsumers,
             false,
             0,
-            light
+            fullLight
         );
+
+        if (vertexConsumers instanceof VertexConsumerProvider.Immediate) {
+            ((VertexConsumerProvider.Immediate) vertexConsumers).draw();
+        }
 
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();

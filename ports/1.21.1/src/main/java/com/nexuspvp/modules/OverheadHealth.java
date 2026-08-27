@@ -1,18 +1,17 @@
 package com.nexuspvp.modules;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
+import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
-import org.joml.Matrix4f;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +35,10 @@ public class OverheadHealth extends Module {
     public OverheadHealth() {
         super("OverheadHealth", "Mini-TargetHUD floating health card above entities", Category.RENDER);
         setEnabled(true);
+    }
+
+    public int getTrackedEntitiesCount() {
+        return trackers.size();
     }
 
     public void renderOverhead(LivingEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, int light) {
@@ -101,17 +104,19 @@ public class OverheadHealth extends Module {
         matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
         float scale = 0.020F;
-        matrices.scale(-scale, -scale, scale);
+        matrices.scale(scale, -scale, scale);
 
-        Matrix4f mat = matrices.peek().getPositionMatrix();
-        int fullLight = 0xF000F0;
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getTextBackground());
+        // 1. Enable blend and write depth buffer so water & clouds cannot overlap!
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
 
-        // 1. Blurple border
-        drawBatchedQuad(buffer, mat, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2, fullLight);
+        // 1. Blurple border (0xEE5865F2)
+        RenderUtils.drawQuad(matrices, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2);
 
-        // 2. Dark Discord background
-        drawBatchedQuad(buffer, mat, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22, fullLight);
+        // 2. Dark Discord background (0xFA1E1F22)
+        RenderUtils.drawQuad(matrices, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22);
 
         // 3. Health bar
         float barX = cardX + 4;
@@ -119,44 +124,47 @@ public class OverheadHealth extends Module {
         float barW = cardW - 8;
         float barH = 5;
 
-        // Health bar track
-        drawBatchedQuad(buffer, mat, barX, barY, barX + barW, barY + barH, 0xFF2B2D31, fullLight);
+        // Health bar track (0xFF2B2D31)
+        RenderUtils.drawQuad(matrices, barX, barY, barX + barW, barY + barH, 0xFF2B2D31);
 
-        // Ghost damage bar
+        // Ghost damage bar (White 0xFFF2F3F5)
         if (ghostDamage.isEnabled() && ghostPct > 0) {
             float ghostW = barW * ghostPct;
-            drawBatchedQuad(buffer, mat, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5, fullLight);
+            RenderUtils.drawQuad(matrices, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5);
         }
 
-        // Active health bar
+        // Active health bar (hpColor)
         if (healthPct > 0) {
             float fillW = barW * healthPct;
-            drawBatchedQuad(buffer, mat, barX, barY, barX + fillW, barY + barH, hpColor, fullLight);
+            RenderUtils.drawQuad(matrices, barX, barY, barX + fillW, barY + barH, hpColor);
         }
 
-        // Absorption bar
+        // Absorption bar (Gold 0xFFFFD700)
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
-            drawBatchedQuad(buffer, mat, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700, fullLight);
+            RenderUtils.drawQuad(matrices, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700);
         }
 
         // 4. Text rendered via TextRenderer
         float textY = cardY + 3;
+        int fullLight = 0xF000F0;
 
+        // Name on the left
         mc.textRenderer.draw(
             name,
             cardX + 4,
             textY,
             0xFFF2F3F5,
             false,
-            mat,
+            matrices.peek().getPositionMatrix(),
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
             0,
             fullLight
         );
 
+        // HP text on the right
         float hpTextX = cardX + cardW - hpTextW - 4;
         mc.textRenderer.draw(
             hpText,
@@ -164,25 +172,21 @@ public class OverheadHealth extends Module {
             textY,
             hpTextColor,
             false,
-            mat,
+            matrices.peek().getPositionMatrix(),
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
             0,
             fullLight
         );
 
+        if (vertexConsumers instanceof VertexConsumerProvider.Immediate) {
+            ((VertexConsumerProvider.Immediate) vertexConsumers).draw();
+        }
+
+        // Restore clean OpenGL state
+        RenderSystem.depthMask(true);
+        RenderSystem.enableDepthTest();
+
         matrices.pop();
-    }
-
-    private void drawBatchedQuad(VertexConsumer buffer, Matrix4f mat, float x1, float y1, float x2, float y2, int color, int light) {
-        int a = (color >> 24) & 0xFF;
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-
-        buffer.vertex(mat, x1, y1, 0.0f).color(r, g, b, a).light(light);
-        buffer.vertex(mat, x1, y2, 0.0f).color(r, g, b, a).light(light);
-        buffer.vertex(mat, x2, y2, 0.0f).color(r, g, b, a).light(light);
-        buffer.vertex(mat, x2, y1, 0.0f).color(r, g, b, a).light(light);
     }
 }
