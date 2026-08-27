@@ -588,9 +588,6 @@ public class GlassDashboardScreen extends Screen {
         });
     }
 
-    @Override
-    public void renderInGameBackground(DrawContext context) {
-        // Disable 1.21 post-processing background blur shader
-    }
+    
 
 }
