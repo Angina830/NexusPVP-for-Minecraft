@@ -93,7 +93,7 @@ public class ClickGui extends Screen {
             List<Module> modules = NexusPVP.getInstance().getModuleManager().getModulesByCategory(category);
             List<ModuleButton> buttons = new ArrayList<>();
             for (Module m : modules) {
-                if (m.getName().equalsIgnoreCase("ClickGuiModule") || m.getName().equalsIgnoreCase("Radio") || m.getName().equalsIgnoreCase("DebugLogger")) {
+                if (m.getName().equalsIgnoreCase("ClickGuiModule") || m.getName().equalsIgnoreCase("Radio") || false) {
                     continue;
                 }
                 ModuleButton mb = new ModuleButton(m, null);
@@ -336,6 +336,7 @@ public class ClickGui extends Screen {
             List<ModuleButton> cards = new ArrayList<>();
             if (currentTab == Tab.PVP) {
                 if (moduleCards.get(Category.PVP) != null) cards.addAll(moduleCards.get(Category.PVP));
+                if (moduleCards.get(Category.MISC) != null) cards.addAll(moduleCards.get(Category.MISC));
             } else if (currentTab == Tab.HUD) {
                 if (moduleCards.get(Category.HUD) != null) cards.addAll(moduleCards.get(Category.HUD));
             } else if (currentTab == Tab.PLAYER) {

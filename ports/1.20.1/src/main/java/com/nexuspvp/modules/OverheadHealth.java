@@ -33,7 +33,7 @@ public class OverheadHealth extends Module {
     private final Map<Integer, HealthTracker> trackers = new HashMap<>();
 
     public OverheadHealth() {
-        super("OverheadHealth", "Mini-TargetHUD floating health card above entities", Category.RENDER);
+        super("OverheadHealth", "Mini-TargetHUD floating health card above entities", Category.PVP);
         setEnabled(true);
     }
 
