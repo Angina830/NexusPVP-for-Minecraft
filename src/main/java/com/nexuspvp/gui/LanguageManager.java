@@ -198,6 +198,12 @@ public class LanguageManager {
         translations.put("ScaleZ", "Масштаб Z");
 
         // Newly added settings
+                translations.put("ChargeIndicator", "Индикатор зарядки");
+        translations.put("ChargeStyle", "Стиль зарядки");
+        translations.put("ChargeReadyColor", "Цвет готовности");
+        translations.put("Bar", "Полоска");
+        translations.put("Chevron", "Шеврон");
+        translations.put("Triangle", "Треугольник");
         translations.put("DynamicSpread", "Динамический разбег");
         translations.put("MinSpread", "Мин. разбег");
         translations.put("MaxSpread", "Макс. разбег");

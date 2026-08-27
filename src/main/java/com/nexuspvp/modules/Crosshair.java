@@ -38,6 +38,11 @@ public class Crosshair extends Module {
     private final BooleanSetting targetFrame = addSetting(new BooleanSetting("TargetFrame", true));
     private final ColorSetting targetColor = addSetting(new ColorSetting("TargetColor", new Color(255, 50, 60)));
 
+    // Attack Charge Readiness Indicator Under Crosshair
+    private final BooleanSetting chargeIndicator = addSetting(new BooleanSetting("ChargeIndicator", true));
+    private final ModeSetting chargeStyle = addSetting(new ModeSetting("ChargeStyle", "Bar", "Bar", "Chevron", "Dot", "Triangle"));
+    private final ColorSetting chargeReadyColor = addSetting(new ColorSetting("ChargeReadyColor", new Color(0, 255, 128)));
+
     private static long lastHitTime = 0;
     private float smoothGap = 2.0f;
 
@@ -79,9 +84,9 @@ public class Crosshair extends Module {
         float halfT = t / 2.0f;
 
         // 60+ FPS continuous frame tickDelta interpolation
+        float cd = mc.player.getAttackCooldownProgress(tickDelta);
         float g;
         if (dynamicSpread.isEnabled()) {
-            float cd = mc.player.getAttackCooldownProgress(tickDelta);
             float minG = minSpread.getFloatValue();
             float maxG = maxSpread.getFloatValue();
             float targetG = MathHelper.lerp(cd, maxG, minG);
@@ -139,6 +144,50 @@ public class Crosshair extends Module {
                 RenderUtils.drawRect(matrices, cx - halfT - 1.0f, cy + g + s + 1.0f, t + 2.0f, 1.0f, tc);
                 RenderUtils.drawRect(matrices, cx - g - s - 2.0f, cy - halfT - 1.0f, 1.0f, t + 2.0f, tc);
                 RenderUtils.drawRect(matrices, cx + g + s + 1.0f, cy - halfT - 1.0f, 1.0f, t + 2.0f, tc);
+            }
+
+            // Full Attack Charge Readiness Indicator Under Crosshair
+            if (chargeIndicator.isEnabled()) {
+                int rColor = chargeReadyColor.getColor().getRGB() | 0xFF000000;
+                float indY = cy + g + s + 4.0f;
+                String cStyle = chargeStyle.getValue();
+
+                if (cStyle.equalsIgnoreCase("Bar")) {
+                    float barW = 12.0f;
+                    float barH = 2.0f;
+                    float barX = cx - barW / 2.0f;
+
+                    RenderUtils.drawRect(matrices, barX - 0.5f, indY - 0.5f, barW + 1.0f, barH + 1.0f, 0x90111214);
+
+                    int fillCol;
+                    if (cd < 0.7f) {
+                        fillCol = 0xFFED4245;
+                    } else if (cd < 0.99f) {
+                        fillCol = 0xFFFEE75C;
+                    } else {
+                        fillCol = rColor;
+                    }
+
+                    float filledW = barW * MathHelper.clamp(cd, 0.0f, 1.0f);
+                    if (filledW > 0.5f) {
+                        RenderUtils.drawRect(matrices, barX, indY, filledW, barH, fillCol);
+                    }
+                } else if (cStyle.equalsIgnoreCase("Chevron")) {
+                    if (cd >= 0.99f) {
+                        RenderUtils.drawRect(matrices, cx - 3.0f, indY + 1.0f, 2.0f, 1.0f, rColor);
+                        RenderUtils.drawRect(matrices, cx - 1.0f, indY + 2.0f, 2.0f, 1.0f, rColor);
+                        RenderUtils.drawRect(matrices, cx + 1.0f, indY + 1.0f, 2.0f, 1.0f, rColor);
+                    }
+                } else if (cStyle.equalsIgnoreCase("Dot")) {
+                    if (cd >= 0.99f) {
+                        RenderUtils.drawRect(matrices, cx - 1.0f, indY, 2.0f, 2.0f, rColor);
+                    }
+                } else if (cStyle.equalsIgnoreCase("Triangle")) {
+                    if (cd >= 0.99f) {
+                        RenderUtils.drawRect(matrices, cx - 1.5f, indY + 1.0f, 3.0f, 1.0f, rColor);
+                        RenderUtils.drawRect(matrices, cx - 0.5f, indY, 1.0f, 3.0f, rColor);
+                    }
+                }
             }
         }
 
