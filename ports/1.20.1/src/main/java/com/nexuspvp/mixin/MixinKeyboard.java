@@ -2,6 +2,9 @@ package com.nexuspvp.mixin;
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.gui.ClickGui;
+import com.nexuspvp.gui.styles.ClassicGuiScreen;
+import com.nexuspvp.gui.styles.CompactListScreen;
+import com.nexuspvp.gui.styles.GlassDashboardScreen;
 import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import org.lwjgl.glfw.GLFW;
@@ -19,8 +22,14 @@ public class MixinKeyboard {
             NexusPVP instance = NexusPVP.getInstance();
             if (instance != null && instance.getModuleManager() != null) {
                 if (key == GLFW.GLFW_KEY_RIGHT_SHIFT) {
-                    if (MinecraftClient.getInstance().currentScreen == null) {
+                    MinecraftClient mc = MinecraftClient.getInstance();
+                    if (mc.currentScreen == null) {
                         ClickGui.openCurrentStyleScreen();
+                    } else if (mc.currentScreen instanceof ClickGui ||
+                               mc.currentScreen instanceof ClassicGuiScreen ||
+                               mc.currentScreen instanceof GlassDashboardScreen ||
+                               mc.currentScreen instanceof CompactListScreen) {
+                        mc.currentScreen.close();
                     }
                 } else {
                     instance.getModuleManager().onKeyPress(key);

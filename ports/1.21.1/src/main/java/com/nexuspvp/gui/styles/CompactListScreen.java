@@ -46,6 +46,7 @@ public class CompactListScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        Compat.setContext(context);
         MatrixStack matrices = context.getMatrices();
         int accent = ThemeManager.getInstance().getAccentColor().getRGB();
 
@@ -213,6 +214,7 @@ public class CompactListScreen extends Screen {
         }
 
         super.render(context, mouseX, mouseY, delta);
+        Compat.setContext(null);
     }
 
     private void renderStyleSelector(MatrixStack matrices, int x, int y, int w, int mouseX, int mouseY) {

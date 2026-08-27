@@ -60,6 +60,7 @@ public class ClassicGuiScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        Compat.setContext(context);
         MatrixStack matrices = context.getMatrices();
         RenderUtils.drawRect(matrices, 0, 0, width, height, 0x77000000);
 
@@ -80,6 +81,7 @@ public class ClassicGuiScreen extends Screen {
         }
 
         super.render(context, mouseX, mouseY, delta);
+        Compat.setContext(null);
     }
 
     @Override

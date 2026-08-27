@@ -68,6 +68,7 @@ public class GlassDashboardScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        Compat.setContext(context);
         MatrixStack matrices = context.getMatrices();
         int accent = ThemeManager.getInstance().getAccentColor().getRGB();
 
@@ -185,6 +186,7 @@ public class GlassDashboardScreen extends Screen {
         }
 
         super.render(context, mouseX, mouseY, delta);
+        Compat.setContext(null);
     }
 
     private void renderSettingsModal(MatrixStack matrices, int px, int py, int pw, int ph, int mouseX, int mouseY) {

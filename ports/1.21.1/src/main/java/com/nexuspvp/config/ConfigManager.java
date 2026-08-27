@@ -52,6 +52,7 @@ public class ConfigManager {
             JsonObject globals = new JsonObject();
             if (NexusPVP.getInstance().getThemeManager() != null) {
                 globals.addProperty("theme", NexusPVP.getInstance().getThemeManager().getCurrentTheme());
+                globals.addProperty("style", NexusPVP.getInstance().getThemeManager().getCurrentStyle().name());
             }
             globals.addProperty("russian", LanguageManager.getInstance().isRussian());
             root.add("globals", globals);
@@ -107,6 +108,12 @@ public class ConfigManager {
                 JsonObject globals = root.getAsJsonObject("globals");
                 if (globals.has("theme") && NexusPVP.getInstance().getThemeManager() != null) {
                     NexusPVP.getInstance().getThemeManager().setTheme(globals.get("theme").getAsString());
+                }
+                if (globals.has("style") && NexusPVP.getInstance().getThemeManager() != null) {
+                    try {
+                        com.nexuspvp.gui.GuiStyle s = com.nexuspvp.gui.GuiStyle.valueOf(globals.get("style").getAsString());
+                        NexusPVP.getInstance().getThemeManager().setStyle(s);
+                    } catch (Exception ignored) {}
                 }
                 if (globals.has("russian")) {
                     LanguageManager.getInstance().setRussian(globals.get("russian").getAsBoolean());
