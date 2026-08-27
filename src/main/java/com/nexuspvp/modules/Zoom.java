@@ -4,6 +4,7 @@ import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
+import com.nexuspvp.util.Compat;
 import org.lwjgl.glfw.GLFW;
 
 public class Zoom extends Module {
@@ -22,10 +23,9 @@ public class Zoom extends Module {
     public float getFactor() {
         return factor.getFloatValue();
     }
-    
-    public void setFactor(float f) {
-        // We'd have a setValue on NumberSetting theoretically
-        // factor.setValue(f);
+
+    public double getZoomFactor() {
+        return factor.getValue();
     }
 
     public boolean isSmooth() {
@@ -35,7 +35,7 @@ public class Zoom extends Module {
     public float getScrollStep() {
         return scrollStep.getFloatValue();
     }
-    
+
     public boolean isZooming() {
         return isEnabled() && GLFW.glfwGetKey(mc.getWindow().getHandle(), getKeyBind()) == GLFW.GLFW_PRESS;
     }

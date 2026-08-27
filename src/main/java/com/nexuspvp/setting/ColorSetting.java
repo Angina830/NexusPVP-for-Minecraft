@@ -1,4 +1,6 @@
 package com.nexuspvp.setting;
+import com.nexuspvp.util.Compat;
+
 
 import java.awt.*;
 

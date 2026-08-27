@@ -7,7 +7,6 @@ import com.nexuspvp.setting.ColorSetting;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.ColorUtils;
-import com.nexuspvp.util.RenderUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
@@ -15,8 +14,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
-import org.lwjgl.opengl.GL11;
+import org.joml.Matrix4f;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -87,11 +87,10 @@ public class Particles extends Module {
         Vec3d center = living.getPos().add(0, living.getHeight() * 0.6, 0);
         int n = count.getIntValue();
         float spd = speed.getFloatValue() * 0.15f;
-        String curStyle = style.getValue();
 
         for (int i = 0; i < n; i++) {
             Color c = rainbow.isEnabled() ? ColorUtils.rainbow(i * 100) : color.getColor();
-            if (curStyle.equals("Blood")) {
+            if (style.getValue().equals("Blood")) {
                 c = new Color(200 + (int)(Math.random() * 55), 10, 20, 240);
             }
 
@@ -107,7 +106,7 @@ public class Particles extends Module {
                     center.add((Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3),
                     vel,
                     c,
-                    curStyle,
+                    style.getValue(),
                     size.getFloatValue() * (0.8f + (float) Math.random() * 0.4f),
                     20 + (int) (Math.random() * 15)
             ));
@@ -118,8 +117,10 @@ public class Particles extends Module {
     public void onRender3D(MatrixStack matrices, float tickDelta) {
         if (mc.player == null || mc.world == null || particles.isEmpty()) return;
 
-        RenderUtils.setupBloom3D();
         Vec3d cam = mc.gameRenderer.getCamera().getPos();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
@@ -127,12 +128,12 @@ public class Particles extends Module {
         for (VFXParticle p : particles) {
             if (p.alpha <= 0.01f) continue;
 
-            RenderSystem.pushMatrix();
-            RenderSystem.translated(p.pos.x - cam.x, p.pos.y - cam.y, p.pos.z - cam.z);
-
-            RenderSystem.rotatef(-mc.gameRenderer.getCamera().getYaw(), 0f, 1f, 0f);
-            RenderSystem.rotatef(mc.gameRenderer.getCamera().getPitch(), 1f, 0f, 0f);
-            RenderSystem.rotatef(p.rotation, 0f, 0f, 1f);
+            matrices.push();
+            matrices.translate(p.pos.x - cam.x, p.pos.y - cam.y, p.pos.z - cam.z);
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-mc.gameRenderer.getCamera().getYaw()));
+            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(mc.gameRenderer.getCamera().getPitch()));
+            matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(p.rotation));
+            Matrix4f matrix = matrices.peek().getPositionMatrix();
 
             int alpha = (int) (p.color.getAlpha() * p.alpha);
             int r = p.color.getRed();
@@ -140,47 +141,18 @@ public class Particles extends Module {
             int b = p.color.getBlue();
             float sz = 0.08f * p.size * p.alpha;
 
-            if (p.style.equals("Stars")) {
-                buffer.begin(GL11.GL_TRIANGLE_FAN, VertexFormats.POSITION_COLOR);
-                buffer.vertex(0f, 0f, 0f).color(255, 255, 255, alpha).next();
-                buffer.vertex(0f, sz * 1.5f, 0f).color(r, g, b, 0).next();
-                buffer.vertex(sz * 0.3f, sz * 0.3f, 0f).color(r, g, b, alpha / 2).next();
-                buffer.vertex(sz * 1.5f, 0f, 0f).color(r, g, b, 0).next();
-                buffer.vertex(sz * 0.3f, -sz * 0.3f, 0f).color(r, g, b, alpha / 2).next();
-                buffer.vertex(0f, -sz * 1.5f, 0f).color(r, g, b, 0).next();
-                buffer.vertex(-sz * 0.3f, -sz * 0.3f, 0f).color(r, g, b, alpha / 2).next();
-                buffer.vertex(-sz * 1.5f, 0f, 0f).color(r, g, b, 0).next();
-                buffer.vertex(-sz * 0.3f, sz * 0.3f, 0f).color(r, g, b, alpha / 2).next();
-                buffer.vertex(0f, sz * 1.5f, 0f).color(r, g, b, 0).next();
-                tessellator.draw();
-            } else if (p.style.equals("AnimeSlash")) {
-                buffer.begin(GL11.GL_TRIANGLES, VertexFormats.POSITION_COLOR);
-                buffer.vertex(0f, sz * 2.0f, 0f).color(255, 255, 255, alpha).next();
-                buffer.vertex(-sz * 0.4f, -sz * 0.8f, 0f).color(r, g, b, 0).next();
-                buffer.vertex(sz * 0.4f, -sz * 0.8f, 0f).color(r, g, b, 0).next();
-                tessellator.draw();
-            } else if (p.style.equals("Hearts")) {
-                float hs = sz * 0.7f;
-                buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
-                buffer.vertex(-hs, hs, 0f).color(r, g, b, alpha).next();
-                buffer.vertex(hs, hs, 0f).color(r, g, b, alpha).next();
-                buffer.vertex(0f, -hs * 1.2f, 0f).color(r, g, b, alpha).next();
-                buffer.vertex(0f, -hs * 1.2f, 0f).color(r, g, b, alpha).next();
-                tessellator.draw();
-            } else {
-                buffer.begin(GL11.GL_TRIANGLE_FAN, VertexFormats.POSITION_COLOR);
-                buffer.vertex(0f, 0f, 0f).color(r, g, b, alpha).next();
-                for (int s = 0; s <= 8; s++) {
-                    double a = 2 * Math.PI * s / 8;
-                    buffer.vertex((float) (sz * Math.cos(a)), (float) (sz * Math.sin(a)), 0f).color(r, g, b, 0).next();
-                }
-                tessellator.draw();
+            buffer.begin(VertexFormat.DrawMode.TRIANGLE_FAN, VertexFormats.POSITION_COLOR);
+            buffer.vertex(matrix, 0f, 0f, 0f).color(r, g, b, alpha).next();
+            for (int s = 0; s <= 8; s++) {
+                double a = 2 * Math.PI * s / 8;
+                buffer.vertex(matrix, (float) (sz * Math.cos(a)), (float) (sz * Math.sin(a)), 0f).color(r, g, b, 0).next();
             }
+            tessellator.draw();
 
-            RenderSystem.popMatrix();
+            matrices.pop();
         }
 
-        RenderUtils.cleanupBloom3D();
+        RenderSystem.disableBlend();
     }
 
     private static class VFXParticle {

@@ -1,13 +1,15 @@
 package com.nexuspvp.gui;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.Radio;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawableHelper;
+
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 import java.util.List;
 
@@ -22,8 +24,8 @@ public class PlayerPanel {
     private int scrollY = 0;
     
     public PlayerPanel(int x, int y) {
-        this.x = x;
-        this.y = y;
+        this.x = (x);
+        this.y = (y);
         // Do not initialize TextFieldWidget here, textRenderer might be null during mod init!
     }
     
@@ -32,7 +34,7 @@ public class PlayerPanel {
         
         if (addTrackField == null) {
             String translatedAdd = LanguageManager.getInstance().get("Add Track...");
-            addTrackField = new TextFieldWidget(mc.textRenderer, x + 5, y + 65, 170, 15, new LiteralText(translatedAdd));
+            addTrackField = new TextFieldWidget(mc.textRenderer, x + 5, y + 65, 170, 15, Text.literal(translatedAdd));
             addTrackField.setMaxLength(256);
             addTrackField.setDrawsBackground(true);
             addTrackField.setSuggestion(translatedAdd);
@@ -49,8 +51,8 @@ public class PlayerPanel {
         if (dragging) {
             x = mouseX - dragOffsetX;
             y = mouseY - dragOffsetY;
-            addTrackField.x = x + 5;
-            addTrackField.y = y + 65;
+            addTrackField.setX(x + 5);
+            addTrackField.setY(y + 65);
         }
         
         Radio radio = NexusPVP.getInstance().getModuleManager().getModule(Radio.class);
@@ -66,7 +68,7 @@ public class PlayerPanel {
         RenderUtils.drawRect(matrices, x, y + 14, width, 8, 0xFF1E1F22);
         
         String translatedHeader = LanguageManager.getInstance().get("Spotify (Radio)").toUpperCase();
-        mc.textRenderer.drawWithShadow(matrices, translatedHeader, x + 10, y + 7, 0xFF1DB954); // Spotify Green
+        Compat.drawText(matrices, translatedHeader, x + 10, y + 7, 0xFF1DB954); // Spotify Green
         
         // Green Spotify status dot
         RenderUtils.drawRoundedRect(matrices, x + width - 18, y + 7, 8, 8, 4, enabled ? 0xFF23A55A : 0xFF80848E);
@@ -84,7 +86,7 @@ public class PlayerPanel {
         if (mc.textRenderer.getWidth(track) > width - 20) {
             track = track.substring(0, Math.min(track.length(), 24)) + "...";
         }
-        mc.textRenderer.drawWithShadow(matrices, track, x + 10, y + 27, 0xFFF2F3F5);
+        Compat.drawText(matrices, track, x + 10, y + 27, 0xFFF2F3F5);
         
         // Download / subtitle status
         if (Radio.downloadProgress != null && !Radio.downloadProgress.isEmpty()) {
@@ -92,31 +94,31 @@ public class PlayerPanel {
             if (mc.textRenderer.getWidth(prog) > width - 20) {
                 prog = prog.substring(0, Math.min(prog.length(), 28)) + "...";
             }
-            mc.textRenderer.drawWithShadow(matrices, prog, x + 10, y + 37, 0xFF949BA4);
+            Compat.drawText(matrices, prog, x + 10, y + 37, 0xFF949BA4);
         } else {
             String statusText = enabled ? "Playing live" : "Idle";
-            mc.textRenderer.drawWithShadow(matrices, statusText, x + 10, y + 37, 0xFF949BA4);
+            Compat.drawText(matrices, statusText, x + 10, y + 37, 0xFF949BA4);
         }
         
         // Buttons
         int btnY = y + 48;
         // Prev btn
         RenderUtils.drawRoundedRect(matrices, x + 10, btnY, 45, 15, 4, 0xFF1E1F22);
-        mc.textRenderer.drawWithShadow(matrices, "⏮ Prev", x + 17, btnY + 4, 0xFFDBDEE1);
+        Compat.drawText(matrices, "⏮ Prev", x + 17, btnY + 4, 0xFFDBDEE1);
         
         // Toggle btn
         int toggleColor = enabled ? 0xFF23A55A : 0xFF5865F2; // Discord Green / Blurple
         RenderUtils.drawRoundedRect(matrices, x + 60, btnY, 60, 15, 4, toggleColor);
         String toggleText = enabled ? "⏸ Pause" : "▶ Play";
-        mc.textRenderer.drawWithShadow(matrices, toggleText, x + 60 + (60 - mc.textRenderer.getWidth(toggleText)) / 2.0f, btnY + 4, 0xFFFFFFFF);
+        Compat.drawText(matrices, toggleText, x + 60 + (60 - mc.textRenderer.getWidth(toggleText)) / 2.0f, btnY + 4, 0xFFFFFFFF);
         
         // Next btn
         RenderUtils.drawRoundedRect(matrices, x + 125, btnY, 45, 15, 4, 0xFF1E1F22);
-        mc.textRenderer.drawWithShadow(matrices, "Next ⏭", x + 130, btnY + 4, 0xFFDBDEE1);
+        Compat.drawText(matrices, "Next ⏭", x + 130, btnY + 4, 0xFFDBDEE1);
         
         // Render text field
         if (addTrackField != null) {
-            addTrackField.render(matrices, mouseX, mouseY, delta);
+            
         }
         
         // Render Playlist
@@ -150,14 +152,14 @@ public class PlayerPanel {
                         }
                         
                         if (itemY >= listY && itemY + 10 <= listY + listHeight) {
-                            mc.textRenderer.drawWithShadow(matrices, display, x + 10, itemY + 3, color);
+                            Compat.drawText(matrices, display, x + 10, itemY + 3, color);
                         }
                     }
                     itemY += 15;
                 }
             } else {
                 String translatedEmpty = LanguageManager.getInstance().get("Playlist is empty");
-                mc.textRenderer.drawWithShadow(matrices, translatedEmpty, x + 12, listY + 10, 0xFF949BA4);
+                Compat.drawText(matrices, translatedEmpty, x + 12, listY + 10, 0xFF949BA4);
             }
         }
     }
@@ -198,7 +200,7 @@ public class PlayerPanel {
             int listHeight = height - 85 - 5;
             if (mouseX >= x + 5 && mouseX <= x + width - 5 && mouseY >= listY && mouseY <= listY + listHeight) {
                 if (button == 0) { // left click
-                    int clickedIndex = (int)(mouseY - listY + scrollY) / 15;
+                    int clickedIndex = (int)(mouseY - listY + scrollY / 15);
                     List<String> playlist = radio.getPlaylist();
                     if (playlist != null && clickedIndex >= 0 && clickedIndex < playlist.size()) {
                         radio.playTrack(clickedIndex);

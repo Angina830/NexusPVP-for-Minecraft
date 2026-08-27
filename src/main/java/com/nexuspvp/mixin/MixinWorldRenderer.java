@@ -2,7 +2,6 @@ package com.nexuspvp.mixin;
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.BlockOutline;
-import com.nexuspvp.modules.GalaxySky;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.WorldRenderer;
@@ -18,23 +17,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinWorldRenderer {
 
     @Inject(method = "drawBlockOutline", at = @At("HEAD"), cancellable = true)
-    private void onDrawBlockOutline(MatrixStack matrices, VertexConsumer vertexConsumer, Entity entity, double d, double e, double f, BlockPos blockPos, BlockState blockState, CallbackInfo ci) {
+    private void onDrawBlockOutline(MatrixStack matrices, VertexConsumer vertexConsumer, Entity entity, double cameraX, double cameraY, double cameraZ, BlockPos pos, BlockState state, CallbackInfo ci) {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null) {
             BlockOutline bo = instance.getModuleManager().getModule(BlockOutline.class);
             if (bo != null && bo.isEnabled()) {
-                ci.cancel();
-            }
-        }
-    }
-
-    @Inject(method = "renderSky", at = @At("HEAD"), cancellable = true)
-    private void onRenderSky(MatrixStack matrices, float tickDelta, CallbackInfo ci) {
-        NexusPVP instance = NexusPVP.getInstance();
-        if (instance != null && instance.getModuleManager() != null) {
-            GalaxySky galaxySky = instance.getModuleManager().getModule(GalaxySky.class);
-            if (galaxySky != null && galaxySky.isEnabled()) {
-                galaxySky.renderCustomSky(matrices, tickDelta);
                 ci.cancel();
             }
         }

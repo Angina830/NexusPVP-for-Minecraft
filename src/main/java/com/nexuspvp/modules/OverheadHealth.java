@@ -5,25 +5,22 @@ import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.Tessellator;
+import com.nexuspvp.util.RenderUtils;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
-import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class OverheadHealth extends Module {
 
-    private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
+        private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
     private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
     private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 60.0, 1.0));
 
@@ -63,33 +60,32 @@ public class OverheadHealth extends Module {
             double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
             if (distSq > maxDistSq) continue;
 
-            // Strictly require direct line of sight
+            // Line of Sight wall check: hide health card if behind solid walls/blocks
             if (!mc.player.canSee(living)) continue;
 
-            double interpX = MathHelper.lerp((double) tickDelta, living.lastRenderX, living.getX());
-            double interpY = MathHelper.lerp((double) tickDelta, living.lastRenderY, living.getY());
-            double interpZ = MathHelper.lerp((double) tickDelta, living.lastRenderZ, living.getZ());
+            double interpX = MathHelper.lerp((double) tickDelta, living.prevX, living.getX());
+            double interpY = MathHelper.lerp((double) tickDelta, living.prevY, living.getY());
+            double interpZ = MathHelper.lerp((double) tickDelta, living.prevZ, living.getZ());
 
-            RenderSystem.pushMatrix();
-            RenderSystem.translated(interpX - camPos.x, interpY - camPos.y + living.getHeight() + 0.55D, interpZ - camPos.z);
-            RenderSystem.rotatef(-mc.gameRenderer.getCamera().getYaw(), 0.0F, 1.0F, 0.0F);
-            RenderSystem.rotatef(mc.gameRenderer.getCamera().getPitch(), 1.0F, 0.0F, 0.0F);
+            matrices.push();
+            matrices.translate(interpX - camPos.x, interpY - camPos.y + living.getHeight() + 0.55D, interpZ - camPos.z);
+            matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
             float scale = 0.020F;
-            RenderSystem.scalef(-scale, -scale, scale);
+            matrices.scale(-scale, -scale, scale);
 
-            renderGraphicalCard(living);
+            renderGraphicalCard(matrices, living);
 
-            RenderSystem.popMatrix();
+            matrices.pop();
         }
     }
 
-    private void renderGraphicalCard(LivingEntity entity) {
+    private void renderGraphicalCard(MatrixStack matrices, LivingEntity entity) {
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         float currentAbs = entity.getAbsorptionAmount();
 
-        HealthTracker tracker = trackers.computeIfAbsent(entity.getEntityId(), id -> {
+        HealthTracker tracker = trackers.computeIfAbsent(entity.getId(), id -> {
             HealthTracker t = new HealthTracker();
             t.animatedHealth = currentHp;
             t.damageGhostHealth = currentHp;
@@ -139,76 +135,65 @@ public class OverheadHealth extends Module {
         float cardY = -cardH / 2.0f;
 
         RenderSystem.enableBlend();
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
-        RenderSystem.disableAlphaTest();
-        RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 
+        // 1. Blurple border (0xEE5865F2)
+        RenderUtils.drawQuad(matrices, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2);
+
+        // 2. Dark Discord background (0xFA1E1F22)
+        RenderUtils.drawQuad(matrices, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22);
+
+        // 3. Health bar
         float barX = cardX + 4;
         float barY = cardY + 13;
         float barW = cardW - 8;
         float barH = 5;
 
-        // Draw ALL card rectangles in ONE single atomic Draw Call!
-        RenderSystem.disableTexture();
-        BufferBuilder buffer = Tessellator.getInstance().getBuffer();
-        buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
+        // Health bar track
+        RenderUtils.drawQuad(matrices, barX, barY, barX + barW, barY + barH, 0xFF2B2D31);
 
-        // 1. Blurple border
-        addQuad(buffer, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
-
-        // 2. Dark Discord background
-        addQuad(buffer, cardX, cardY, cardW, cardH, 0xFA1E1F22);
-
-        // 3. Health bar track
-        addQuad(buffer, barX, barY, barW, barH, 0xFF2B2D31);
-
-        // 4. Active health bar (Green / Yellow / Red)
+        // Active health bar
         if (healthPct > 0) {
             float fillW = barW * healthPct;
-            addQuad(buffer, barX, barY, fillW, barH, hpColor);
+            RenderUtils.drawQuad(matrices, barX, barY, barX + fillW, barY + barH, hpColor);
         }
 
-        // 5. Ghost damage bar (only trailing lost damage chunk)
+        // Ghost damage bar (only trailing lost damage chunk)
         if (ghostDamage.isEnabled() && ghostPct > healthPct + 0.005f) {
             float ghostStart = barX + (barW * healthPct);
             float ghostWidth = barW * (ghostPct - healthPct);
-            addQuad(buffer, ghostStart, barY, ghostWidth, barH, 0xFFF2F3F5);
+            RenderUtils.drawQuad(matrices, ghostStart, barY, ghostStart + ghostWidth, barY + barH, 0xFFF2F3F5);
         }
 
-        // 6. Absorption bar
+        // Absorption bar
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
-            addQuad(buffer, barX, barY + barH - 2, absW, 2, 0xFFFFD700);
+            RenderUtils.drawQuad(matrices, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700);
         }
 
-        Tessellator.getInstance().draw();
-        RenderSystem.enableTexture();
-
-        // Draw text
-        float textY = cardY + 3;
+        // 4. Text rendered with immediate flush
         VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
+        float textY = cardY + 3;
 
-        Matrix4f identity = new Matrix4f();
-        identity.loadIdentity();
-
+        // Name on the left
         mc.textRenderer.draw(
             name,
             cardX + 4,
             textY,
             0xFFF2F3F5,
             false,
-            identity,
+            matrices.peek().getPositionMatrix(),
             vertexConsumers,
-            false,
+            TextRenderer.TextLayerType.NORMAL,
             0,
             0xF000F0
         );
 
+        // HP text on the right
         float hpTextX = cardX + cardW - hpTextW - 4;
         mc.textRenderer.draw(
             hpText,
@@ -216,31 +201,17 @@ public class OverheadHealth extends Module {
             textY,
             hpTextColor,
             false,
-            identity,
+            matrices.peek().getPositionMatrix(),
             vertexConsumers,
-            false,
+            TextRenderer.TextLayerType.NORMAL,
             0,
             0xF000F0
         );
 
         vertexConsumers.draw();
 
-        RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.enableAlphaTest();
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
-    }
-
-    private void addQuad(BufferBuilder buffer, float x, float y, float width, float height, int color) {
-        float a = (color >> 24 & 0xFF) / 255.0f;
-        float r = (color >> 16 & 0xFF) / 255.0f;
-        float g = (color >> 8 & 0xFF) / 255.0f;
-        float b = (color & 0xFF) / 255.0f;
-
-        buffer.vertex(x, y + height, 0.0D).color(r, g, b, a).next();
-        buffer.vertex(x + width, y + height, 0.0D).color(r, g, b, a).next();
-        buffer.vertex(x + width, y, 0.0D).color(r, g, b, a).next();
-        buffer.vertex(x, y, 0.0D).color(r, g, b, a).next();
     }
 }

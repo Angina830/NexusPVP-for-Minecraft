@@ -1,19 +1,20 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.RenderUtils;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffectUtil;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 public class PotionHUD extends Module {
 
@@ -60,7 +61,10 @@ public class PotionHUD extends Module {
                 name += " " + (effect.getAmplifier() + 1);
             }
 
-            String duration = StatusEffectUtil.durationToString(effect, 1.0F);
+            int totalSeconds = curDuration / 20;
+            int mins = totalSeconds / 60;
+            int secs = totalSeconds % 60;
+            String duration = String.format("%d:%02d", mins, secs);
             String fullText = name + " (" + duration + ")";
 
             int textW = mc.textRenderer.getWidth(fullText);
@@ -74,7 +78,7 @@ public class PotionHUD extends Module {
                 RenderUtils.drawRoundedRect(matrices, 2, currentY + 3, 3, badgeH - 6, 2, effectColor);
             }
 
-            mc.textRenderer.drawWithShadow(matrices, fullText, 8, currentY + 4, effectColor);
+            Compat.drawText(matrices, fullText, 8, currentY + 4, effectColor);
 
             if (durationBar.isEnabled() && maxDur > 0) {
                 float pct = Math.max(0.0f, Math.min(1.0f, (float) curDuration / (float) maxDur));

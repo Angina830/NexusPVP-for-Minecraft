@@ -1,4 +1,6 @@
 package com.nexuspvp.gui;
+import com.nexuspvp.util.Compat;
+
 
 public enum GuiStyle {
     DISCORD("Discord Modern", "Sidebar + expandable cards layout", "\uD83D\uDCAC"),

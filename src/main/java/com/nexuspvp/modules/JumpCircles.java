@@ -7,12 +7,11 @@ import com.nexuspvp.setting.ColorSetting;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.ColorUtils;
-import com.nexuspvp.util.RenderUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
-import org.lwjgl.opengl.GL11;
+import org.joml.Matrix4f;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -39,13 +38,11 @@ public class JumpCircles extends Module {
         if (mc.player == null || mc.world == null) return;
 
         boolean onGround = mc.player.isOnGround();
-
         if (wasOnGround && !onGround && mc.player.getVelocity().y > 0.05) {
             spawnCircle(mc.player.getPos());
         } else if (!wasOnGround && onGround && mc.player.fallDistance > 0.6f) {
             spawnCircle(mc.player.getPos());
         }
-
         wasOnGround = onGround;
 
         float speedVal = speed.getFloatValue() * 0.04f;
@@ -71,10 +68,12 @@ public class JumpCircles extends Module {
     public void onRender3D(MatrixStack matrices, float tickDelta) {
         if (mc.player == null || mc.world == null || circles.isEmpty()) return;
 
-        RenderUtils.setupBloom3D();
         Vec3d cam = mc.gameRenderer.getCamera().getPos();
-        String currentStyle = style.getValue();
         float thick = thickness.getFloatValue();
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
@@ -82,90 +81,39 @@ public class JumpCircles extends Module {
         for (CircleAnimation c : circles) {
             if (c.alpha <= 0.01f) continue;
 
-            RenderSystem.pushMatrix();
-            RenderSystem.translated(c.pos.x - cam.x, c.pos.y - cam.y, c.pos.z - cam.z);
+            matrices.push();
+            matrices.translate(c.pos.x - cam.x, c.pos.y - cam.y, c.pos.z - cam.z);
+            Matrix4f matrix = matrices.peek().getPositionMatrix();
 
             int alpha = (int) (c.color.getAlpha() * c.alpha);
             if (alpha <= 0) {
-                RenderSystem.popMatrix();
+                matrices.pop();
                 continue;
             }
 
             int r = c.color.getRed();
             int g = c.color.getGreen();
             int b = c.color.getBlue();
+            int segments = 40;
 
-            int segments = 48;
+            float innerR = Math.max(0f, c.radius - thick);
+            float outerR = c.radius;
 
-            if (currentStyle.equals("Shockwave") || currentStyle.equals("DoubleWave")) {
-                float innerR = Math.max(0f, c.radius - thick);
-                float outerR = c.radius;
+            buffer.begin(VertexFormat.DrawMode.TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
+            for (int i = 0; i <= segments; i++) {
+                double angle = 2 * Math.PI * i / segments;
+                float cos = (float) Math.cos(angle);
+                float sin = (float) Math.sin(angle);
 
-                buffer.begin(GL11.GL_TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
-                for (int i = 0; i <= segments; i++) {
-                    double angle = 2 * Math.PI * i / segments;
-                    float cos = (float) Math.cos(angle);
-                    float sin = (float) Math.sin(angle);
-
-                    buffer.vertex(innerR * cos, 0f, innerR * sin).color(r, g, b, 0).next();
-                    buffer.vertex(outerR * cos, 0f, outerR * sin).color(r, g, b, alpha).next();
-                }
-                tessellator.draw();
-
-                float edgeR = outerR + (thick * 0.5f);
-                buffer.begin(GL11.GL_TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
-                for (int i = 0; i <= segments; i++) {
-                    double angle = 2 * Math.PI * i / segments;
-                    float cos = (float) Math.cos(angle);
-                    float sin = (float) Math.sin(angle);
-
-                    buffer.vertex(outerR * cos, 0f, outerR * sin).color(r, g, b, alpha).next();
-                    buffer.vertex(edgeR * cos, 0f, edgeR * sin).color(r, g, b, 0).next();
-                }
-                tessellator.draw();
-
-                if (currentStyle.equals("DoubleWave") && c.radius > maxRadius.getFloatValue() * 0.4f) {
-                    float r2 = c.radius * 0.6f;
-                    float in2 = Math.max(0f, r2 - (thick * 0.6f));
-                    int a2 = (int) (alpha * 0.6f);
-
-                    buffer.begin(GL11.GL_TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
-                    for (int i = 0; i <= segments; i++) {
-                        double angle = 2 * Math.PI * i / segments;
-                        float cos = (float) Math.cos(angle);
-                        float sin = (float) Math.sin(angle);
-
-                        buffer.vertex(in2 * cos, 0f, in2 * sin).color(r, g, b, 0).next();
-                        buffer.vertex(r2 * cos, 0f, r2 * sin).color(r, g, b, a2).next();
-                    }
-                    tessellator.draw();
-                }
-            } else if (currentStyle.equals("GradientDisc")) {
-                buffer.begin(GL11.GL_TRIANGLE_FAN, VertexFormats.POSITION_COLOR);
-                buffer.vertex(0f, 0f, 0f).color(r, g, b, alpha).next();
-                for (int i = 0; i <= segments; i++) {
-                    double angle = 2 * Math.PI * i / segments;
-                    float cos = (float) Math.cos(angle);
-                    float sin = (float) Math.sin(angle);
-                    buffer.vertex(c.radius * cos, 0f, c.radius * sin).color(r, g, b, 0).next();
-                }
-                tessellator.draw();
-            } else {
-                GL11.glLineWidth(3.0f);
-                buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
-                for (int i = 0; i < segments; i++) {
-                    double angle = 2 * Math.PI * i / segments;
-                    float cos = (float) Math.cos(angle);
-                    float sin = (float) Math.sin(angle);
-                    buffer.vertex(c.radius * cos, 0f, c.radius * sin).color(r, g, b, alpha).next();
-                }
-                tessellator.draw();
+                buffer.vertex(matrix, innerR * cos, 0f, innerR * sin).color(r, g, b, 0).next();
+                buffer.vertex(matrix, outerR * cos, 0f, outerR * sin).color(r, g, b, alpha).next();
             }
+            tessellator.draw();
 
-            RenderSystem.popMatrix();
+            matrices.pop();
         }
 
-        RenderUtils.cleanupBloom3D();
+        RenderSystem.disableBlend();
     }
 
     private static class CircleAnimation {

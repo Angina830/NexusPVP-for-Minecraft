@@ -1,116 +1,114 @@
 package com.nexuspvp.modules;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.gui.ThemeManager;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
-import com.nexuspvp.setting.BooleanSetting;
-import com.nexuspvp.util.RenderUtils;
+import com.nexuspvp.setting.ColorSetting;
+import net.minecraft.block.Block;
 import net.minecraft.block.ShulkerBoxBlock;
-import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.util.collection.DefaultedList;
+
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ShulkerPreview extends Module {
 
-    private final BooleanSetting showEmpty = addSetting(new BooleanSetting("ShowEmpty", true));
+    private final ColorSetting borderColor = addSetting(new ColorSetting("Border", new Color(160, 0, 255, 220)));
 
     public ShulkerPreview() {
-        super("ShulkerPreview", "Shows a 3x9 grid preview of items inside shulker boxes", Category.HUD);
+        super("ShulkerPreview", "Shows 3x9 item inventory preview on hovering shulker boxes", Category.HUD);
     }
 
-    public boolean isShulkerBox(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem() instanceof BlockItem && ((BlockItem) stack.getItem()).getBlock() instanceof ShulkerBoxBlock;
+    public static boolean isShulkerBox(Item item) {
+        if (item instanceof BlockItem) {
+            Block block = ((BlockItem) item).getBlock();
+            return block instanceof ShulkerBoxBlock;
+        }
+        return false;
     }
 
-    public boolean renderShulkerPreview(MatrixStack matrices, ItemStack stack, int mouseX, int mouseY) {
-        if (!isEnabled() || !isShulkerBox(stack) || mc.player == null) return false;
-
-        NbtCompound blockEntityTag = stack.getSubTag("BlockEntityTag");
-        if (blockEntityTag == null || !blockEntityTag.contains("Items", 9)) {
-            return false;
-        }
-
-        NbtList itemsTag = blockEntityTag.getList("Items", 10);
-        DefaultedList<ItemStack> items = DefaultedList.ofSize(27, ItemStack.EMPTY);
-
-        for (int i = 0; i < itemsTag.size(); i++) {
-            NbtCompound itemTag = itemsTag.getCompound(i);
-            int slot = itemTag.getByte("Slot") & 255;
-            if (slot < 27) {
-                items.set(slot, ItemStack.fromNbt(itemTag));
-            }
-        }
-
-        int width = 166;
-        int height = 74;
-
-        int screenW = mc.getWindow().getScaledWidth();
-        int screenH = mc.getWindow().getScaledHeight();
-
-        int x = mouseX + 12;
-        int y = mouseY - 12;
-
-        if (x + width > screenW - 4) {
-            x = mouseX - width - 8;
-        }
-        if (y + height > screenH - 4) {
-            y = screenH - height - 4;
-        }
-        if (y < 4) {
-            y = 4;
-        }
-
-        int accent = ThemeManager.getInstance().getAccentColor().getRGB();
-
-        // 1. Draw Background and Slots
-        RenderSystem.disableDepthTest();
-        RenderUtils.drawRoundedRect(matrices, x - 1, y - 1, width + 2, height + 2, 5, accent);
-        RenderUtils.drawRoundedRect(matrices, x, y, width, height, 4, 0xFA1E1F22);
-
-        // Header: Shulker Box name
-        String title = stack.getName().getString();
-        if (mc.textRenderer.getWidth(title) > width - 12) {
-            title = title.substring(0, Math.min(title.length(), 22)) + "..";
-        }
-        mc.textRenderer.drawWithShadow(matrices, title, x + 6, y + 5, 0xFFF2F3F5);
-
-        // Separator line
-        RenderUtils.drawRect(matrices, x + 4, y + 16, width - 8, 1, 0xFF2B2D31);
-
-        int startSlotX = x + 3;
-        int startSlotY = y + 19;
-
-        // Draw slot rectangles
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                int slotX = startSlotX + col * 18;
-                int slotY = startSlotY + row * 18;
-                RenderUtils.drawRoundedRect(matrices, slotX, slotY, 17, 17, 2, 0xFF2B2D31);
-            }
-        }
-        RenderSystem.enableDepthTest();
-
-        // 2. Render all 27 Items with custom zOffset
-        mc.getItemRenderer().zOffset = 300.0F;
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                int index = row * 9 + col;
-                int slotX = startSlotX + col * 18;
-                int slotY = startSlotY + row * 18;
-
-                ItemStack item = items.get(index);
-                if (!item.isEmpty()) {
-                    mc.getItemRenderer().renderInGuiWithOverrides(item, slotX + 1, slotY + 1);
-                    mc.getItemRenderer().renderGuiItemOverlay(mc.textRenderer, item, slotX + 1, slotY + 1);
+    public static List<ItemStack> getShulkerItems(ItemStack stack) {
+        List<ItemStack> items = new ArrayList<>(Collections.nCopies(27, ItemStack.EMPTY));
+        if (stack == null || stack.isEmpty() || !stack.hasNbt()) return items;
+        NbtCompound blockEntityTag = stack.getSubNbt("BlockEntityTag");
+        if (blockEntityTag != null && blockEntityTag.contains("Items", 9)) {
+            NbtList list = blockEntityTag.getList("Items", 10);
+            for (int i = 0; i < list.size(); i++) {
+                NbtCompound itemTag = list.getCompound(i);
+                int slot = itemTag.getByte("Slot") & 255;
+                if (slot < 27) {
+                    items.set(slot, ItemStack.fromNbt(itemTag));
                 }
             }
         }
-        mc.getItemRenderer().zOffset = 0.0F;
+        return items;
+    }
 
-        return true;
+    public void renderShulkerPreview(DrawContext context, ItemStack shulkerStack, int mouseX, int mouseY) {
+        if (context == null || shulkerStack == null || !isShulkerBox(shulkerStack.getItem())) return;
+        List<ItemStack> items = getShulkerItems(shulkerStack);
+
+        int gridW = 9 * 18 + 8; // 170
+        int gridH = 3 * 18 + 8; // 62
+        int headerH = 14;
+        int totalH = gridH + headerH;
+
+        int startX = mouseX + 12;
+        int totalY = mouseY - totalH - 8;
+        if (totalY < 4) totalY = mouseY + 16;
+        if (startX + gridW > mc.getWindow().getScaledWidth() - 4) {
+            startX = mc.getWindow().getScaledWidth() - gridW - 4;
+        }
+        if (totalY + totalH > mc.getWindow().getScaledHeight() - 4) {
+            totalY = mc.getWindow().getScaledHeight() - totalH - 4;
+        }
+
+        int startY = totalY + headerH;
+
+        // Elevate to topmost Z-layer
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 500.0f);
+
+        int border = borderColor.getColor().getRGB() | 0xFF000000;
+        int bg = 0xF2101114;
+        int slotBg = 0xFF1E1F22;
+        int slotBorder = 0xFF2B2D31;
+
+        // Outer Glow / Border & Container
+        context.fill(startX - 2, totalY - 2, startX + gridW + 2, totalY + totalH + 2, border);
+        context.fill(startX - 1, totalY - 1, startX + gridW + 1, totalY + totalH + 1, 0xFF18191C);
+        context.fill(startX, totalY, startX + gridW, totalY + totalH, bg);
+
+        // Header Title
+        String title = shulkerStack.getName().getString();
+        context.drawText(mc.textRenderer, title, startX + 5, totalY + 3, 0xFFFFFFFF, true);
+
+        // 3x9 Slots
+        for (int i = 0; i < 27; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            int slotX = startX + 4 + col * 18;
+            int slotY = startY + 4 + row * 18;
+
+            context.fill(slotX, slotY, slotX + 18, slotY + 18, slotBorder);
+            context.fill(slotX + 1, slotY + 1, slotX + 17, slotY + 17, slotBg);
+
+            if (i < items.size()) {
+                ItemStack item = items.get(i);
+                if (item != null && !item.isEmpty()) {
+                    context.drawItem(item, slotX + 1, slotY + 1);
+                    context.drawItemInSlot(mc.textRenderer, item, slotX + 1, slotY + 1);
+                }
+            }
+        }
+
+        context.getMatrices().pop();
     }
 }
