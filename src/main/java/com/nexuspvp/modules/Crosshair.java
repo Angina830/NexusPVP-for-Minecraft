@@ -54,10 +54,10 @@ public class Crosshair extends Module {
         if (mc.player == null || mc.options.hudHidden) return;
         if (mc.options.getPerspective() != Perspective.FIRST_PERSON) return;
 
-        double screenW = mc.getWindow().getScaledWidth();
-        double screenH = mc.getWindow().getScaledHeight();
-        double cx = screenW / 2.0;
-        double cy = screenH / 2.0;
+        float screenW = (float) mc.getWindow().getScaledWidth();
+        float screenH = (float) mc.getWindow().getScaledHeight();
+        float cx = screenW / 2.0f;
+        float cy = screenH / 2.0f;
 
         boolean isTargeting = false;
         if (mc.targetedEntity instanceof LivingEntity && mc.targetedEntity.isAlive() && mc.targetedEntity != mc.player) {
@@ -74,12 +74,12 @@ public class Crosshair extends Module {
                 (color.getColor().getRGB() | 0xFF000000);
         int tc = targetColor.getColor().getRGB() | 0xFF000000;
 
-        double s = size.getValue();
-        double t = Math.max(1.0, thickness.getValue());
-        double halfT = t / 2.0;
+        float s = size.getFloatValue();
+        float t = Math.max(1.0f, thickness.getFloatValue());
+        float halfT = t / 2.0f;
 
         // 60+ FPS continuous frame tickDelta interpolation
-        double g;
+        float g;
         if (dynamicSpread.isEnabled()) {
             float cd = mc.player.getAttackCooldownProgress(tickDelta);
             float minG = minSpread.getFloatValue();
@@ -88,7 +88,7 @@ public class Crosshair extends Module {
             smoothGap = MathHelper.lerp(0.35f, smoothGap, targetG);
             g = smoothGap;
         } else {
-            g = gap.getValue();
+            g = gap.getFloatValue();
         }
 
         String currentStyle = style.getValue();
@@ -110,35 +110,35 @@ public class Crosshair extends Module {
             } else if (currentStyle.equals("Circle")) {
                 for (int a = 0; a < 360; a += 15) {
                     double rad = Math.toRadians(a);
-                    double px = cx + Math.cos(rad) * (s + g);
-                    double py = cy + Math.sin(rad) * (s + g);
+                    float px = (float) (cx + Math.cos(rad) * (s + g));
+                    float py = (float) (cy + Math.sin(rad) * (s + g));
                     RenderUtils.drawRect(matrices, px, py, t, t, c);
                 }
             }
 
             // Target Acquisition Frames
             if (targetFrame.isEnabled() && isTargeting) {
-                double fDist = g + s + 3.0;
-                double arm = 4.0;
+                float fDist = g + s + 3.0f;
+                float arm = 4.0f;
 
                 // Corner brackets
-                RenderUtils.drawRect(matrices, cx - fDist, cy - fDist, arm, 1.0, tc);
-                RenderUtils.drawRect(matrices, cx - fDist, cy - fDist, 1.0, arm, tc);
+                RenderUtils.drawRect(matrices, cx - fDist, cy - fDist, arm, 1.0f, tc);
+                RenderUtils.drawRect(matrices, cx - fDist, cy - fDist, 1.0f, arm, tc);
 
-                RenderUtils.drawRect(matrices, cx + fDist - arm, cy - fDist, arm, 1.0, tc);
-                RenderUtils.drawRect(matrices, cx + fDist - 1.0, cy - fDist, 1.0, arm, tc);
+                RenderUtils.drawRect(matrices, cx + fDist - arm, cy - fDist, arm, 1.0f, tc);
+                RenderUtils.drawRect(matrices, cx + fDist - 1.0f, cy - fDist, 1.0f, arm, tc);
 
-                RenderUtils.drawRect(matrices, cx - fDist, cy + fDist - 1.0, arm, 1.0, tc);
-                RenderUtils.drawRect(matrices, cx - fDist, cy + fDist - arm, 1.0, arm, tc);
+                RenderUtils.drawRect(matrices, cx - fDist, cy + fDist - 1.0f, arm, 1.0f, tc);
+                RenderUtils.drawRect(matrices, cx - fDist, cy + fDist - arm, 1.0f, arm, tc);
 
-                RenderUtils.drawRect(matrices, cx + fDist - arm, cy + fDist - 1.0, arm, 1.0, tc);
-                RenderUtils.drawRect(matrices, cx + fDist - 1.0, cy + fDist - arm, 1.0, arm, tc);
+                RenderUtils.drawRect(matrices, cx + fDist - arm, cy + fDist - 1.0f, arm, 1.0f, tc);
+                RenderUtils.drawRect(matrices, cx + fDist - 1.0f, cy + fDist - arm, 1.0f, arm, tc);
 
                 // Line accent ticks
-                RenderUtils.drawRect(matrices, cx - halfT - 1.0, cy - g - s - 2.0, t + 2.0, 1.0, tc);
-                RenderUtils.drawRect(matrices, cx - halfT - 1.0, cy + g + s + 1.0, t + 2.0, 1.0, tc);
-                RenderUtils.drawRect(matrices, cx - g - s - 2.0, cy - halfT - 1.0, 1.0, t + 2.0, tc);
-                RenderUtils.drawRect(matrices, cx + g + s + 1.0, cy - halfT - 1.0, 1.0, t + 2.0, tc);
+                RenderUtils.drawRect(matrices, cx - halfT - 1.0f, cy - g - s - 2.0f, t + 2.0f, 1.0f, tc);
+                RenderUtils.drawRect(matrices, cx - halfT - 1.0f, cy + g + s + 1.0f, t + 2.0f, 1.0f, tc);
+                RenderUtils.drawRect(matrices, cx - g - s - 2.0f, cy - halfT - 1.0f, 1.0f, t + 2.0f, tc);
+                RenderUtils.drawRect(matrices, cx + g + s + 1.0f, cy - halfT - 1.0f, 1.0f, t + 2.0f, tc);
             }
         }
 
@@ -147,20 +147,20 @@ public class Crosshair extends Module {
             float fade = 1.0f - ((System.currentTimeMillis() - lastHitTime) / 300.0f);
             int alpha = (int) (fade * 255);
             int hmColor = (alpha << 24) | 0xFF3333;
-            double hmSize = 6.0;
-            double hmGap = 4.0;
+            float hmSize = 6.0f;
+            float hmGap = 4.0f;
 
-            RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy - hmGap - hmSize, hmSize, 1.0, hmColor);
-            RenderUtils.drawRect(matrices, cx - hmGap - 1.0, cy - hmGap - hmSize, 1.0, hmSize, hmColor);
+            RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy - hmGap - hmSize, hmSize, 1.0f, hmColor);
+            RenderUtils.drawRect(matrices, cx - hmGap - 1.0f, cy - hmGap - hmSize, 1.0f, hmSize, hmColor);
 
-            RenderUtils.drawRect(matrices, cx + hmGap, cy - hmGap - hmSize, hmSize, 1.0, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1.0, cy - hmGap - hmSize, 1.0, hmSize, hmColor);
+            RenderUtils.drawRect(matrices, cx + hmGap, cy - hmGap - hmSize, hmSize, 1.0f, hmColor);
+            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1.0f, cy - hmGap - hmSize, 1.0f, hmSize, hmColor);
 
-            RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy + hmGap + hmSize - 1.0, hmSize, 1.0, hmColor);
-            RenderUtils.drawRect(matrices, cx - hmGap - 1.0, cy + hmGap, 1.0, hmSize, hmColor);
+            RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy + hmGap + hmSize - 1.0f, hmSize, 1.0f, hmColor);
+            RenderUtils.drawRect(matrices, cx - hmGap - 1.0f, cy + hmGap, 1.0f, hmSize, hmColor);
 
-            RenderUtils.drawRect(matrices, cx + hmGap, cy + hmGap + hmSize - 1.0, hmSize, 1.0, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1.0, cy + hmGap, 1.0, hmSize, hmColor);
+            RenderUtils.drawRect(matrices, cx + hmGap, cy + hmGap + hmSize - 1.0f, hmSize, 1.0f, hmColor);
+            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1.0f, cy + hmGap, 1.0f, hmSize, hmColor);
         }
     }
 }
