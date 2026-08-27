@@ -45,23 +45,31 @@ public class Crosshair extends Module {
         int s = size.getIntValue();
         int g = gap.getIntValue();
         int t = Math.max(1, thickness.getIntValue());
-        int halfT = t / 2;
 
         String mode = style.getValue();
         if (mode.equalsIgnoreCase("Dot")) {
-            context.fill(cx - 1, cy - 1, cx + 2, cy + 2, c);
+            int d = Math.max(2, t * 2);
+            context.fill(cx - d / 2, cy - d / 2, cx + (d + 1) / 2, cy + (d + 1) / 2, c);
         } else if (mode.equalsIgnoreCase("Circle")) {
-            context.fill(cx - s, cy - halfT, cx - s + t, cy + halfT + 1, c);
-            context.fill(cx + s - t, cy - halfT, cx + s, cy + halfT + 1, c);
-            context.fill(cx - halfT, cy - s, cx + halfT + 1, cy - s + t, c);
-            context.fill(cx - halfT, cy + s - t, cx + halfT + 1, cy + s, c);
-        } else { // Cross
-            context.fill(cx - halfT, cy - g - s, cx + halfT + (t % 2 == 0 ? 0 : 1), cy - g, c);
-            context.fill(cx - halfT, cy + g, cx + halfT + (t % 2 == 0 ? 0 : 1), cy + g + s, c);
-            context.fill(cx - g - s, cy - halfT, cx - g, cy + halfT + (t % 2 == 0 ? 0 : 1), c);
-            context.fill(cx + g, cy - halfT, cx + g + s, cy + halfT + (t % 2 == 0 ? 0 : 1), c);
+            // Precise equidistant 8-point ring
+            for (int a = 0; a < 360; a += 15) {
+                double rad = Math.toRadians(a);
+                int px = (int) Math.round(cx + Math.cos(rad) * (s + g));
+                int py = (int) Math.round(cy + Math.sin(rad) * (s + g));
+                context.fill(px, py, px + t, py + t, c);
+            }
+        } else { // Cross - 100% Symmetric around center pixel (cx, cy)
+            // Top branch
+            context.fill(cx, cy - g - s, cx + t, cy - g, c);
+            // Bottom branch
+            context.fill(cx, cy + g + 1, cx + t, cy + g + s + 1, c);
+            // Left branch
+            context.fill(cx - g - s, cy, cx - g, cy + t, c);
+            // Right branch
+            context.fill(cx + g + 1, cy, cx + g + s + 1, cy + t, c);
+
             if (dot.isEnabled()) {
-                context.fill(cx - 1, cy - 1, cx + 1, cy + 1, c);
+                context.fill(cx, cy, cx + t, cy + t, c);
             }
         }
 
@@ -73,9 +81,9 @@ public class Crosshair extends Module {
                 int hms = 5;
                 for (int i = 2; i <= hms; i++) {
                     context.fill(cx - i, cy - i, cx - i + 1, cy - i + 1, hmColor);
-                    context.fill(cx + i, cy - i, cx + i + 1, cy - i + 1, hmColor);
-                    context.fill(cx - i, cy + i, cx - i + 1, cy + i + 1, hmColor);
-                    context.fill(cx + i, cy + i, cx + i + 1, cy + i + 1, hmColor);
+                    context.fill(cx + i + 1, cy - i, cx + i + 2, cy - i + 1, hmColor);
+                    context.fill(cx - i, cy + i + 1, cx - i + 1, cy + i + 2, hmColor);
+                    context.fill(cx + i + 1, cy + i + 1, cx + i + 2, cy + i + 2, hmColor);
                 }
             }
         }

@@ -4,7 +4,6 @@ import com.nexuspvp.gui.ThemeManager;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.ColorSetting;
-import com.nexuspvp.util.RenderUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.client.gui.DrawContext;
@@ -70,7 +69,6 @@ public class ShulkerPreview extends Module {
         int slotBg = 0xFF1E1F22;
         int slotBorder = 0xFF2B2D31;
 
-        // Background & Border
         context.fill(startX - 1, startY - 1, startX + gridW + 1, startY + gridH + 1, border);
         context.fill(startX, startY, startX + gridW, startY + gridH, bg);
 
@@ -80,13 +78,13 @@ public class ShulkerPreview extends Module {
             int slotX = startX + 4 + col * 18;
             int slotY = startY + 4 + row * 18;
 
-            // Draw slot box
             context.fill(slotX, slotY, slotX + 18, slotY + 18, slotBorder);
             context.fill(slotX + 1, slotY + 1, slotX + 17, slotY + 17, slotBg);
 
             if (i < items.size()) {
                 ItemStack item = items.get(i);
                 if (item != null && !item.isEmpty()) {
+                    context.drawItem(item, slotX + 1, slotY + 1);
                     context.drawItemInSlot(mc.textRenderer, item, slotX + 1, slotY + 1);
                 }
             }
