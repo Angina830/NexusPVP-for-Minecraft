@@ -62,16 +62,16 @@ public class OverheadHealth extends Module {
             // Never show through walls: strictly require direct line of sight
             if (!mc.player.canSee(living)) continue;
 
-            double interpX = MathHelper.lerp((double) tickDelta, living.prevX, living.getX());
-            double interpY = MathHelper.lerp((double) tickDelta, living.prevY, living.getY());
-            double interpZ = MathHelper.lerp((double) tickDelta, living.prevZ, living.getZ());
+            double interpX = MathHelper.lerp((double) tickDelta, living.lastRenderX, living.getX());
+            double interpY = MathHelper.lerp((double) tickDelta, living.lastRenderY, living.getY());
+            double interpZ = MathHelper.lerp((double) tickDelta, living.lastRenderZ, living.getZ());
 
             matrices.push();
             matrices.translate(interpX - camPos.x, interpY - camPos.y + living.getHeight() + 0.55D, interpZ - camPos.z);
             matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
             float scale = 0.020F;
-            matrices.scale(-scale, -scale, scale);
+            matrices.scale(scale, -scale, scale);
 
             renderGraphicalCard(matrices, living);
 
