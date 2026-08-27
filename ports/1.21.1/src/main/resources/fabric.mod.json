@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "nexus_pvp",
-  "version": "0.1.3-beta",
+  "version": "0.1.4-beta",
   "name": "NexusPVP",
-  "description": "NexusPVP v0.1.3-beta [Spectra] - Advanced Visuals & Quality of Life Mod",
+  "description": "NexusPVP v0.1.4-beta [Aegis] - Advanced Visuals & Quality of Life Mod",
   "authors": [
     "NexusPVP"
   ],
