@@ -36,14 +36,14 @@ public class ShulkerPreview extends Module {
 
     public static List<ItemStack> getShulkerItems(ItemStack stack) {
         List<ItemStack> items = new ArrayList<>(Collections.nCopies(27, ItemStack.EMPTY));
-        if (stack == null || stack.isEmpty()) return items;
+        if (stack == null || stack.isEmpty() || !stack.hasNbt()) return items;
         NbtCompound blockEntityTag = stack.getSubNbt("BlockEntityTag");
         if (blockEntityTag != null && blockEntityTag.contains("Items", 9)) {
-            NbtList tagList = blockEntityTag.getList("Items", 10);
-            for (int i = 0; i < tagList.size(); i++) {
-                NbtCompound itemTag = tagList.getCompound(i);
+            NbtList list = blockEntityTag.getList("Items", 10);
+            for (int i = 0; i < list.size(); i++) {
+                NbtCompound itemTag = list.getCompound(i);
                 int slot = itemTag.getByte("Slot") & 255;
-                if (slot >= 0 && slot < 27) {
+                if (slot < 27) {
                     items.set(slot, ItemStack.fromNbt(itemTag));
                 }
             }
@@ -57,21 +57,40 @@ public class ShulkerPreview extends Module {
 
         int gridW = 9 * 18 + 8; // 170
         int gridH = 3 * 18 + 8; // 62
+        int headerH = 14;
+        int totalH = gridH + headerH;
+
         int startX = mouseX + 12;
-        int startY = mouseY - gridH - 12;
-        if (startY < 8) startY = mouseY + 16;
+        int totalY = mouseY - totalH - 8;
+        if (totalY < 4) totalY = mouseY + 16;
         if (startX + gridW > mc.getWindow().getScaledWidth() - 4) {
             startX = mc.getWindow().getScaledWidth() - gridW - 4;
         }
+        if (totalY + totalH > mc.getWindow().getScaledHeight() - 4) {
+            totalY = mc.getWindow().getScaledHeight() - totalH - 4;
+        }
+
+        int startY = totalY + headerH;
+
+        // Elevate to topmost Z-layer
+        context.getMatrices().push();
+        context.getMatrices().translate(0, 0, 500.0f);
 
         int border = borderColor.getColor().getRGB() | 0xFF000000;
         int bg = 0xF2101114;
         int slotBg = 0xFF1E1F22;
         int slotBorder = 0xFF2B2D31;
 
-        context.fill(startX - 1, startY - 1, startX + gridW + 1, startY + gridH + 1, border);
-        context.fill(startX, startY, startX + gridW, startY + gridH, bg);
+        // Outer Glow / Border & Container
+        context.fill(startX - 2, totalY - 2, startX + gridW + 2, totalY + totalH + 2, border);
+        context.fill(startX - 1, totalY - 1, startX + gridW + 1, totalY + totalH + 1, 0xFF18191C);
+        context.fill(startX, totalY, startX + gridW, totalY + totalH, bg);
 
+        // Header Title
+        String title = shulkerStack.getName().getString();
+        context.drawText(mc.textRenderer, title, startX + 5, totalY + 3, 0xFFFFFFFF, true);
+
+        // 3x9 Slots
         for (int i = 0; i < 27; i++) {
             int row = i / 9;
             int col = i % 9;
@@ -89,5 +108,7 @@ public class ShulkerPreview extends Module {
                 }
             }
         }
+
+        context.getMatrices().pop();
     }
 }
