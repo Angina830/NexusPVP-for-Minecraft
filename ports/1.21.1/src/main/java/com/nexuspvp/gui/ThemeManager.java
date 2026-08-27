@@ -1,6 +1,4 @@
 package com.nexuspvp.gui;
-import com.nexuspvp.util.Compat;
-
 
 import java.awt.Color;
 import java.util.LinkedHashMap;
@@ -65,7 +63,6 @@ public class ThemeManager {
             }
         }
     }
-    }
 
     public String getCurrentTheme() {
         return currentTheme;
@@ -86,7 +83,6 @@ public class ThemeManager {
                 com.nexuspvp.NexusPVP.getInstance().getConfigManager().saveConfig();
             }
         }
-    }
     }
 
     private static class Theme {
