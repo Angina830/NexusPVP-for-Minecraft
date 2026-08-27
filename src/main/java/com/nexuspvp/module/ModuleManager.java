@@ -1,4 +1,6 @@
 package com.nexuspvp.module;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.modules.*;
 import java.util.ArrayList;
@@ -44,11 +46,19 @@ public class ModuleManager {
         register(new TNTTimer());
         register(new ClearWater());
         register(new ChatTweaks());
-        register(new DebugLogger());
+                                                register(new DebugLogger());
     }
 
     private void register(Module module) {
         modules.add(module);
+    }
+
+    public List<Module> getEnabledModules() {
+        List<Module> list = new ArrayList<>();
+        for (Module m : modules) {
+            if (m.isEnabled()) list.add(m);
+        }
+        return list;
     }
 
     public List<Module> getModules() {

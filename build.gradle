@@ -3,8 +3,8 @@ plugins {
     id 'java'
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
 
 group = project.maven_group
 version = project.mod_version
@@ -29,6 +29,7 @@ dependencies {
 
 processResources {
     inputs.property "version", project.version
+
     filesMatching("fabric.mod.json") {
         expand "version": project.version
     }
@@ -36,7 +37,7 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
-    it.options.release = 8
+    it.options.release = 21
 }
 
 java {
@@ -47,4 +48,8 @@ jar {
     from("LICENSE") {
         rename { "${it}_${project.archivesBaseName}" }
     }
+}
+
+remapJar {
+    destinationDirectory = file("build/libs")
 }
