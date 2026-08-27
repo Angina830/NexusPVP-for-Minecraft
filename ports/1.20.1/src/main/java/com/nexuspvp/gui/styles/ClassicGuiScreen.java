@@ -413,7 +413,6 @@ public class ClassicGuiScreen extends Screen {
     }
 
     @Override
-        @Override
     public void close() {
         if (this.client != null) {
             Compat.setScreen(client, null);
