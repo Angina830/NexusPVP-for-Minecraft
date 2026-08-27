@@ -7,7 +7,6 @@ import com.nexuspvp.setting.ColorSetting;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.ColorUtils;
-import com.nexuspvp.util.RenderUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.*;
@@ -17,26 +16,19 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import org.lwjgl.opengl.GL11;
+import org.joml.Matrix4f;
 
 import java.awt.Color;
 
 public class BlockOutline extends Module {
-    private final ModeSetting mode = addSetting(new ModeSetting("Mode", "NeonGlow", "NeonGlow", "GradientEdge", "Wireframe", "FilledBox"));
+    private final ModeSetting mode = addSetting(new ModeSetting("Mode", "NeonGlow", "NeonGlow", "FilledBox", "Wireframe"));
     private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 2.5, 1.0, 6.0, 0.5));
     private final NumberSetting fillAlpha = addSetting(new NumberSetting("FillAlpha", 45, 0, 200, 5));
     private final BooleanSetting rainbow = addSetting(new BooleanSetting("Rainbow", false));
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(0, 230, 255, 230)));
 
-    private float animTicks = 0f;
-
     public BlockOutline() {
         super("BlockOutline", "Glowing animated neon outlines & soft fills on targeted blocks", Category.VISUAL);
-    }
-
-    @Override
-    public void onTick() {
-        animTicks += 0.05f;
     }
 
     @Override
@@ -52,13 +44,11 @@ public class BlockOutline extends Module {
         Vec3d cam = mc.gameRenderer.getCamera().getPos();
         Box box = state.getOutlineShape(mc.world, pos).getBoundingBox().offset(pos.getX(), pos.getY(), pos.getZ());
         Color c = rainbow.isEnabled() ? ColorUtils.rainbow(0) : color.getColor();
-        float lw = lineWidth.getFloatValue();
         int fAlpha = fillAlpha.getIntValue();
-        String curMode = mode.getValue();
 
-        RenderUtils.setupBloom3D();
-        RenderSystem.pushMatrix();
-        RenderSystem.translated(-cam.x, -cam.y, -cam.z);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
@@ -66,73 +56,27 @@ public class BlockOutline extends Module {
         int r = c.getRed();
         int g = c.getGreen();
         int b = c.getBlue();
-        int a = c.getAlpha();
 
-        if ((curMode.equals("NeonGlow") || curMode.equals("FilledBox")) && fAlpha > 0) {
-            buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
-            buffer.vertex((float)box.minX, (float)box.minY, (float)box.minZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.minY, (float)box.minZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.minY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.minX, (float)box.minY, (float)box.maxZ).color(r, g, b, fAlpha).next();
+        if (fAlpha > 0) {
+            matrices.push();
+            matrices.translate(-cam.x, -cam.y, -cam.z);
+            Matrix4f matrix = matrices.peek().getPositionMatrix();
 
-            buffer.vertex((float)box.minX, (float)box.maxY, (float)box.minZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.minX, (float)box.maxY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.minZ).color(r, g, b, fAlpha).next();
+            buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+            buffer.vertex(matrix, (float)box.minX, (float)box.minY, (float)box.minZ).color(r, g, b, fAlpha).next();
+            buffer.vertex(matrix, (float)box.maxX, (float)box.minY, (float)box.minZ).color(r, g, b, fAlpha).next();
+            buffer.vertex(matrix, (float)box.maxX, (float)box.minY, (float)box.maxZ).color(r, g, b, fAlpha).next();
+            buffer.vertex(matrix, (float)box.minX, (float)box.minY, (float)box.maxZ).color(r, g, b, fAlpha).next();
 
-            buffer.vertex((float)box.minX, (float)box.minY, (float)box.minZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.minX, (float)box.maxY, (float)box.minZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.minZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.minY, (float)box.minZ).color(r, g, b, fAlpha).next();
-
-            buffer.vertex((float)box.minX, (float)box.minY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.minY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.minX, (float)box.maxY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-
-            buffer.vertex((float)box.minX, (float)box.minY, (float)box.minZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.minX, (float)box.minY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.minX, (float)box.maxY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.minX, (float)box.maxY, (float)box.minZ).color(r, g, b, fAlpha).next();
-
-            buffer.vertex((float)box.maxX, (float)box.minY, (float)box.minZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.minZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.maxZ).color(r, g, b, fAlpha).next();
-            buffer.vertex((float)box.maxX, (float)box.minY, (float)box.maxZ).color(r, g, b, fAlpha).next();
+            buffer.vertex(matrix, (float)box.minX, (float)box.maxY, (float)box.minZ).color(r, g, b, fAlpha).next();
+            buffer.vertex(matrix, (float)box.minX, (float)box.maxY, (float)box.maxZ).color(r, g, b, fAlpha).next();
+            buffer.vertex(matrix, (float)box.maxX, (float)box.maxY, (float)box.maxZ).color(r, g, b, fAlpha).next();
+            buffer.vertex(matrix, (float)box.maxX, (float)box.maxY, (float)box.minZ).color(r, g, b, fAlpha).next();
             tessellator.draw();
+
+            matrices.pop();
         }
 
-        GL11.glLineWidth(lw);
-        buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
-        buffer.vertex((float)box.minX, (float)box.minY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.minY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.minY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.minY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.minY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.minX, (float)box.minY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.minX, (float)box.minY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.minX, (float)box.minY, (float)box.minZ).color(r, g, b, a).next();
-
-        buffer.vertex((float)box.minX, (float)box.maxY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.minX, (float)box.maxY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.minX, (float)box.maxY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.minX, (float)box.maxY, (float)box.minZ).color(r, g, b, a).next();
-
-        buffer.vertex((float)box.minX, (float)box.minY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.minX, (float)box.maxY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.minY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.minZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.minY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.maxX, (float)box.maxY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.minX, (float)box.minY, (float)box.maxZ).color(r, g, b, a).next();
-        buffer.vertex((float)box.minX, (float)box.maxY, (float)box.maxZ).color(r, g, b, a).next();
-        tessellator.draw();
-
-        RenderSystem.popMatrix();
-        RenderUtils.cleanupBloom3D();
+        RenderSystem.disableBlend();
     }
 }

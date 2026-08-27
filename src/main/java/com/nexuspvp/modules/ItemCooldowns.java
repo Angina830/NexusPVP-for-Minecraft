@@ -1,75 +1,63 @@
 package com.nexuspvp.modules;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.nexuspvp.gui.ThemeManager;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.ColorSetting;
-import com.nexuspvp.util.RenderUtils;
-import net.minecraft.client.util.math.MatrixStack;
+import com.nexuspvp.setting.ModeSetting;
+import com.nexuspvp.setting.NumberSetting;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.item.EnderPearlItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.Items;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ShieldItem;
 
 import java.awt.Color;
 
 public class ItemCooldowns extends Module {
 
-    private final BooleanSetting circular = addSetting(new BooleanSetting("Circular", true));
-    private final BooleanSetting showSeconds = addSetting(new BooleanSetting("Seconds", true));
-    private final BooleanSetting customColor = addSetting(new BooleanSetting("CustomColor", false));
-    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(0, 200, 255)));
+    private final ModeSetting style = addSetting(new ModeSetting("Style", "Both", "Numbers", "Overlay", "Both"));
+    private final BooleanSetting pearlOnly = addSetting(new BooleanSetting("PearlOnly", false));
+    private final ColorSetting textColor = addSetting(new ColorSetting("TextColor", new Color(255, 255, 255)));
 
     public ItemCooldowns() {
         super("ItemCooldowns", "Smooth circular cooldown timer over hotbar items", Category.HUD);
     }
 
-    public void renderCooldownOverlay(MatrixStack matrices, int x, int y, float progress, Item item) {
-        if (progress <= 0.0f || mc.player == null) return;
+    public void renderHotbarCooldowns(DrawContext context) {
+        if (mc.player == null) return;
 
-        RenderSystem.disableDepthTest();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+        int screenW = mc.getWindow().getScaledWidth();
+        int screenH = mc.getWindow().getScaledHeight();
+        int hotbarX = screenW / 2 - 90;
+        int hotbarY = screenH - 22;
 
-        int accent = customColor.isEnabled() ? color.getColor().getRGB() : ThemeManager.getInstance().getAccentColor().getRGB();
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mc.player.getInventory().getStack(i);
+            if (stack == null || stack.isEmpty()) continue;
 
-        // Dark dim backdrop over item
-        RenderUtils.drawRoundedRect(matrices, x, y, 16, 16, 2, 0x88000000);
+            Item item = stack.getItem();
+            if (pearlOnly.isEnabled() && !(item instanceof EnderPearlItem)) continue;
 
-        if (circular.isEnabled()) {
-            // Circular arc progress
-            float angle = 360.0f * progress;
-            RenderUtils.drawFilledArc2D(matrices, x + 8, y + 8, 7.0f, -90, -90 + angle, (0xBB << 24) | (accent & 0x00FFFFFF));
+            if (mc.player.getItemCooldownManager().isCoolingDown(item)) {
+                float progress = mc.player.getItemCooldownManager().getCooldownProgress(item, 0.0f);
+                if (progress > 0.0f) {
+                    int slotX = hotbarX + i * 20 + 3;
+                    int slotY = hotbarY + 3;
+
+                    if (style.getValue().equals("Overlay") || style.getValue().equals("Both")) {
+                        int overlayH = (int) (16 * progress);
+                        context.fill(slotX, slotY + (16 - overlayH), slotX + 16, slotY + 16, 0x88000000);
+                    }
+
+                    if (style.getValue().equals("Numbers") || style.getValue().equals("Both")) {
+                        float sec = progress * (item instanceof EnderPearlItem ? 15.0f : (item instanceof ShieldItem ? 5.0f : 10.0f));
+                        String text = sec > 1.0f ? String.format("%.0fs", sec) : String.format("%.1fs", sec);
+                        int tw = mc.textRenderer.getWidth(text);
+                        context.drawTextWithShadow(mc.textRenderer, text, slotX + (16 - tw) / 2, slotY + 4, textColor.getColor().getRGB() | 0xFF000000);
+                    }
+                }
+            }
         }
-
-        if (showSeconds.isEnabled()) {
-            // Accurate seconds calculation
-            float maxCdSeconds = getMaxCooldownSeconds(item);
-            float remainingSec = progress * maxCdSeconds;
-            String secText = remainingSec >= 10.0f ? String.format("%.0f", remainingSec) : String.format("%.1f", remainingSec);
-            
-            int tw = mc.textRenderer.getWidth(secText);
-
-            matrices.push();
-            float sc = 0.70f;
-            float cx = x + 8;
-            float cy = y + 8;
-            matrices.translate(cx, cy, 0);
-            matrices.scale(sc, sc, 1.0f);
-            matrices.translate(-cx, -cy, 0);
-
-            mc.textRenderer.drawWithShadow(matrices, secText, x + 8 - tw / 2.0f, y + 4.5f, 0xFFFFFFFF);
-            matrices.pop();
-        }
-
-        RenderSystem.enableDepthTest();
-    }
-
-    private float getMaxCooldownSeconds(Item item) {
-        if (item == Items.ENDER_PEARL) return 15.0f;
-        if (item == Items.CHORUS_FRUIT) return 1.0f;
-        if (item == Items.SHIELD) return 5.0f;
-        if (item == Items.GOLDEN_APPLE || item == Items.ENCHANTED_GOLDEN_APPLE) return 2.0f;
-        return 10.0f;
     }
 }

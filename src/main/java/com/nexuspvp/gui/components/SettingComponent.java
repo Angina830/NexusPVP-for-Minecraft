@@ -1,4 +1,6 @@
 package com.nexuspvp.gui.components;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.gui.ModuleButton;
 import com.nexuspvp.setting.Setting;
@@ -22,8 +24,8 @@ public abstract class SettingComponent {
     public abstract void mouseReleased(double mouseX, double mouseY, int button);
     public abstract void mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY);
 
-    public void setX(int x) { this.x = x; }
-    public void setY(int y) { this.y = y; }
+    public void setX(int x) { this.x = (x); }
+    public void setY(int y) { this.y = (y); }
     public void setWidth(int width) { this.width = width; }
     public int getWidth() { return width; }
     public int getHeight() { return height; }
