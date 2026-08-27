@@ -5,6 +5,8 @@ import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
@@ -22,134 +24,172 @@ public class OverheadHealth extends Module {
     private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 60.0, 1.0));
 
     private static class HealthTracker {
-        float ghostHp;
-        float previousHp;
-        long lastHitTime;
+        float animatedHealth;
+        float damageGhostHealth;
+        float previousHealth;
+        float animatedAbsorption;
+        long lastDamageTime;
     }
 
     private final Map<Integer, HealthTracker> trackers = new HashMap<>();
 
     public OverheadHealth() {
-        super("OverheadHealth", "Clean health bar above entities with ghost damage", Category.RENDER);
+        super("OverheadHealth", "Mini-TargetHUD floating health card above entities", Category.RENDER);
         setEnabled(true);
     }
 
-    public void renderOverhead(LivingEntity entity, MatrixStack matrices, VertexConsumerProvider vcp, float tickDelta, int light) {
+    public void renderOverhead(LivingEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, int light) {
         if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisible()) return;
         if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
         if (entity.squaredDistanceTo(mc.player) > range.getValue() * range.getValue()) return;
         if (!mc.player.canSee(entity)) return;
 
-        float health = entity.getHealth();
-        float maxHealth = entity.getMaxHealth();
-        float absorb = entity.getAbsorptionAmount();
+        float currentHp = entity.getHealth();
+        float maxHp = entity.getMaxHealth();
+        float currentAbs = entity.getAbsorptionAmount();
 
-        // Ghost damage
-        HealthTracker t = trackers.computeIfAbsent(entity.getId(), id -> {
-            HealthTracker tr = new HealthTracker();
-            tr.ghostHp = health;
-            tr.previousHp = health;
-            tr.lastHitTime = 0;
-            return tr;
+        // TargetHUD-identical smooth animation and Dota-style Ghost Damage tracking
+        HealthTracker tracker = trackers.computeIfAbsent(entity.getId(), id -> {
+            HealthTracker t = new HealthTracker();
+            t.animatedHealth = currentHp;
+            t.damageGhostHealth = currentHp;
+            t.previousHealth = currentHp;
+            t.animatedAbsorption = currentAbs;
+            t.lastDamageTime = 0;
+            return t;
         });
-        if (health < t.previousHp) {
-            t.ghostHp = t.previousHp;
-            t.lastHitTime = System.currentTimeMillis();
+
+        if (currentHp < tracker.previousHealth) {
+            tracker.damageGhostHealth = tracker.previousHealth;
+            tracker.lastDamageTime = System.currentTimeMillis();
         }
-        t.previousHp = health;
-        if (System.currentTimeMillis() - t.lastHitTime > 400) {
-            t.ghostHp = MathHelper.lerp(0.08f, t.ghostHp, health);
+        tracker.previousHealth = currentHp;
+
+        tracker.animatedHealth = MathHelper.lerp(0.18f, tracker.animatedHealth, currentHp);
+        tracker.animatedAbsorption = MathHelper.lerp(0.18f, tracker.animatedAbsorption, currentAbs);
+
+        if (System.currentTimeMillis() - tracker.lastDamageTime > 280) {
+            tracker.damageGhostHealth = MathHelper.lerp(0.08f, tracker.damageGhostHealth, currentHp);
         }
-        if (health > t.ghostHp) t.ghostHp = health;
+        if (currentHp > tracker.damageGhostHealth) {
+            tracker.damageGhostHealth = currentHp;
+        }
 
-        float hpPct = MathHelper.clamp(health / maxHealth, 0f, 1f);
-        float ghostPct = MathHelper.clamp(t.ghostHp / maxHealth, 0f, 1f);
+        // Entity name
+        String name = entity.getName().getString();
+        if (name.length() > 16) {
+            name = name.substring(0, 14) + "..";
+        }
 
-        // Color
-        int hpColor = hpPct > 0.55f ? 0xFF23A55A : (hpPct > 0.25f ? 0xFFFEE75C : 0xFFED4245);
+        // HP text
+        String hpText = String.format("%.1f", currentHp) + " / " + String.format("%.0f", maxHp) + " ❤";
+        if (currentAbs > 0) {
+            hpText += " (+" + String.format("%.1f", currentAbs) + ")";
+        }
 
-        // Format HP text
-        String hpText = String.format("%.0f / %.0f", health, maxHealth);
-        if (absorb > 0) hpText += String.format(" +%.0f", absorb);
+        float healthPct = MathHelper.clamp(tracker.animatedHealth / maxHp, 0.0f, 1.0f);
+        float ghostPct = MathHelper.clamp(tracker.damageGhostHealth / maxHp, 0.0f, 1.0f);
+        int hpColor = healthPct > 0.6f ? 0xFF23A55A : (healthPct > 0.3f ? 0xFFFEE75C : 0xFFED4245);
+        int hpTextColor = currentAbs > 0 ? 0xFFFFD700 : hpColor;
+
+        int nameW = mc.textRenderer.getWidth(name);
+        int hpTextW = mc.textRenderer.getWidth(hpText);
+
+        // Compact Mini-TargetHUD card dimensions
+        int contentW = Math.max(nameW + hpTextW + 12, 85);
+        int cardW = contentW + 8;
+        int cardH = 22;
+        int cardX = -cardW / 2;
+        int cardY = -cardH / 2;
 
         matrices.push();
-
-        // Position above entity head (same as vanilla nameplate)
-        matrices.translate(0.0, entity.getHeight() + 0.5, 0.0);
+        matrices.translate(0.0D, entity.getHeight() + 0.55F, 0.0D);
         matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
-        matrices.scale(0.025f, -0.025f, 0.025f);
 
-        Matrix4f mat = matrices.peek().getPositionMatrix();
-        TextRenderer tr = mc.textRenderer;
+        float scale = 0.020F;
+        matrices.scale(scale, -scale, scale);
 
-        int textW = tr.getWidth(hpText);
-        float centerX = -textW / 2.0f;
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+        VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getTextBackground());
 
-        // 1) HP text with dark background (above the bar)
-        tr.draw(hpText, centerX, -3, hpColor, false, mat, vcp,
-                TextRenderer.TextLayerType.NORMAL, 0x80000000, light);
+        // 1. Blurple border (identical to TargetHUD 0xEE5865F2)
+        drawQuad(matrix, vc, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0.01f, 0xEE5865F2, light);
 
-        // 2) Health bar below text using space characters with backgrounds
-        // Bar width = text width (matches text above), height = ~4px
-        // We abuse TextRenderer background rectangles for solid color fills:
-        // Draw invisible spaces with colored backgrounds
+        // 2. Dark Discord background (identical to TargetHUD 0xFA1E1F22)
+        drawQuad(matrix, vc, cardX, cardY, cardW, cardH, 0.008f, 0xFA1E1F22, light);
 
-        int barW = Math.max(textW, 60);
-        float barX = -barW / 2.0f;
-        float barY = 7;
+        // 3. Health bar
+        int barX = cardX + 4;
+        int barY = cardY + 13;
+        int barW = cardW - 8;
+        int barH = 5;
 
-        // Background track (dark) - draw a string of spaces
-        String barSpaces = generateSpaces(barW, tr);
-        int spacesW = tr.getWidth(barSpaces);
-        float spacesX = -spacesW / 2.0f;
+        // Health bar track background (0xFF2B2D31)
+        drawQuad(matrix, vc, barX, barY, barW, barH, 0.006f, 0xFF2B2D31, light);
 
-        // Dark background track
-        tr.draw(barSpaces, spacesX, barY, 0x00000000, false, mat, vcp,
-                TextRenderer.TextLayerType.NORMAL, 0xDD2B2D31, light);
-
-        // Ghost damage segment (white)
-        if (ghostDamage.isEnabled() && ghostPct > hpPct) {
-            int ghostChars = (int) Math.ceil(ghostPct * barSpaces.length());
-            int activeChars = (int) Math.ceil(hpPct * barSpaces.length());
-            if (ghostChars > activeChars && ghostChars <= barSpaces.length()) {
-                String ghostSeg = barSpaces.substring(0, ghostChars - activeChars);
-                float ghostX = spacesX + tr.getWidth(barSpaces.substring(0, activeChars));
-                tr.draw(ghostSeg, ghostX, barY, 0x00000000, false, mat, vcp,
-                        TextRenderer.TextLayerType.NORMAL, 0xCCFFFFFF, light);
-            }
+        // Ghost damage bar (White 0xFFF2F3F5)
+        if (ghostDamage.isEnabled() && ghostPct > 0) {
+            float ghostW = barW * ghostPct;
+            drawQuad(matrix, vc, barX, barY, ghostW, barH, 0.004f, 0xFFF2F3F5, light);
         }
 
-        // Active health fill (colored)
-        int activeChars = (int) Math.ceil(hpPct * barSpaces.length());
-        if (activeChars > 0 && activeChars <= barSpaces.length()) {
-            String activeSeg = barSpaces.substring(0, activeChars);
-            tr.draw(activeSeg, spacesX, barY, 0x00000000, false, mat, vcp,
-                    TextRenderer.TextLayerType.NORMAL, hpColor, light);
+        // Active health bar (hpColor)
+        if (healthPct > 0) {
+            float fillW = barW * healthPct;
+            drawQuad(matrix, vc, barX, barY, fillW, barH, 0.002f, hpColor, light);
         }
 
-        // Absorption (gold)
-        if (absorb > 0 && activeChars < barSpaces.length()) {
-            float absPct = MathHelper.clamp(absorb / maxHealth, 0f, 1f);
-            int absChars = Math.min((int) Math.ceil(absPct * barSpaces.length()), barSpaces.length() - activeChars);
-            if (absChars > 0) {
-                String absSeg = barSpaces.substring(0, absChars);
-                float absX = spacesX + tr.getWidth(barSpaces.substring(0, activeChars));
-                tr.draw(absSeg, absX, barY, 0x00000000, false, mat, vcp,
-                        TextRenderer.TextLayerType.NORMAL, 0xDDFFD700, light);
-            }
+        // Absorption bar (Gold 0xFFFFD700)
+        if (tracker.animatedAbsorption > 0) {
+            float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
+            float absW = barW * absPct;
+            drawQuad(matrix, vc, barX, barY + barH - 2, absW, 2, 0.0f, 0xFFFFD700, light);
         }
+
+        // 4. Text - rendered via normal TextRenderer (depth tested)
+        int textY = cardY + 3;
+
+        // Name on the left
+        mc.textRenderer.draw(
+            name,
+            cardX + 4,
+            textY,
+            0xFFF2F3F5,
+            false,
+            matrix,
+            vertexConsumers,
+            TextRenderer.TextLayerType.NORMAL,
+            0,
+            light
+        );
+
+        // HP text on the right
+        int hpTextX = cardX + cardW - hpTextW - 4;
+        mc.textRenderer.draw(
+            hpText,
+            hpTextX,
+            textY,
+            hpTextColor,
+            false,
+            matrix,
+            vertexConsumers,
+            TextRenderer.TextLayerType.NORMAL,
+            0,
+            light
+        );
 
         matrices.pop();
     }
 
-    private String generateSpaces(int targetWidth, TextRenderer tr) {
-        // Generate a string of thin characters to approximate target pixel width
-        StringBuilder sb = new StringBuilder();
-        int w = 0;
-        while (w < targetWidth) {
-            sb.append(' ');
-            w = tr.getWidth(sb.toString());
-        }
-        return sb.toString();
+    private void drawQuad(Matrix4f matrix, VertexConsumer vc, float x, float y, float w, float h, float z, int color, int light) {
+        float a = ((color >> 24) & 0xFF) / 255.0f;
+        float r = ((color >> 16) & 0xFF) / 255.0f;
+        float g = ((color >> 8) & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
+
+        vc.vertex(matrix, x, y, z).color(r, g, b, a).light(light);
+        vc.vertex(matrix, x, y + h, z).color(r, g, b, a).light(light);
+        vc.vertex(matrix, x + w, y + h, z).color(r, g, b, a).light(light);
+        vc.vertex(matrix, x + w, y, z).color(r, g, b, a).light(light);
     }
 }
