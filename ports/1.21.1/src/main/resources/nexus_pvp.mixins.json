@@ -20,7 +20,8 @@
     "MixinLivingEntity",
     "MixinBackgroundRenderer",
     "MixinDrawContext",
-    "MixinHandledScreen"
+    "MixinHandledScreen",
+    "MixinEntityRenderDispatcher"
   ],
   "injectors": {
     "defaultRequire": 1
