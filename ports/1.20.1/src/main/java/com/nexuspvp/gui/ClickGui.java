@@ -1120,7 +1120,24 @@ public class ClickGui extends Screen {
     public static void openCurrentStyleScreen() {
         net.minecraft.client.MinecraftClient mc = net.minecraft.client.MinecraftClient.getInstance();
         GuiStyle style = ThemeManager.getInstance().getCurrentStyle();
-        mc.setScreen(new ClickGui());
+        if (style == null) style = GuiStyle.DISCORD;
+        net.minecraft.client.gui.screen.Screen screen;
+        switch (style) {
+            case CLASSIC_WINDOWS:
+                screen = new com.nexuspvp.gui.styles.ClassicGuiScreen();
+                break;
+            case GLASS_DASHBOARD:
+                screen = new com.nexuspvp.gui.styles.GlassDashboardScreen();
+                break;
+            case COMPACT_LIST:
+                screen = new com.nexuspvp.gui.styles.CompactListScreen();
+                break;
+            case DISCORD:
+            default:
+                screen = new ClickGui();
+                break;
+        }
+        Compat.setScreen(mc, screen);
     }
 
     public boolean shouldPause() {

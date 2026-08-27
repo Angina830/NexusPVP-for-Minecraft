@@ -570,4 +570,25 @@ public class GlassDashboardScreen extends Screen {
     public boolean shouldPause() {
         return false;
     }
+
+    @Override
+    public void close() {
+        if (this.client != null) {
+            Compat.setScreen(client, null);
+        }
+        if (NexusPVP.getInstance().getConfigManager() != null) {
+            NexusPVP.getInstance().getConfigManager().saveConfig();
+        }
+        NexusPVP.getInstance().getModuleManager().getModuleByName("ClickGui").ifPresent(m -> {
+            if (m.isEnabled()) {
+                m.toggle();
+            }
+        });
+    }
+
+    @Override
+    public boolean shouldPause() {
+        return false;
+    }
+
 }
