@@ -69,7 +69,7 @@ public class OverheadHealth extends Module {
         VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
         int light = 0xF000F0;
 
-        HealthTracker tracker = trackerMap.computeIfAbsent(entity.getId(), id -> new HealthTracker());
+        HealthTracker tracker = trackerMap.computeIfAbsent(entity.getEntityId(), id -> new HealthTracker());
 
         float currentHp = entity.getHealth();
         float maxHp = entity.getMaxHealth();
@@ -131,17 +131,19 @@ public class OverheadHealth extends Module {
         float scale = 0.020F;
         matrices.scale(scale, -scale, scale);
 
-        // Direct hardware rendering with depth test against world, but no depth write between HUD layers
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(false);
+        RenderSystem.depthMask(true);
 
         // 1. Blurple border (0xEE5865F2)
-        RenderUtils.drawQuad(matrices, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2);
+        RenderUtils.drawRect(matrices, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
 
         // 2. Dark Discord background (0xFA1E1F22)
-        RenderUtils.drawQuad(matrices, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22);
+        RenderUtils.drawRect(matrices, cardX, cardY, cardW, cardH, 0xFA1E1F22);
+
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
 
         // 3. Health bar
         float barX = cardX + 4;
@@ -150,33 +152,30 @@ public class OverheadHealth extends Module {
         float barH = 5;
 
         // Health bar track (0xFF2B2D31)
-        RenderUtils.drawQuad(matrices, barX, barY, barX + barW, barY + barH, 0xFF2B2D31);
+        RenderUtils.drawRect(matrices, barX, barY, barW, barH, 0xFF2B2D31);
 
         // Ghost damage bar (White 0xFFF2F3F5)
         if (ghostDamage.isEnabled() && ghostPct > 0) {
             float ghostW = barW * ghostPct;
-            RenderUtils.drawQuad(matrices, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5);
+            RenderUtils.drawRect(matrices, barX, barY, ghostW, barH, 0xFFF2F3F5);
         }
 
         // Active health bar (hpColor)
         if (healthPct > 0) {
             float fillW = barW * healthPct;
-            RenderUtils.drawQuad(matrices, barX, barY, barX + fillW, barY + barH, hpColor);
+            RenderUtils.drawRect(matrices, barX, barY, fillW, barH, hpColor);
         }
 
         // Absorption bar (Gold 0xFFFFD700)
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
-            RenderUtils.drawQuad(matrices, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700);
+            RenderUtils.drawRect(matrices, barX, barY + barH - 2, absW, 2, 0xFFFFD700);
         }
-
-        RenderSystem.depthMask(true);
 
         // 4. Text rendered via TextRenderer
         float textY = cardY + 3;
 
-        // Name on the left
         mc.textRenderer.draw(
             name,
             cardX + 4,
@@ -185,12 +184,11 @@ public class OverheadHealth extends Module {
             false,
             matrices.peek().getPositionMatrix(),
             vertexConsumers,
-            TextRenderer.TextLayerType.NORMAL,
+            false,
             0,
             light
         );
 
-        // HP text on the right
         float hpTextX = cardX + cardW - hpTextW - 4;
         mc.textRenderer.draw(
             hpText,
@@ -200,10 +198,13 @@ public class OverheadHealth extends Module {
             false,
             matrices.peek().getPositionMatrix(),
             vertexConsumers,
-            TextRenderer.TextLayerType.NORMAL,
+            false,
             0,
             light
         );
+
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
 
         matrices.pop();
     }
