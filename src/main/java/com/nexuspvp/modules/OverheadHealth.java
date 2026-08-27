@@ -5,12 +5,18 @@ import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
-import com.nexuspvp.util.RenderUtils;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vec3d;
+import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,14 +46,45 @@ public class OverheadHealth extends Module {
         return trackers.size();
     }
 
-    public void renderOverhead(LivingEntity entity, MatrixStack matrices, float tickDelta) {
-        if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisibleTo(mc.player)) return;
-        if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
-        if (entity.squaredDistanceTo(mc.player) > range.getValue() * range.getValue()) return;
+    @Override
+    public void onRender3D(MatrixStack matrices, float tickDelta) {
+        if (mc.world == null || mc.player == null) return;
 
-        // Never show through walls: strictly require direct line of sight
-        if (!mc.player.canSee(entity)) return;
+        double maxDistSq = range.getValue() * range.getValue();
+        Vec3d camPos = mc.gameRenderer.getCamera().getPos();
 
+        for (Entity entity : mc.world.getEntities()) {
+            if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
+            if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) continue;
+
+            LivingEntity living = (LivingEntity) entity;
+            if (!living.isAlive() || living.isInvisibleTo(mc.player)) continue;
+
+            double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
+            if (distSq > maxDistSq) continue;
+
+            // Never show through walls: strictly require direct line of sight
+            if (!mc.player.canSee(living)) continue;
+
+            double interpX = MathHelper.lerp((double) tickDelta, living.lastRenderX, living.getX());
+            double interpY = MathHelper.lerp((double) tickDelta, living.lastRenderY, living.getY());
+            double interpZ = MathHelper.lerp((double) tickDelta, living.lastRenderZ, living.getZ());
+
+            RenderSystem.pushMatrix();
+            RenderSystem.translated(interpX - camPos.x, interpY - camPos.y + living.getHeight() + 0.55D, interpZ - camPos.z);
+            RenderSystem.rotatef(-mc.gameRenderer.getCamera().getYaw(), 0.0F, 1.0F, 0.0F);
+            RenderSystem.rotatef(mc.gameRenderer.getCamera().getPitch(), 1.0F, 0.0F, 0.0F);
+
+            float scale = 0.020F;
+            RenderSystem.scalef(-scale, -scale, scale);
+
+            renderGraphicalCard(living);
+
+            RenderSystem.popMatrix();
+        }
+    }
+
+    private void renderGraphicalCard(LivingEntity entity) {
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         float currentAbs = entity.getAbsorptionAmount();
@@ -101,13 +138,6 @@ public class OverheadHealth extends Module {
         float cardX = -cardW / 2.0f;
         float cardY = -cardH / 2.0f;
 
-        matrices.push();
-        matrices.translate(0.0D, entity.getHeight() + 0.55D, 0.0D);
-        matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
-
-        float scale = 0.020F;
-        matrices.scale(-scale, -scale, scale);
-
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableDepthTest();
@@ -115,10 +145,10 @@ public class OverheadHealth extends Module {
         RenderSystem.disableCull();
 
         // 1. Blurple border
-        RenderUtils.drawRect(matrices, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
+        drawDirectQuad(cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
 
         // 2. Dark Discord background
-        RenderUtils.drawRect(matrices, cardX, cardY, cardW, cardH, 0xFA1E1F22);
+        drawDirectQuad(cardX, cardY, cardW, cardH, 0xFA1E1F22);
 
         // 3. Health bar
         float barX = cardX + 4;
@@ -126,26 +156,29 @@ public class OverheadHealth extends Module {
         float barW = cardW - 8;
         float barH = 5;
 
-        RenderUtils.drawRect(matrices, barX, barY, barW, barH, 0xFF2B2D31);
+        drawDirectQuad(barX, barY, barW, barH, 0xFF2B2D31);
 
         if (ghostDamage.isEnabled() && ghostPct > 0) {
             float ghostW = barW * ghostPct;
-            RenderUtils.drawRect(matrices, barX, barY, ghostW, barH, 0xFFF2F3F5);
+            drawDirectQuad(barX, barY, ghostW, barH, 0xFFF2F3F5);
         }
 
         if (healthPct > 0) {
             float fillW = barW * healthPct;
-            RenderUtils.drawRect(matrices, barX, barY, fillW, barH, hpColor);
+            drawDirectQuad(barX, barY, fillW, barH, hpColor);
         }
 
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
-            RenderUtils.drawRect(matrices, barX, barY + barH - 2, absW, 2, 0xFFFFD700);
+            drawDirectQuad(barX, barY + barH - 2, absW, 2, 0xFFFFD700);
         }
 
         float textY = cardY + 3;
         VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
+
+        Matrix4f identity = new Matrix4f();
+        identity.loadIdentity();
 
         mc.textRenderer.draw(
             name,
@@ -153,7 +186,7 @@ public class OverheadHealth extends Module {
             textY,
             0xFFF2F3F5,
             false,
-            matrices.peek().getModel(),
+            identity,
             vertexConsumers,
             false,
             0,
@@ -167,7 +200,7 @@ public class OverheadHealth extends Module {
             textY,
             hpTextColor,
             false,
-            matrices.peek().getModel(),
+            identity,
             vertexConsumers,
             false,
             0,
@@ -179,7 +212,23 @@ public class OverheadHealth extends Module {
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
+    }
 
-        matrices.pop();
+    private void drawDirectQuad(float x, float y, float width, float height, int color) {
+        float a = (color >> 24 & 0xFF) / 255.0f;
+        float r = (color >> 16 & 0xFF) / 255.0f;
+        float g = (color >> 8 & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
+
+        RenderSystem.disableTexture();
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+        buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
+        buffer.vertex(x, y + height, 0).color(r, g, b, a).next();
+        buffer.vertex(x + width, y + height, 0).color(r, g, b, a).next();
+        buffer.vertex(x + width, y, 0).color(r, g, b, a).next();
+        buffer.vertex(x, y, 0).color(r, g, b, a).next();
+        tessellator.draw();
+        RenderSystem.enableTexture();
     }
 }
