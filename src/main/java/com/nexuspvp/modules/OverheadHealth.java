@@ -68,7 +68,7 @@ public class OverheadHealth extends Module {
             matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
             float scale = 0.020F;
-            matrices.scale(-scale, -scale, scale);
+            matrices.scale(scale, -scale, scale);
 
             renderGraphicalCard(matrices, living);
 
