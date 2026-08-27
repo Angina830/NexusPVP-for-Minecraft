@@ -59,7 +59,7 @@ public class OverheadHealth extends Module {
             double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
             if (distSq > maxDistSq) continue;
 
-            // Never show through walls: strictly require direct line of sight
+            // Never show through walls
             if (!mc.player.canSee(living)) continue;
 
             double interpX = MathHelper.lerp((double) tickDelta, living.lastRenderX, living.getX());
@@ -67,11 +67,13 @@ public class OverheadHealth extends Module {
             double interpZ = MathHelper.lerp((double) tickDelta, living.lastRenderZ, living.getZ());
 
             matrices.push();
-            matrices.translate(interpX - camPos.x, interpY - camPos.y + living.getHeight() + 0.55D, interpZ - camPos.z);
+            // In 1.16.5 WorldRenderer matrix stack: matrices already has camera translation (-camPos)!
+            // So we translate directly to the interpolated entity world coordinates!
+            matrices.translate(interpX, interpY + living.getHeight() + 0.55D, interpZ);
             matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
             float scale = 0.020F;
-            matrices.scale(scale, -scale, scale);
+            matrices.scale(-scale, -scale, scale);
 
             renderGraphicalCard(matrices, living);
 

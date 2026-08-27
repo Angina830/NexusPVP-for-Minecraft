@@ -4,7 +4,6 @@ import com.nexuspvp.config.ConfigManager;
 import com.nexuspvp.gui.ThemeManager;
 import com.nexuspvp.module.ModuleManager;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 
 public class NexusPVP implements ClientModInitializer {
     private static NexusPVP instance;
@@ -21,19 +20,13 @@ public class NexusPVP implements ClientModInitializer {
 
         configManager.loadConfig();
 
-        WorldRenderEvents.LAST.register(context -> {
-            if (moduleManager != null && context.matrixStack() != null) {
-                moduleManager.onRender3D(context.matrixStack(), context.tickDelta());
-            }
-        });
-
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (configManager != null) {
                 configManager.saveConfig();
             }
         }));
 
-        System.out.println("[NexusPVP] Mod initialized! Version 0.1.33-beta [Occlusion](Standalone)");
+        System.out.println("[NexusPVP] Mod initialized! Version 0.1.33-beta (1.16.5)");
     }
 
     public static NexusPVP getInstance() {
