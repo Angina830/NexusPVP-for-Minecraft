@@ -6,87 +6,81 @@ import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.ColorSetting;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
-import com.nexuspvp.util.Compat;
-import com.nexuspvp.util.RenderUtils;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.option.Perspective;
 import net.minecraft.client.util.math.MatrixStack;
 
 import java.awt.Color;
 
 public class Crosshair extends Module {
 
-    private final ModeSetting style = addSetting(new ModeSetting("Style", "Cross", "Cross", "Dot", "Circle", "None"));
-    private final BooleanSetting onlyHitmarker = addSetting(new BooleanSetting("OnlyHitmarker", false));
-    private final NumberSetting size = addSetting(new NumberSetting("Size", 4.0, 1.0, 15.0, 0.5));
-    private final NumberSetting gap = addSetting(new NumberSetting("Gap", 3.0, 0.0, 10.0, 0.5));
-    private final NumberSetting thickness = addSetting(new NumberSetting("Thickness", 1.5, 0.5, 5.0, 0.5));
-    private final BooleanSetting dot = addSetting(new BooleanSetting("CenterDot", false));
+    private final ModeSetting style = addSetting(new ModeSetting("Style", "Cross", "Cross", "Dot", "Circle"));
+    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(0, 255, 230)));
+    private final NumberSetting size = addSetting(new NumberSetting("Size", 4, 1, 15, 1));
+    private final NumberSetting gap = addSetting(new NumberSetting("Gap", 2, 0, 10, 1));
+    private final NumberSetting thickness = addSetting(new NumberSetting("Thickness", 1, 1, 4, 1));
+    private final BooleanSetting dot = addSetting(new BooleanSetting("Dot", false));
     private final BooleanSetting hitmarker = addSetting(new BooleanSetting("Hitmarker", true));
-    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(0, 255, 200)));
 
-    private static long lastHitTime = 0;
+    private long lastHitTime = 0;
 
     public Crosshair() {
-        super("Crosshair", "Custom PvP crosshair with hitmarkers", Category.PVP);
+        super("Crosshair", "Custom PvP crosshair with styles and hitmarkers", Category.RENDER);
     }
 
-    public static void recordHit() {
+    public void onEntityHit() {
         lastHitTime = System.currentTimeMillis();
     }
 
-    @Override
-    public void onRender2D(MatrixStack matrices, float tickDelta) {
-        if (mc.player == null) return;
+    public void renderCustomCrosshair(DrawContext context) {
+        if (mc.player == null || mc.options.hudHidden) return;
+        if (mc.options.getPerspective() != Perspective.FIRST_PERSON) return;
 
-        int screenW = Compat.getScaledWidth();
-        int screenH = Compat.getScaledHeight();
+        int screenW = mc.getWindow().getScaledWidth();
+        int screenH = mc.getWindow().getScaledHeight();
         int cx = screenW / 2;
         int cy = screenH / 2;
 
         int c = color.getColor().getRGB() | 0xFF000000;
-        int sz = (int) size.getFloatValue();
-        int gp = (int) gap.getFloatValue();
-        int th = Math.max(1, (int) thickness.getFloatValue());
-        int halfTh = th / 2;
+        int s = size.getIntValue();
+        int g = gap.getIntValue();
+        int t = Math.max(1, thickness.getIntValue());
+        int halfT = t / 2;
 
-        String currentStyle = style.getValue();
-
-        if (!onlyHitmarker.isEnabled() && !currentStyle.equals("None")) {
-            if (currentStyle.equals("Dot") || dot.isEnabled()) {
-                RenderUtils.drawRect(matrices, cx - 1, cy - 1, 2, 2, c);
-            }
-
-            if (currentStyle.equals("Cross")) {
-                // Top
-                RenderUtils.drawRect(matrices, cx - halfTh, cy - gp - sz, th, sz, c);
-                // Bottom
-                RenderUtils.drawRect(matrices, cx - halfTh, cy + gp, th, sz, c);
-                // Left
-                RenderUtils.drawRect(matrices, cx - gp - sz, cy - halfTh, sz, th, c);
-                // Right
-                RenderUtils.drawRect(matrices, cx + gp, cy - halfTh, sz, th, c);
-            } else if (currentStyle.equals("Circle")) {
-                RenderUtils.drawRect(matrices, cx - sz, cy - sz, sz * 2, 1, c);
-                RenderUtils.drawRect(matrices, cx - sz, cy + sz, sz * 2, 1, c);
-                RenderUtils.drawRect(matrices, cx - sz, cy - sz, 1, sz * 2, c);
-                RenderUtils.drawRect(matrices, cx + sz, cy - sz, 1, sz * 2, c);
+        String mode = style.getValue();
+        if (mode.equalsIgnoreCase("Dot")) {
+            context.fill(cx - 1, cy - 1, cx + 2, cy + 2, c);
+        } else if (mode.equalsIgnoreCase("Circle")) {
+            context.fill(cx - s, cy - halfT, cx - s + t, cy + halfT + 1, c);
+            context.fill(cx + s - t, cy - halfT, cx + s, cy + halfT + 1, c);
+            context.fill(cx - halfT, cy - s, cx + halfT + 1, cy - s + t, c);
+            context.fill(cx - halfT, cy + s - t, cx + halfT + 1, cy + s, c);
+        } else { // Cross
+            context.fill(cx - halfT, cy - g - s, cx + halfT + (t % 2 == 0 ? 0 : 1), cy - g, c);
+            context.fill(cx - halfT, cy + g, cx + halfT + (t % 2 == 0 ? 0 : 1), cy + g + s, c);
+            context.fill(cx - g - s, cy - halfT, cx - g, cy + halfT + (t % 2 == 0 ? 0 : 1), c);
+            context.fill(cx + g, cy - halfT, cx + g + s, cy + halfT + (t % 2 == 0 ? 0 : 1), c);
+            if (dot.isEnabled()) {
+                context.fill(cx - 1, cy - 1, cx + 1, cy + 1, c);
             }
         }
 
-        if (hitmarker.isEnabled() && (System.currentTimeMillis() - lastHitTime < 300)) {
-            float fade = 1.0f - ((System.currentTimeMillis() - lastHitTime) / 300.0f);
-            int alpha = (int) (fade * 255);
-            int hmColor = (alpha << 24) | 0xFF3333;
-            int hmSize = 6;
-            int hmGap = 4;
-
-            RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy - hmGap - hmSize, hmSize, 1, hmColor);
-            RenderUtils.drawRect(matrices, cx - hmGap - 1, cy - hmGap - hmSize, 1, hmSize, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap, cy - hmGap - hmSize, hmSize, 1, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1, cy - hmGap - hmSize, 1, hmSize, hmColor);
-            RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy + hmGap + hmSize - 1, hmSize, 1, hmColor);
-            RenderUtils.drawRect(matrices, cx - hmGap - 1, cy + hmGap, 1, hmSize, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap, cy + hmGap + hmSize - 1, hmSize, 1, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1, cy + hmGap, 1, hmSize, hmColor);
+        if (hitmarker.isEnabled()) {
+            long elapsed = System.currentTimeMillis() - lastHitTime;
+            if (elapsed < 300) {
+                float alpha = 1.0f - (elapsed / 300.0f);
+                int hmColor = new Color(255, 50, 50, (int) (alpha * 255)).getRGB();
+                int hms = 5;
+                for (int i = 2; i <= hms; i++) {
+                    context.fill(cx - i, cy - i, cx - i + 1, cy - i + 1, hmColor);
+                    context.fill(cx + i, cy - i, cx + i + 1, cy - i + 1, hmColor);
+                    context.fill(cx - i, cy + i, cx - i + 1, cy + i + 1, hmColor);
+                    context.fill(cx + i, cy + i, cx + i + 1, cy + i + 1, hmColor);
+                }
+            }
         }
     }
+
+    @Override
+    public void onRender2D(MatrixStack matrices, float tickDelta) {}
 }

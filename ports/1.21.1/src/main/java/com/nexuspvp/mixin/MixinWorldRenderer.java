@@ -21,6 +21,7 @@ public class MixinWorldRenderer {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null) {
             MatrixStack matrices = new MatrixStack();
+            matrices.multiplyPositionMatrix(matrix4f);
             instance.getModuleManager().onRender3D(matrices, tickCounter.getTickDelta(false));
         }
     }

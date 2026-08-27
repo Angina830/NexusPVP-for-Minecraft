@@ -1,21 +1,18 @@
 package com.nexuspvp.mixin;
 
 import com.nexuspvp.NexusPVP;
-import com.nexuspvp.modules.HitColor;
 import com.nexuspvp.modules.OverheadHealth;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
-import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LivingEntityRenderer.class)
-public abstract class MixinLivingEntityRenderer<T extends LivingEntity, M extends EntityModel<T>> {
+public class MixinLivingEntityRenderer<T extends LivingEntity> {
 
     @Inject(method = "render", at = @At("RETURN"))
     private void onRenderReturn(T entity, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
@@ -23,7 +20,7 @@ public abstract class MixinLivingEntityRenderer<T extends LivingEntity, M extend
         if (instance != null && instance.getModuleManager() != null) {
             OverheadHealth overhead = instance.getModuleManager().getModule(OverheadHealth.class);
             if (overhead != null && overhead.isEnabled()) {
-                overhead.renderOverhead(entity, matrices, tickDelta);
+                overhead.renderOverhead(entity, matrices, vertexConsumers, tickDelta, light);
             }
         }
     }

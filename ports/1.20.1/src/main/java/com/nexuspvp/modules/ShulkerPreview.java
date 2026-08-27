@@ -1,5 +1,6 @@
 package com.nexuspvp.modules;
 
+import com.nexuspvp.gui.ThemeManager;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.ColorSetting;
@@ -15,11 +16,12 @@ import net.minecraft.nbt.NbtList;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ShulkerPreview extends Module {
 
-    private final ColorSetting borderColor = addSetting(new ColorSetting("Border", new Color(160, 0, 255, 200)));
+    private final ColorSetting borderColor = addSetting(new ColorSetting("Border", new Color(160, 0, 255, 220)));
 
     public ShulkerPreview() {
         super("ShulkerPreview", "Shows 3x9 item inventory preview on hovering shulker boxes", Category.HUD);
@@ -34,14 +36,17 @@ public class ShulkerPreview extends Module {
     }
 
     public static List<ItemStack> getShulkerItems(ItemStack stack) {
-        List<ItemStack> items = new ArrayList<>();
+        List<ItemStack> items = new ArrayList<>(Collections.nCopies(27, ItemStack.EMPTY));
         if (stack == null || stack.isEmpty()) return items;
         NbtCompound blockEntityTag = stack.getSubNbt("BlockEntityTag");
         if (blockEntityTag != null && blockEntityTag.contains("Items", 9)) {
             NbtList tagList = blockEntityTag.getList("Items", 10);
             for (int i = 0; i < tagList.size(); i++) {
                 NbtCompound itemTag = tagList.getCompound(i);
-                items.add(ItemStack.fromNbt(itemTag));
+                int slot = itemTag.getByte("Slot") & 255;
+                if (slot >= 0 && slot < 27) {
+                    items.set(slot, ItemStack.fromNbt(itemTag));
+                }
             }
         }
         return items;
@@ -50,30 +55,42 @@ public class ShulkerPreview extends Module {
     public void renderShulkerPreview(DrawContext context, ItemStack shulkerStack, int mouseX, int mouseY) {
         if (context == null || shulkerStack == null || !isShulkerBox(shulkerStack.getItem())) return;
         List<ItemStack> items = getShulkerItems(shulkerStack);
-        if (items.isEmpty()) return;
 
-        int gridW = 9 * 18 + 6;
-        int gridH = 3 * 18 + 6;
+        int gridW = 9 * 18 + 8; // 170
+        int gridH = 3 * 18 + 8; // 62
         int startX = mouseX + 12;
-        int startY = mouseY - gridH - 6;
-        if (startY < 10) startY = mouseY + 20;
+        int startY = mouseY - gridH - 12;
+        if (startY < 8) startY = mouseY + 16;
+        if (startX + gridW > mc.getWindow().getScaledWidth() - 4) {
+            startX = mc.getWindow().getScaledWidth() - gridW - 4;
+        }
 
-        RenderUtils.drawRoundedRect(context.getMatrices(), startX - 1, startY - 1, gridW + 2, gridH + 2, 4, borderColor.getColor().getRGB());
-        RenderUtils.drawRoundedRect(context.getMatrices(), startX, startY, gridW, gridH, 3, 0xF01E1F22);
+        int border = borderColor.getColor().getRGB() | 0xFF000000;
+        int bg = 0xF2101114;
+        int slotBg = 0xFF1E1F22;
+        int slotBorder = 0xFF2B2D31;
 
-        int idx = 0;
-        for (ItemStack item : items) {
-            if (idx >= 27) break;
-            int row = idx / 9;
-            int col = idx % 9;
-            int slotX = startX + 3 + col * 18;
-            int slotY = startY + 3 + row * 18;
+        // Background & Border
+        context.fill(startX - 1, startY - 1, startX + gridW + 1, startY + gridH + 1, border);
+        context.fill(startX, startY, startX + gridW, startY + gridH, bg);
 
-            RenderUtils.drawRoundedRect(context.getMatrices(), slotX, slotY, 18, 18, 2, 0xFF2B2D31);
-            if (!item.isEmpty()) {
-                context.drawItemInSlot(mc.textRenderer, item, slotX + 1, slotY + 1);
+        for (int i = 0; i < 27; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            int slotX = startX + 4 + col * 18;
+            int slotY = startY + 4 + row * 18;
+
+            // Draw slot box
+            context.fill(slotX, slotY, slotX + 18, slotY + 18, slotBorder);
+            context.fill(slotX + 1, slotY + 1, slotX + 17, slotY + 17, slotBg);
+
+            if (i < items.size()) {
+                ItemStack item = items.get(i);
+                if (item != null && !item.isEmpty()) {
+                    context.drawItem(item, slotX + 1, slotY + 1);
+                    context.drawStackOverlay(mc.textRenderer, item, slotX + 1, slotY + 1);
+                }
             }
-            idx++;
         }
     }
 }
