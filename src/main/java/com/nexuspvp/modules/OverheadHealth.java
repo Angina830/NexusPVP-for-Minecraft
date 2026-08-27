@@ -142,7 +142,7 @@ public class OverheadHealth extends Module {
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
-            drawBatchedQuad(buffer, mat, barX, barY + barH - 2, absW, 2, 0xFFFFD700);
+            drawBatchedQuad(buffer, mat, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700, fullLight);
         }
 
         // 4. Text rendered via TextRenderer
