@@ -143,6 +143,8 @@ public class OverheadHealth extends Module {
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
+        RenderSystem.disableAlphaTest();
+        RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 
         // 1. Blurple border
         drawDirectQuad(cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
@@ -213,6 +215,8 @@ public class OverheadHealth extends Module {
 
         vertexConsumers.draw();
 
+        RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableAlphaTest();
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
@@ -225,6 +229,10 @@ public class OverheadHealth extends Module {
         float b = (color & 0xFF) / 255.0f;
 
         RenderSystem.disableTexture();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
@@ -233,6 +241,7 @@ public class OverheadHealth extends Module {
         buffer.vertex(x + width, y, 0).color(r, g, b, a).next();
         buffer.vertex(x, y, 0).color(r, g, b, a).next();
         tessellator.draw();
+
         RenderSystem.enableTexture();
     }
 }
