@@ -4,6 +4,8 @@ import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
+import com.nexuspvp.util.Compat;
+import net.minecraft.entity.player.PlayerEntity;
 
 public class SwingAnimations extends Module {
 

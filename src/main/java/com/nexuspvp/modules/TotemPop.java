@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.gui.LanguageManager;
 import com.nexuspvp.gui.ThemeManager;
@@ -54,7 +56,7 @@ public class TotemPop extends Module {
     }
 
     public void handlePop(Entity entity) {
-        String name = entity.getName().asString();
+        String name = entity.getName().getString();
         int count = popCounts.getOrDefault(name, 0) + 1;
         popCounts.put(name, count);
 
@@ -123,7 +125,7 @@ public class TotemPop extends Module {
             RenderUtils.drawRoundedRect(matrices, drawX - 1, curY - 1, badgeW + 2, badgeH + 2, 4, border);
             RenderUtils.drawRoundedRect(matrices, drawX, curY, badgeW, badgeH, 3, bg);
 
-            mc.textRenderer.drawWithShadow(matrices, text, drawX + 8, curY + 5, (alpha << 24) | 0xFFFFFF);
+            Compat.drawText(matrices, text, drawX + 8, curY + 5, (alpha << 24) | 0xFFFFFF);
 
             curY += badgeH + 4;
         }

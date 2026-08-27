@@ -1,4 +1,6 @@
 package com.nexuspvp.gui.components;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.gui.ModuleButton;
@@ -26,20 +28,21 @@ public class SliderComponent extends SettingComponent {
         this.numSetting = setting;
     }
 
-    @Override
+        @Override
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+        float mAlpha = com.nexuspvp.gui.ClickGui.getMenuAlpha();
         String translatedName = com.nexuspvp.gui.LanguageManager.getInstance().get(numSetting.getName());
         String valStr = String.valueOf(numSetting.getFloatValue());
         
-        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, translatedName, x + 4, y + 2, 0xFFDBDEE1);
+        Compat.drawWithShadow(null, matrices, translatedName, x + 4, y + 2, com.nexuspvp.gui.ClickGui.applyAlpha(0xFFDBDEE1, Math.max(0.5f, mAlpha)));
         int valW = MinecraftClient.getInstance().textRenderer.getWidth(valStr);
-        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, valStr, x + width - valW - 14, y + 2, 0xFF949BA4);
+        Compat.drawWithShadow(null, matrices, valStr, x + width - valW - 14, y + 2, com.nexuspvp.gui.ClickGui.applyAlpha(0xFF949BA4, Math.max(0.5f, mAlpha)));
         
         int sliderX = x + 4;
         int sliderY = y + 14;
         int sliderW = width - 18;
         
-        RenderUtils.drawRoundedRect(matrices, sliderX, sliderY + 1, sliderW, 4, 2, 0xFF1E1F22);
+        RenderUtils.drawRoundedRect(matrices, sliderX, sliderY + 1, sliderW, 4, 2, com.nexuspvp.gui.ClickGui.applyAlpha(0xFF1E1F22, mAlpha));
         
         double range = numSetting.getMax() - numSetting.getMin();
         double val = numSetting.getFloatValue() - numSetting.getMin();
@@ -48,13 +51,13 @@ public class SliderComponent extends SettingComponent {
         int fillW = (int) (sliderW * pct);
         if (fillW > 0) {
             int accentColor = ThemeManager.getInstance().getAccentColor().getRGB();
-            RenderUtils.drawRoundedRect(matrices, sliderX, sliderY + 1, fillW, 4, 2, accentColor);
+            RenderUtils.drawRoundedRect(matrices, sliderX, sliderY + 1, fillW, 4, 2, com.nexuspvp.gui.ClickGui.applyAlpha(accentColor, Math.max(0.7f, mAlpha)));
         }
         
         int thumbRadius = 3;
         int thumbX = sliderX + fillW - thumbRadius;
         int thumbY = sliderY + 3 - thumbRadius;
-        RenderUtils.drawRoundedRect(matrices, thumbX, thumbY, thumbRadius * 2, thumbRadius * 2, thumbRadius, 0xFFFFFFFF);
+        RenderUtils.drawRoundedRect(matrices, thumbX, thumbY, thumbRadius * 2, thumbRadius * 2, thumbRadius, com.nexuspvp.gui.ClickGui.applyAlpha(0xFFFFFFFF, Math.max(0.8f, mAlpha)));
         
         if (dragging) {
             updateValue(mouseX);

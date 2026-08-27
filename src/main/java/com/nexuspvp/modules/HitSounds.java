@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
@@ -41,10 +43,10 @@ public class HitSounds extends Module {
         switch (mode) {
             case "Ding":
             case "Bell":
-                event = SoundEvents.BLOCK_NOTE_BLOCK_BELL;
+                event = SoundEvents.BLOCK_NOTE_BLOCK_BELL.value();
                 break;
             case "Skeet":
-                event = SoundEvents.UI_BUTTON_CLICK;
+                event = SoundEvents.UI_BUTTON_CLICK.value();
                 p = 1.8f;
                 break;
             case "Pop":

@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
@@ -37,8 +39,8 @@ public class ArmorHUD extends Module {
     public void onRender2D(MatrixStack matrices, float tickDelta) {
         if (mc.player == null) return;
 
-        int screenW = mc.getWindow().getScaledWidth();
-        int screenH = mc.getWindow().getScaledHeight();
+        int screenW = Compat.getScaledWidth();
+        int screenH = Compat.getScaledHeight();
         int centerX = screenW / 2 + posX.getIntValue();
         int centerY = screenH / 2 + posY.getIntValue();
 
@@ -47,7 +49,7 @@ public class ArmorHUD extends Module {
         if (!offhand.isEmpty()) items.add(offhand);
 
         for (int i = 3; i >= 0; i--) {
-            ItemStack armor = mc.player.inventory.armor.get(i);
+            ItemStack armor = mc.player.getInventory().armor.get(i);
             if (!armor.isEmpty()) items.add(armor);
         }
 
@@ -84,8 +86,8 @@ public class ArmorHUD extends Module {
             }
 
             RenderUtils.drawRoundedRect(matrices, ix - 1, iy - 1, itemSize + 2, itemSize + 2, 3, 0xBB1E1F22);
-            mc.getItemRenderer().renderInGui(stack, ix + 1, iy + 1);
-            mc.getItemRenderer().renderGuiItemOverlay(mc.textRenderer, stack, ix + 1, iy + 1);
+            Compat.drawItem(matrices, stack, ix + 1, iy + 1);
+            
 
             if (showDurability.isEnabled() && stack.isDamageable()) {
                 int barW = itemSize;
@@ -103,7 +105,7 @@ public class ArmorHUD extends Module {
                 matrices.push();
                 matrices.translate(ix + (itemSize - pw * 0.5f) / 2, barY + 3, 0);
                 matrices.scale(0.5f, 0.5f, 1.0f);
-                mc.textRenderer.drawWithShadow(matrices, text, 0, 0, col);
+                Compat.drawText(matrices, text, 0, 0, col);
                 matrices.pop();
             }
         }
@@ -114,8 +116,8 @@ public class ArmorHUD extends Module {
                 int tx = startX + totalW + 4;
                 int ty = startY;
                 RenderUtils.drawRoundedRect(matrices, tx, ty, 38, itemSize, 4, 0xEE1E1F22);
-                mc.getItemRenderer().renderInGui(new ItemStack(Items.TOTEM_OF_UNDYING), tx + 1, ty + 1);
-                mc.textRenderer.drawWithShadow(matrices, "x" + totems, tx + 19, ty + 5, 0xFFFFD700);
+                Compat.drawItem(matrices, new ItemStack(Items.TOTEM_OF_UNDYING), tx + 1, ty + 1);
+                Compat.drawText(matrices, "x" + totems, tx + 19, ty + 5, 0xFFFFD700);
             }
         }
 
@@ -125,16 +127,16 @@ public class ArmorHUD extends Module {
                 int ax = startX - 42;
                 int ay = startY;
                 RenderUtils.drawRoundedRect(matrices, ax, ay, 38, itemSize, 4, 0xEE1E1F22);
-                mc.getItemRenderer().renderInGui(new ItemStack(Items.ARROW), ax + 1, ay + 1);
-                mc.textRenderer.drawWithShadow(matrices, "x" + arrows, ax + 19, ay + 5, 0xFFDBDEE1);
+                Compat.drawItem(matrices, new ItemStack(Items.ARROW), ax + 1, ay + 1);
+                Compat.drawText(matrices, "x" + arrows, ax + 19, ay + 5, 0xFFDBDEE1);
             }
         }
     }
 
     private int countItem(net.minecraft.item.Item item) {
         int count = 0;
-        for (int i = 0; i < mc.player.inventory.size(); i++) {
-            ItemStack s = mc.player.inventory.getStack(i);
+        for (int i = 0; i < mc.player.getInventory().size(); i++) {
+            ItemStack s = mc.player.getInventory().getStack(i);
             if (!s.isEmpty() && s.getItem() == item) {
                 count += s.getCount();
             }
