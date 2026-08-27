@@ -119,6 +119,11 @@
 
 ### 🛠️ Медиа & Утилиты (3 функции)
 - 🎵 **SoundCloud Radio**: Встроенный музыкальный плеер прямо в меню игры с 3D-звуком.
+
+> [!NOTE]
+> **🎵 Важная информация о работе SoundCloud Radio:**
+> 1. **Автоматическая загрузка компонентов:** При первом включении и воспроизведении первого трека клиент автоматически загрузит необходимые вспомогательные компоненты (`yt-dlp` и `ffmpeg`) в папку `.minecraft/nexus_pvp/` (прогресс загрузки отображается прямо в интерфейсе плеера).
+> 2. **Для пользователей из РФ:** Для бесперебойной загрузки и воспроизведения аудиопотоков требуется активный инструмент обхода блокировок (например, **Zapret**, GoodbyeDPI или VPN).
 - 🎨 **ClickGuiModule**: Модуль вызова меню (`Right Shift`) с переключением 4 стилей.
 - 📋 **DebugLogger**: Внутриигровой монитор состояния клиента.
 
@@ -239,6 +244,10 @@ Switch seamlessly between **4 uniquely designed GUI layouts** in real time:
 
 ### 🛠️ Media & Utilities (3 Modules)
 - 🎵 **SoundCloud Radio**: Integrated audio streamer built right into the client interface.
+
+> [!NOTE]
+> **🎵 SoundCloud Radio Setup & Notes:**
+> - **Automatic Component Setup:** On the very first track playback, the client will automatically download the necessary streaming utilities (`yt-dlp` and `ffmpeg`) into `.minecraft/nexus_pvp/` with real-time download progress shown in the UI. No manual setup needed!
 - 🎨 **ClickGuiModule**: Menu launcher (`Right Shift`) with real-time style switching.
 - 📋 **DebugLogger**: In-game real-time diagnostics monitor.
 
