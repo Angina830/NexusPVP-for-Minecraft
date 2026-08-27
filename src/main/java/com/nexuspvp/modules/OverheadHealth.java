@@ -1,17 +1,16 @@
 package com.nexuspvp.modules;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
+import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Matrix4f;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -102,14 +101,16 @@ public class OverheadHealth extends Module {
         float scale = 0.020F;
         matrices.scale(-scale, -scale, scale);
 
-        Matrix4f mat = matrices.peek().getModel();
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getTextBackground());
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(false);
 
         // 1. Blurple border
-        drawBatchedQuad(buffer, mat, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2, light);
+        RenderUtils.drawRect(matrices, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
 
         // 2. Dark Discord background
-        drawBatchedQuad(buffer, mat, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22, light);
+        RenderUtils.drawRect(matrices, cardX, cardY, cardW, cardH, 0xFA1E1F22);
 
         // 3. Health bar
         float barX = cardX + 4;
@@ -117,29 +118,24 @@ public class OverheadHealth extends Module {
         float barW = cardW - 8;
         float barH = 5;
 
-        // Health bar track
-        drawBatchedQuad(buffer, mat, barX, barY, barX + barW, barY + barH, 0xFF2B2D31, light);
+        RenderUtils.drawRect(matrices, barX, barY, barW, barH, 0xFF2B2D31);
 
-        // Ghost damage bar
         if (ghostDamage.isEnabled() && ghostPct > 0) {
             float ghostW = barW * ghostPct;
-            drawBatchedQuad(buffer, mat, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5, light);
+            RenderUtils.drawRect(matrices, barX, barY, ghostW, barH, 0xFFF2F3F5);
         }
 
-        // Active health bar
         if (healthPct > 0) {
             float fillW = barW * healthPct;
-            drawBatchedQuad(buffer, mat, barX, barY, barX + fillW, barY + barH, hpColor, light);
+            RenderUtils.drawRect(matrices, barX, barY, fillW, barH, hpColor);
         }
 
-        // Absorption bar
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
-            drawBatchedQuad(buffer, mat, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700, light);
+            RenderUtils.drawRect(matrices, barX, barY + barH - 2, absW, 2, 0xFFFFD700);
         }
 
-        // 4. Text rendered via TextRenderer
         float textY = cardY + 3;
 
         mc.textRenderer.draw(
@@ -148,7 +144,7 @@ public class OverheadHealth extends Module {
             textY,
             0xFFF2F3F5,
             false,
-            mat,
+            matrices.peek().getModel(),
             vertexConsumers,
             false,
             0,
@@ -162,25 +158,16 @@ public class OverheadHealth extends Module {
             textY,
             hpTextColor,
             false,
-            mat,
+            matrices.peek().getModel(),
             vertexConsumers,
             false,
             0,
             light
         );
 
+        RenderSystem.depthMask(true);
+        RenderSystem.enableDepthTest();
+
         matrices.pop();
-    }
-
-    private void drawBatchedQuad(VertexConsumer buffer, Matrix4f mat, float x1, float y1, float x2, float y2, int color, int light) {
-        int a = (color >> 24) & 0xFF;
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-
-        buffer.vertex(mat, x1, y2, 0.0f).color(r, g, b, a).light(light).next();
-        buffer.vertex(mat, x2, y2, 0.0f).color(r, g, b, a).light(light).next();
-        buffer.vertex(mat, x2, y1, 0.0f).color(r, g, b, a).light(light).next();
-        buffer.vertex(mat, x1, y1, 0.0f).color(r, g, b, a).light(light).next();
     }
 }
