@@ -63,7 +63,7 @@ public class OverheadHealth extends Module {
             double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
             if (distSq > maxDistSq) continue;
 
-            // Never show through walls: strictly require direct line of sight
+            // Strictly require direct line of sight
             if (!mc.player.canSee(living)) continue;
 
             double interpX = MathHelper.lerp((double) tickDelta, living.lastRenderX, living.getX());
@@ -150,7 +150,7 @@ public class OverheadHealth extends Module {
         // 2. Dark Discord background
         drawDirectQuad(cardX, cardY, cardW, cardH, 0xFA1E1F22);
 
-        // 3. Health bar
+        // 3. Health bar track
         float barX = cardX + 4;
         float barY = cardY + 13;
         float barW = cardW - 8;
@@ -158,16 +158,20 @@ public class OverheadHealth extends Module {
 
         drawDirectQuad(barX, barY, barW, barH, 0xFF2B2D31);
 
-        if (ghostDamage.isEnabled() && ghostPct > 0) {
-            float ghostW = barW * ghostPct;
-            drawDirectQuad(barX, barY, ghostW, barH, 0xFFF2F3F5);
-        }
-
+        // Active health bar (Green / Yellow / Red)
         if (healthPct > 0) {
             float fillW = barW * healthPct;
             drawDirectQuad(barX, barY, fillW, barH, hpColor);
         }
 
+        // Ghost damage bar: ONLY draw the trailing damage lost segment when ghost > active health
+        if (ghostDamage.isEnabled() && ghostPct > healthPct + 0.005f) {
+            float ghostStart = barX + (barW * healthPct);
+            float ghostWidth = barW * (ghostPct - healthPct);
+            drawDirectQuad(ghostStart, barY, ghostWidth, barH, 0xFFF2F3F5);
+        }
+
+        // Absorption bar
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;

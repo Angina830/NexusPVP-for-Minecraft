@@ -155,16 +155,17 @@ public class OverheadHealth extends Module {
         // Health bar track
         RenderUtils.drawQuad(matrices, barX, barY, barX + barW, barY + barH, 0xFF2B2D31);
 
-        // Ghost damage bar
-        if (ghostDamage.isEnabled() && ghostPct > 0) {
-            float ghostW = barW * ghostPct;
-            RenderUtils.drawQuad(matrices, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5);
-        }
-
         // Active health bar
         if (healthPct > 0) {
             float fillW = barW * healthPct;
             RenderUtils.drawQuad(matrices, barX, barY, barX + fillW, barY + barH, hpColor);
+        }
+
+        // Ghost damage bar (only trailing lost damage chunk)
+        if (ghostDamage.isEnabled() && ghostPct > healthPct + 0.005f) {
+            float ghostStart = barX + (barW * healthPct);
+            float ghostWidth = barW * (ghostPct - healthPct);
+            RenderUtils.drawQuad(matrices, ghostStart, barY, ghostStart + ghostWidth, barY + barH, 0xFFF2F3F5);
         }
 
         // Absorption bar
