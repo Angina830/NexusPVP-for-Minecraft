@@ -2,6 +2,9 @@ package com.nexuspvp.modules;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.gui.ClickGui;
+import com.nexuspvp.gui.styles.ClassicGuiScreen;
+import com.nexuspvp.gui.styles.CompactListScreen;
+import com.nexuspvp.gui.styles.GlassDashboardScreen;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
@@ -10,9 +13,12 @@ import com.nexuspvp.util.Compat;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.MathHelper;
 
 public class TargetHUD extends Module {
@@ -20,7 +26,7 @@ public class TargetHUD extends Module {
     private final NumberSetting posX = addSetting(new NumberSetting("PosX", 0, -500, 500, 5));
     private final NumberSetting posY = addSetting(new NumberSetting("PosY", 60, -400, 400, 5));
     private final NumberSetting scale = addSetting(new NumberSetting("Scale", 1.0, 0.5, 2.0, 0.05));
-    private final BooleanSetting preview = addSetting(new BooleanSetting("Preview", false));
+    private final BooleanSetting preview = addSetting(new BooleanSetting("Preview", true));
 
     private LivingEntity target = null;
     private long lastTargetTime = 0;
@@ -33,6 +39,7 @@ public class TargetHUD extends Module {
 
     public TargetHUD() {
         super("TargetHUD", "Discord-styled target health and armor info", Category.PVP);
+        setEnabled(true);
     }
 
     public NumberSetting getPosX() { return posX; }
@@ -55,12 +62,17 @@ public class TargetHUD extends Module {
     public void onTick() {
         if (mc.world == null || mc.player == null) return;
 
-        if (mc.targetedEntity instanceof LivingEntity && mc.targetedEntity != mc.player) {
+        if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
+            Entity ent = ((EntityHitResult) mc.crosshairTarget).getEntity();
+            if (ent instanceof LivingEntity && ent != mc.player) {
+                setTarget((LivingEntity) ent);
+            }
+        } else if (mc.targetedEntity instanceof LivingEntity && mc.targetedEntity != mc.player) {
             setTarget((LivingEntity) mc.targetedEntity);
         }
 
         if (target != null) {
-            if (!target.isAlive() || System.currentTimeMillis() - lastTargetTime > 4000) {
+            if (!target.isAlive() || System.currentTimeMillis() - lastTargetTime > 6000) {
                 target = null;
             }
         }
@@ -70,7 +82,12 @@ public class TargetHUD extends Module {
     public void onRender2D(MatrixStack matrices, float tickDelta) {
         if (mc.player == null) return;
 
-        boolean isPreview = preview.isEnabled() || (mc.currentScreen instanceof ClickGui && preview.isEnabled());
+        boolean isGuiOpen = mc.currentScreen instanceof ClickGui ||
+                            mc.currentScreen instanceof ClassicGuiScreen ||
+                            mc.currentScreen instanceof GlassDashboardScreen ||
+                            mc.currentScreen instanceof CompactListScreen;
+
+        boolean isPreview = (preview.isEnabled() && isGuiOpen) || (target == null && isGuiOpen);
         if (target == null && !isPreview) return;
 
         int screenW = Compat.getScaledWidth();

@@ -12,11 +12,12 @@ import net.minecraft.entity.player.PlayerEntity;
 
 public class OverheadHealth extends Module {
 
-    private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", true));
-    private final NumberSetting range = addSetting(new NumberSetting("Range", 20.0, 5.0, 40.0, 1.0));
+    private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
+    private final NumberSetting range = addSetting(new NumberSetting("Range", 25.0, 5.0, 50.0, 1.0));
 
     public OverheadHealth() {
         super("OverheadHealth", "Renders clear floating health indicators above entities", Category.RENDER);
+        setEnabled(true);
     }
 
     public void renderOverhead(LivingEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, int light) {
@@ -32,7 +33,7 @@ public class OverheadHealth extends Module {
 
         float health = entity.getHealth();
         float maxHealth = entity.getMaxHealth();
-        String hpText = String.format("%.1f HP", health);
+        String hpText = String.format("%.1f ❤", health);
         int color = health > maxHealth * 0.5f ? 0xFF55FF55 : (health > maxHealth * 0.25f ? 0xFFFFAA00 : 0xFFFF5555);
 
         int textW = mc.textRenderer.getWidth(hpText);
