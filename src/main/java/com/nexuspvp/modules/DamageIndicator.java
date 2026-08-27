@@ -53,6 +53,7 @@ public class DamageIndicator extends Module {
 
     public DamageIndicator() {
         super("DamageIndicator", "Displays dealt damage on screen and world", Category.PVP);
+        setEnabled(true);
     }
 
     public NumberSetting getComboOffsetX() { return comboOffsetX; }
@@ -89,7 +90,7 @@ public class DamageIndicator extends Module {
                     float damage = prev - currentHealth;
                     
                     Long attackTime = myAttacks.get(e.getEntityId());
-                    boolean wasHitByMe = attackTime != null && (now - attackTime <= 800);
+                    boolean wasHitByMe = (attackTime != null && (now - attackTime <= 2000)) || (mc.player != null && mc.player.distanceTo(living) <= 4.5);
 
                     if (onlyMyDamage.isEnabled() && !wasHitByMe) {
                         trackedHealth.put(e.getEntityId(), currentHealth);

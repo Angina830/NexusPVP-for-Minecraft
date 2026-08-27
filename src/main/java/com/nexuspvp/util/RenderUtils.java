@@ -223,11 +223,13 @@ public class RenderUtils {
 
     public static void cleanupBloom3D() {
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();
         RenderSystem.enableTexture();
+        RenderSystem.color4f(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     public static void drawBloomLine3D(Vec3d start, Vec3d end, Color color, float coreWidth) {

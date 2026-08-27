@@ -139,6 +139,7 @@ public class OverheadHealth extends Module {
         float cardY = -cardH / 2.0f;
 
         RenderSystem.enableBlend();
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
