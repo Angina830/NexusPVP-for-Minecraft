@@ -50,7 +50,6 @@ public class RenderUtils {
         buffer.vertex(matrix, x2, y1, 0).color(r, g, b, a);
         buffer.vertex(matrix, x1, y1, 0).color(r, g, b, a);
         BufferRenderer.drawWithGlobalProgram(buffer.end());
-        RenderSystem.disableBlend();
     }
 
     public static void drawLine3D(MatrixStack matrices, double x1, double y1, double z1, double x2, double y2, double z2, Color color, float width) {
@@ -70,7 +69,6 @@ public class RenderUtils {
         buffer.vertex(matrix, (float) x1, (float) y1, (float) z1).color(r, g, b, a);
         buffer.vertex(matrix, (float) x2, (float) y2, (float) z2).color(r, g, b, a);
         BufferRenderer.drawWithGlobalProgram(buffer.end());
-        RenderSystem.disableBlend();
     }
 
     public static void drawNeonLine3D(MatrixStack matrices, double x1, double y1, double z1, double x2, double y2, double z2, Color color) {
@@ -133,7 +131,6 @@ public class RenderUtils {
             buffer.vertex(matrix, (float) x2, (float) y2, (float) z2).color(fr, fg, fb, fa);
             buffer.vertex(matrix, (float) x2, (float) y2, (float) z1).color(fr, fg, fb, fa);
             BufferRenderer.drawWithGlobalProgram(buffer.end());
-            RenderSystem.disableBlend();
         }
 
         drawBox3D(matrices, x1, y1, z1, x2, y2, z2, new Color(r, g, b, (int) (a * 0.22f)), 5.5f);

@@ -6,13 +6,12 @@ import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.RenderUtils;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,70 +19,42 @@ import java.util.Map;
 public class OverheadHealth extends Module {
 
     private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
-    private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 60.0, 1.0));
     private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
-
-    private final Map<Integer, HealthTracker> trackerMap = new HashMap<>();
+    private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 60.0, 1.0));
 
     private static class HealthTracker {
-        float previousHealth = -1;
-        float animatedHealth = -1;
-        float damageGhostHealth = -1;
-        long lastDamageTime = 0;
-        float animatedAbsorption = 0;
+        float animatedHealth;
+        float damageGhostHealth;
+        float previousHealth;
+        float animatedAbsorption;
+        long lastDamageTime;
     }
+
+    private final Map<Integer, HealthTracker> trackers = new HashMap<>();
 
     public OverheadHealth() {
         super("OverheadHealth", "Mini-TargetHUD floating health card above entities", Category.RENDER);
+        setEnabled(true);
     }
 
-    @Override
-    public void onRender3D(MatrixStack matrices, float tickDelta) {
-        if (mc.world == null || mc.player == null) return;
-
-        double maxDistSq = range.getValue() * range.getValue();
-        Vec3d camPos = mc.gameRenderer.getCamera().getPos();
-
-        for (Entity entity : mc.world.getEntities()) {
-            if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
-            if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) continue;
-
-            LivingEntity living = (LivingEntity) entity;
-            if (!living.isAlive() || living.isInvisibleTo(mc.player)) continue;
-
-            double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
-            if (distSq > maxDistSq) continue;
-            if (!mc.player.canSee(living)) continue;
-
-            matrices.push();
-            Vec3d interp = RenderUtils.getInterpolatedPos(living, tickDelta);
-            matrices.translate(interp.x - camPos.x, interp.y - camPos.y + living.getHeight() + 0.55D, interp.z - camPos.z);
-            matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
-
-            float scale = 0.020F;
-            matrices.scale(-scale, -scale, scale);
-
-            renderEntityHealth(matrices, living);
-
-            matrices.pop();
-        }
-    }
-
-    private void renderEntityHealth(MatrixStack matrices, LivingEntity entity) {
-        VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
-
-        HealthTracker tracker = trackerMap.computeIfAbsent(entity.getEntityId(), id -> new HealthTracker());
+    public void renderOverhead(LivingEntity entity, MatrixStack matrices, float tickDelta) {
+        if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisible()) return;
+        if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
+        if (entity.squaredDistanceTo(mc.player) > range.getValue() * range.getValue()) return;
 
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         float currentAbs = entity.getAbsorptionAmount();
 
-        if (tracker.previousHealth < 0) {
-            tracker.previousHealth = currentHp;
-            tracker.animatedHealth = currentHp;
-            tracker.damageGhostHealth = currentHp;
-            tracker.animatedAbsorption = currentAbs;
-        }
+        HealthTracker tracker = trackers.computeIfAbsent(entity.getEntityId(), id -> {
+            HealthTracker t = new HealthTracker();
+            t.animatedHealth = currentHp;
+            t.damageGhostHealth = currentHp;
+            t.previousHealth = currentHp;
+            t.animatedAbsorption = currentAbs;
+            t.lastDamageTime = 0;
+            return t;
+        });
 
         if (currentHp < tracker.previousHealth) {
             tracker.damageGhostHealth = tracker.previousHealth;
@@ -121,21 +92,27 @@ public class OverheadHealth extends Module {
         int nameW = mc.textRenderer.getWidth(name);
         int hpTextW = mc.textRenderer.getWidth(hpText);
 
-        // Compact card dimensions
         int cardW = Math.max(nameW + hpTextW + 16, 95);
         int cardH = 22;
         float cardX = -cardW / 2.0f;
         float cardY = -cardH / 2.0f;
 
+        matrices.push();
+        matrices.translate(0.0D, entity.getHeight() + 0.55F, 0.0D);
+        matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
+
+        float scale = 0.020F;
+        matrices.scale(-scale, -scale, scale);
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
+        RenderSystem.enableDepthTest();
         RenderSystem.depthMask(false);
 
-        // 1. Blurple border (0xEE5865F2)
+        // 1. Blurple border
         RenderUtils.drawRect(matrices, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
 
-        // 2. Dark Discord background (0xFA1E1F22)
+        // 2. Dark Discord background
         RenderUtils.drawRect(matrices, cardX, cardY, cardW, cardH, 0xFA1E1F22);
 
         // 3. Health bar
@@ -144,30 +121,26 @@ public class OverheadHealth extends Module {
         float barW = cardW - 8;
         float barH = 5;
 
-        // Health bar track (0xFF2B2D31)
         RenderUtils.drawRect(matrices, barX, barY, barW, barH, 0xFF2B2D31);
 
-        // Ghost damage bar (White 0xFFF2F3F5)
         if (ghostDamage.isEnabled() && ghostPct > 0) {
             float ghostW = barW * ghostPct;
             RenderUtils.drawRect(matrices, barX, barY, ghostW, barH, 0xFFF2F3F5);
         }
 
-        // Active health bar (hpColor)
         if (healthPct > 0) {
             float fillW = barW * healthPct;
             RenderUtils.drawRect(matrices, barX, barY, fillW, barH, hpColor);
         }
 
-        // Absorption bar (Gold 0xFFFFD700)
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
             RenderUtils.drawRect(matrices, barX, barY + barH - 2, absW, 2, 0xFFFFD700);
         }
 
-        // 4. Text rendered via TextRenderer
         float textY = cardY + 3;
+        VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
 
         mc.textRenderer.draw(
             name,
@@ -200,5 +173,7 @@ public class OverheadHealth extends Module {
 
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
+
+        matrices.pop();
     }
 }
