@@ -59,6 +59,16 @@ public class ModuleManager {
         return modules;
     }
 
+    public List<Module> getEnabledModules() {
+        List<Module> result = new ArrayList<>();
+        for (Module module : modules) {
+            if (module.isEnabled()) {
+                result.add(module);
+            }
+        }
+        return result;
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends Module> T getModule(Class<T> clazz) {
         for (Module module : modules) {
