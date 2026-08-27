@@ -1,6 +1,6 @@
 package com.nexuspvp.modules;
 
-import com.nexuspvp.NexusPVP;
+import com.nexuspvp.NexusPVP v0.1.2-beta;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
@@ -46,7 +46,7 @@ public class HudModule extends Module {
         int accent = rainbow.isEnabled() ? ColorUtils.rainbow(0).getRGB() : color.getColor().getRGB();
 
         if (watermark.isEnabled()) {
-            Compat.drawText(matrices, "NexusPVP", 4, 4, accent);
+            Compat.drawText(matrices, "NexusPVP v0.1.2-beta", 4, 4, accent);
         }
 
         if (fps.isEnabled()) {
@@ -61,7 +61,7 @@ public class HudModule extends Module {
         }
 
         if (arrayList.isEnabled()) {
-            List<Module> active = NexusPVP.getInstance().getModuleManager().getEnabledModules();
+            List<Module> active = NexusPVP v0.1.2-beta.getInstance().getModuleManager().getEnabledModules();
             active.sort(Comparator.comparingInt(m -> -mc.textRenderer.getWidth(m.getName())));
 
             int y = 4;

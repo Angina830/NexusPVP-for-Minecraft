@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "nexus_pvp",
-  "version": "0.1.1-beta",
+  "version": "0.1.2-beta",
   "name": "NexusPVP",
-  "description": "Visual enhancements mod for Minecraft - beautiful particles, trails, animations and HUD customization",
+  "description": "NexusPVP v0.1.2-beta [Vortex] - Advanced Visuals & Quality of Life Mod",
   "authors": [
     "NexusPVP"
   ],

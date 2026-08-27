@@ -1,6 +1,6 @@
 package com.nexuspvp.modules;
 
-import com.nexuspvp.NexusPVP;
+import com.nexuspvp.NexusPVP v0.1.2-beta;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
@@ -70,7 +70,7 @@ public class HudModule extends Module {
 
         int yOffset = 2;
         if (watermark.isEnabled()) {
-            String text = "NexusPVP";
+            String text = "NexusPVP v0.1.2-beta";
             if (background.isEnabled()) {
                 net.minecraft.client.gui.DrawableHelper.fill(matrices, 2, yOffset, 2 + mc.textRenderer.getWidth(text) + 2, yOffset + mc.textRenderer.fontHeight + 2, 0x80000000);
             }
@@ -97,7 +97,7 @@ public class HudModule extends Module {
         }
 
         if (arrayList.isEnabled()) {
-            List<Module> activeModules = NexusPVP.getInstance().getModuleManager().getModules().stream()
+            List<Module> activeModules = NexusPVP v0.1.2-beta.getInstance().getModuleManager().getModules().stream()
                 .filter(Module::isEnabled)
                 .sorted(Comparator.comparingInt(m -> -mc.textRenderer.getWidth(m.getName())))
                 .collect(Collectors.toList());
