@@ -13,6 +13,8 @@ import net.minecraft.client.util.math.MatrixStack;
 import java.awt.Color;
 
 public class Crosshair extends Module {
+    private static long staticHitTime = 0;
+    public static void recordHit() { staticHitTime = System.currentTimeMillis(); }
 
     private final ModeSetting style = addSetting(new ModeSetting("Style", "Cross", "Cross", "Dot", "Circle"));
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(0, 255, 230)));
@@ -22,14 +24,14 @@ public class Crosshair extends Module {
     private final BooleanSetting dot = addSetting(new BooleanSetting("Dot", false));
     private final BooleanSetting hitmarker = addSetting(new BooleanSetting("Hitmarker", true));
 
-    private long lastHitTime = 0;
+    private long staticHitTime = 0;
 
     public Crosshair() {
         super("Crosshair", "Custom PvP crosshair with styles and hitmarkers", Category.RENDER);
     }
 
     public void onEntityHit() {
-        lastHitTime = System.currentTimeMillis();
+        staticHitTime = System.currentTimeMillis();
     }
 
     public void renderCustomCrosshair(DrawContext context) {
@@ -66,7 +68,7 @@ public class Crosshair extends Module {
         }
 
         if (hitmarker.isEnabled()) {
-            long elapsed = System.currentTimeMillis() - lastHitTime;
+            long elapsed = System.currentTimeMillis() - staticHitTime;
             if (elapsed < 300) {
                 float alpha = 1.0f - (elapsed / 300.0f);
                 int hmColor = new Color(255, 50, 50, (int) (alpha * 255)).getRGB();

@@ -83,8 +83,7 @@ public class ShulkerPreview extends Module {
             if (i < items.size()) {
                 ItemStack item = items.get(i);
                 if (item != null && !item.isEmpty()) {
-                    context.drawItem(item, slotX + 1, slotY + 1);
-                    context.drawStackOverlay(mc.textRenderer, item, slotX + 1, slotY + 1);
+                    context.drawItemInSlot(mc.textRenderer, item, slotX + 1, slotY + 1);
                 }
             }
         }
