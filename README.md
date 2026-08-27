@@ -67,7 +67,7 @@
 
 | Стиль | Описание | Особенности |
 |---|---|---|
-| 💬 **Discord Modern** | Боковой сайдбар с иконками категорий + карточки | Полные описания, бегунки, SoundCloud плеер |
+| 🌌 **Modern Sidebar** | Боковой сайдбар с иконками категорий + карточки | Полные описания, бегунки, SoundCloud плеер |
 | 🪟 **Classic Windows** | Независимые перетаскиваемые окна по категориям | Drag & Drop окон, сворачивание, компактные списки |
 | 💎 **Glass Dashboard** | Верхний навбар + матовая 2-колоночная сетка | Эффект Frosted Glass, iOS-переключатели, модальные настройки |
 | ⚡ **Compact List** | Ультра-компактный плоский список | Молниеносное переключение в бою, выездной слайдер настроек |
@@ -78,7 +78,7 @@
 
 ### ⚔️ PvP & Бой (Combat — 13 функций)
 - 🎯 **TargetHUD**: Стильная карточка захваченной цели с 3D-моделью скина, здоровьем, броней и плавной шкалой HP.
-- 🩸 **OverheadHealth**: Discord-карточка со здоровьем и поглощением ровно над головами мобов и игроков. Не видна сквозь стены, 0 искажений моделей.
+- 🩸 **OverheadHealth**: Стильная парящая карточка со здоровьем и поглощением ровно над головами мобов и игроков. Не видна сквозь стены, 0 искажений моделей.
 - 💥 **DamageIndicator**: Всплывающие числа урона с параболической физикой и счетчик комбо-ударов (`HITS / DMG`).
 - 🎯 **Crosshair & Hitmarker**: Кастомный прицел с динамическим разлетом от кулдауна удара и 45-градусным `X`-хитмаркером при попадании.
 - 🏹 **TrajectoryPreview**: 3D-расчёт траектории и места приземления перлов (Ender Pearl), стрел, трезубцев и зелий.
@@ -187,7 +187,7 @@ Switch seamlessly between **4 uniquely designed GUI layouts** in real time:
 
 | Layout | Description | Highlights |
 |---|---|---|
-| 💬 **Discord Modern** | Sidebar navigation with category icons + module cards | Full descriptions, smooth sliders, SoundCloud player |
+| 🌌 **Modern Sidebar** | Sidebar navigation with category icons + module cards | Full descriptions, smooth sliders, SoundCloud player |
 | 🪟 **Classic Windows** | Draggable floating windows for each category | Window drag-and-drop, collapsible headers, compact cards |
 | 💎 **Glass Dashboard** | Top navigation bar + frosted 2-column grid | Frosted glass look, iOS toggle switches, clean modal settings |
 | ⚡ **Compact List** | Ultra-minimalist flat list | Fast mid-fight toggling, slide-out setting panels |
@@ -198,7 +198,7 @@ Switch seamlessly between **4 uniquely designed GUI layouts** in real time:
 
 ### ⚔️ PvP & Combat (13 Modules)
 - 🎯 **TargetHUD**: Modern target card featuring the opponent's 3D skin model, health, armor durability, and smooth health bar animations.
-- 🩸 **OverheadHealth**: Discord-styled floating health card positioned cleanly above players and entities. Line-of-sight checked (never visible through walls).
+- 🩸 **OverheadHealth**: Modern floating health card positioned cleanly above players and entities. Line-of-sight checked (never visible through walls).
 - 💥 **DamageIndicator**: Floating damage popups with parabolic bounce physics and active combo hit counter (`HITS / DMG`).
 - 🎯 **Crosshair & Hitmarker**: Fully custom crosshair with dynamic attack spread and crisp 45° diagonal `X` hitmarkers.
 - 🏹 **TrajectoryPreview**: Real-time 3D physics trajectory & landing prediction for Ender Pearls, arrows, tridents, and potions.
