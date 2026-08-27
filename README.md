@@ -34,6 +34,9 @@
 
 ## 🌟 О проекте
 
+> 💎 **Отличная бесплатная альтернатива платным модам (TopkaVisuals, PulseVisuals, Celestial и др.)**
+> **NexusPVP** объединяет все премиальные возможности современных визуальных PvP-клиентов: TargetHUD с 3D-моделями, OverheadHealth, физические индикаторы урона, кастомные хитмаркеры, 1.7 Block-Hit, 3D-траектории и встроенное SoundCloud радио — абсолютно бесплатно, без привязок и с открытым исходным кодом.
+
 **NexusPVP** — это инновационный, полностью кастомизируемый визуальный PvP-клиент для Minecraft на платформе **Fabric** (`1.16.5`, `1.20.1`, `1.21.1`). Клиент создан специально для динамичных PvP-битв, анархии (**HolyWorld, FunTime, ReallyWorld**) и комфортной игры с максимальным FPS.
 
 ---
@@ -158,6 +161,9 @@
 > **MANDATORY REQUIREMENT:** This mod **strictly requires [Fabric API](https://modrinth.com/mod/fabric-api)** for your corresponding Minecraft version (`1.16.5`, `1.20.1`, or `1.21.1`)! The mod will not start without Fabric API installed.
 
 ## 🌟 About NexusPVP
+
+> 💎 **A Great Free Alternative to Paid Mods (TopkaVisuals, PulseVisuals, Celestial, etc.)**
+> **NexusPVP** brings together the full feature set of premium visual and PvP clients: 3D TargetHUD models, OverheadHealth, physics-based damage popups, custom hitmarkers, 1.7 Block-Hit animations, 3D ballistic trajectories, and integrated SoundCloud radio — 100% free and open-source.
 
 **NexusPVP** is an advanced, fully customizable visual PvP client for Minecraft built on the **Fabric** platform supporting (`1.16.5`, `1.20.1`, `1.21.1`). Engineered specifically for competitive PvP, Anarchy servers, and crystal-clear high FPS performance.
 
