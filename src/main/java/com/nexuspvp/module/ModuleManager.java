@@ -15,6 +15,10 @@ public class ModuleManager {
         register(new HitColor());
         register(new HudModule());
         register(new Particles());
+        register(new JumpCircles());
+        register(new Trails());
+        register(new JumpParticles());
+        register(new SwordSlash());
         register(new SwingAnimations());
         register(new Targeting());
         register(new ViewModel());
@@ -66,7 +70,9 @@ public class ModuleManager {
     }
 
     public Optional<Module> getModuleByName(String name) {
-        return modules.stream().filter(m -> m.getName().equalsIgnoreCase(name)).findFirst();
+        return modules.stream()
+                .filter(m -> m.getName().equalsIgnoreCase(name))
+                .findFirst();
     }
 
     public List<Module> getModulesByCategory(Category category) {
@@ -77,6 +83,14 @@ public class ModuleManager {
             }
         }
         return result;
+    }
+
+    public void onTick() {
+        for (Module module : modules) {
+            if (module.isEnabled()) {
+                module.onTick();
+            }
+        }
     }
 
     public void onRender2D(net.minecraft.client.util.math.MatrixStack matrices, float tickDelta) {
@@ -95,25 +109,15 @@ public class ModuleManager {
         }
     }
 
-    public void onTick() {
-        for (Module module : modules) {
-            if (module.isEnabled()) {
-                module.onTick();
-            }
-        }
+    public void onKeyPress(int keyCode) {
+        onKeyPressed(keyCode);
     }
 
-    public void onKeyPress(int key) {
+    public void onKeyPressed(int keyCode) {
         for (Module module : modules) {
-            if (module.getKeyBind() == key) {
+            if (module.getKeyBind() == keyCode && keyCode != 0) {
                 module.toggle();
             }
-        }
-    }
-
-    public void onKey(int key, int action) {
-        if (action == 1) {
-            onKeyPress(key);
         }
     }
 }

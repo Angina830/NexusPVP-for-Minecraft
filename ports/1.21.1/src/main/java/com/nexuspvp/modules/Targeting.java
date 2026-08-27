@@ -6,59 +6,83 @@ import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.ColorSetting;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
-import com.nexuspvp.util.RenderUtils;
+import com.nexuspvp.util.ColorUtils;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix4f;
 
 import java.awt.Color;
 
 public class Targeting extends Module {
-
+    private final ModeSetting style = addSetting(new ModeSetting("Style", "PulsingDoubleRing", "PulsingDoubleRing", "RotatingDiamond", "HologramBrackets"));
+    private final NumberSetting range = addSetting(new NumberSetting("Range", 5.0, 2.0, 10.0, 0.5));
+    private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 2.5, 1.0, 5.0, 0.5));
+    private final BooleanSetting rainbow = addSetting(new BooleanSetting("Rainbow", false));
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(0, 240, 255, 230)));
-    private final NumberSetting range = addSetting(new NumberSetting("Range", 5.0, 2.0, 12.0, 0.5));
-    private final ModeSetting style = addSetting(new ModeSetting("Style", "NeonCircle", "NeonCircle", "NeonBox", "Diamond"));
-    private final BooleanSetting animate = addSetting(new BooleanSetting("Animate", true));
+
+    private float animTicks = 0f;
 
     public Targeting() {
-        super("Targeting", "Highlights targeted entity with neon bloom visual effects", Category.VISUAL);
+        super("Targeting", "Futuristic 3D holographic targeting reticle & glowing aura on target", Category.VISUAL);
+    }
+
+    @Override
+    public void onTick() {
+        animTicks += 0.05f;
     }
 
     @Override
     public void onRender3D(MatrixStack matrices, float tickDelta) {
-        if (mc.targetedEntity == null || !(mc.targetedEntity instanceof LivingEntity) || mc.player == null || mc.gameRenderer == null) return;
+        if (mc.player == null || mc.world == null || mc.crosshairTarget == null) return;
+        if (mc.crosshairTarget.getType() != HitResult.Type.ENTITY) return;
 
-        LivingEntity entity = (LivingEntity) mc.targetedEntity;
-        if (entity.squaredDistanceTo(mc.player) > range.getValue() * range.getValue()) return;
+        Entity entity = ((EntityHitResult) mc.crosshairTarget).getEntity();
+        if (!(entity instanceof LivingEntity) || entity == mc.player) return;
+        if (mc.player.distanceTo(entity) > range.getFloatValue()) return;
 
+        LivingEntity target = (LivingEntity) entity;
         Vec3d cam = mc.gameRenderer.getCamera().getPos();
-        double x = MathHelper.lerp(tickDelta, entity.lastRenderX, entity.getX()) - cam.x;
-        double y = MathHelper.lerp(tickDelta, entity.lastRenderY, entity.getY()) - cam.y;
-        double z = MathHelper.lerp(tickDelta, entity.lastRenderZ, entity.getZ()) - cam.z;
+        Vec3d targetPos = target.getPos();
+        Color c = rainbow.isEnabled() ? ColorUtils.rainbow(0) : color.getColor();
 
-        Color c = color.getColor();
-        float width = entity.getWidth();
-        float height = entity.getHeight();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
-        String s = style.getValue();
-        if (s.equals("NeonCircle")) {
-            float rot = animate.isEnabled() ? (System.currentTimeMillis() % 3600) / 10.0f : 0.0f;
-            matrices.push();
-            matrices.translate(x, y + 0.05, z);
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(rot));
-            RenderUtils.drawNeonCircle3D(matrices, 0, 0, 0, width * 0.75f, c);
-            matrices.pop();
-        } else if (s.equals("NeonBox")) {
-            RenderUtils.drawNeonBox3D(matrices, x - width / 2, y, z - width / 2, x + width / 2, y + height, z + width / 2, c, true, 25);
-        } else if (s.equals("Diamond")) {
-            matrices.push();
-            matrices.translate(x, y + height + 0.4, z);
-            matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
-            float anim = (float) Math.sin(System.currentTimeMillis() / 200.0) * 0.05f;
-            RenderUtils.drawNeonCircle3D(matrices, 0, 0, 0, 0.22f + anim, c);
-            matrices.pop();
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+
+        int r = c.getRed();
+        int g = c.getGreen();
+        int b = c.getBlue();
+        int a = c.getAlpha();
+
+        float pulse = (float) Math.sin(animTicks * 3.0f) * 0.08f;
+        float r1 = 0.65f + pulse;
+
+        matrices.push();
+        matrices.translate(targetPos.x - cam.x, targetPos.y - cam.y + 0.05, targetPos.z - cam.z);
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(animTicks * 50f));
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+
+        buffer.begin(VertexFormat.DrawMode.TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
+        for (int i = 0; i <= 32; i++) {
+            double angle = 2 * Math.PI * i / 32;
+            float cos = (float) Math.cos(angle);
+            float sin = (float) Math.sin(angle);
+            buffer.vertex(matrix, (r1 - 0.08f) * cos, 0f, (r1 - 0.08f) * sin).color(r, g, b, 0).next();
+            buffer.vertex(matrix, r1 * cos, 0f, r1 * sin).color(r, g, b, a).next();
         }
+        tessellator.draw();
+
+        matrices.pop();
+        RenderSystem.disableBlend();
     }
 }

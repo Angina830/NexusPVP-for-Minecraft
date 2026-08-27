@@ -77,7 +77,7 @@
 
 ---
 
-## 🔥 Ключевые возможности (36 модулей)
+## 🔥 Ключевые возможности (40 модулей)
 
 ### ⚔️ PvP & Бой (Combat — 13 функций)
 - 🎯 **TargetHUD**: Стильная карточка захваченной цели с 3D-моделью скина, здоровьем, броней и плавной шкалой HP.
@@ -95,6 +95,10 @@
 - ⌨️ **CommandKeybinds**: Мгновенный ввод серверных команд по нажатию горячих клавиш.
 
 ### 🌌 Визуальные эффекты (Visual — 9 функций)
+- ⚔️ **SwordSlash**: 3D аниме-слэши меча и светящиеся полумесяцы при атаках.
+- ⭕ **JumpCircles**: Расширяющиеся неоновые ударные волны под ногами при прыжке.
+- 🎗️ **Trails**: Плавная неоновая 3D-лента за ногами игрока с сужением (Ribbon).
+- 💫 **JumpParticles**: Взрывной выброс 3D-частиц из-под ног при прыжке.
 - 🌌 **GalaxySky**: Космическое звездное небо с градиентами.
 - 🌊 **ClearWater**: Полное устранение мутного подводного тумана.
 - 🔥 **LowFire**: Низкий огонь на экране, не закрывающий обзор.
@@ -205,7 +209,7 @@ Switch seamlessly between **4 uniquely designed GUI layouts** in real time:
 
 ---
 
-## 🔥 Features Overview (36 Modules)
+## 🔥 Features Overview (40 Modules)
 
 ### ⚔️ PvP & Combat (13 Modules)
 - 🎯 **TargetHUD**: Modern target card featuring the opponent's 3D skin model, health, armor durability, and smooth health bar animations.
@@ -223,6 +227,10 @@ Switch seamlessly between **4 uniquely designed GUI layouts** in real time:
 - ⌨️ **CommandKeybinds**: Instant keybind execution for custom server commands.
 
 ### 🌌 Visual Effects (9 Modules)
+- ⚔️ **SwordSlash**: Glowing 3D anime slash crescent arcs sweeping on weapon swings.
+- ⭕ **JumpCircles**: Expanding neon shockwaves and ripple discs at feet on jump.
+- 🎗️ **Trails**: Smooth continuous 3D tapered neon ribbon trail behind player.
+- 💫 **JumpParticles**: Outward bursting 3D radial particle explosion upon jumping.
 - 🌌 **GalaxySky**: Custom deep-space starry sky renderer with smooth gradients.
 - 🌊 **ClearWater**: Completely eliminates murky underwater fog for crystal-clear vision.
 - 🔥 **LowFire**: Reduced first-person burning screen overlay.
