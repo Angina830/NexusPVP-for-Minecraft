@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Keyboard.class)
 public class MixinKeyboard {
 
-    @Inject(method = "onKey", at = @At("HEAD"))
+    @Inject(method = "onKey", at = @At("HEAD"), cancellable = true)
     private void onKey(long window, int key, int scancode, int action, int modifiers, CallbackInfo ci) {
         if (action == 1) { // GLFW_PRESS
             NexusPVP instance = NexusPVP.getInstance();
@@ -31,9 +31,10 @@ public class MixinKeyboard {
                                mc.currentScreen instanceof CompactListScreen) {
                         mc.currentScreen.close();
                     }
-                } else {
-                    instance.getModuleManager().onKeyPress(key);
+                    ci.cancel();
+                    return;
                 }
+                instance.getModuleManager().onKeyPress(key);
             }
         }
     }
