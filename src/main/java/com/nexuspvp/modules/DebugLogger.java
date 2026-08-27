@@ -74,8 +74,9 @@ public class DebugLogger extends Module {
             long totalMem = Runtime.getRuntime().totalMemory() / 1024 / 1024;
             long freeMem = Runtime.getRuntime().freeMemory() / 1024 / 1024;
             long usedMem = totalMem - freeMem;
+            String fpsStr = mc.fpsDebugString != null ? mc.fpsDebugString.split(" ")[0] : "0";
 
-            lines.add(String.format("§6Memory: §f%dMB / %dMB §7| §6FPS: §f%d", usedMem, maxMem, MinecraftClient.getInstance().getCurrentFps()));
+            lines.add(String.format("§6Memory: §f%dMB / %dMB §7| §6FPS: §f%s", usedMem, maxMem, fpsStr));
             lines.add(String.format("§6Player: §f[%.1f, %.1f, %.1f] §7(Yaw: §e%.1f§7, Pitch: §e%.1f§7)", 
                 mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.yaw, mc.player.pitch));
         }
