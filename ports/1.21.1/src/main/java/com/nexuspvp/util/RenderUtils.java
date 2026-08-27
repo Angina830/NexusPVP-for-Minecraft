@@ -173,15 +173,23 @@ public class RenderUtils {
         drawCircle3D(matrices, x, y, z, radius, new Color(coreR, coreG, coreB, a), 1.5f);
     }
 
-    public static void startScissor(int x, int y, int width, int height) {
-        if (mc.getWindow() == null) return;
-        double scale = mc.getWindow().getScaleFactor();
-        int screenH = mc.getWindow().getScaledHeight();
-        int scissorY = (int) ((screenH - (y + height)) * scale);
-        RenderSystem.enableScissor((int) (x * scale), Math.max(0, scissorY), (int) (width * scale), (int) (height * scale));
+        public static void startScissor(int x, int y, int width, int height) {
+        if (Compat.getContext() != null) {
+            Compat.getContext().enableScissor(x, y, x + width, y + height);
+        } else {
+            if (mc.getWindow() == null) return;
+            double scale = mc.getWindow().getScaleFactor();
+            int screenH = mc.getWindow().getScaledHeight();
+            int scissorY = (int) ((screenH - (y + height)) * scale);
+            RenderSystem.enableScissor((int) (x * scale), Math.max(0, scissorY), (int) (width * scale), (int) (height * scale));
+        }
     }
 
     public static void endScissor() {
-        RenderSystem.disableScissor();
+        if (Compat.getContext() != null) {
+            Compat.getContext().disableScissor();
+        } else {
+            RenderSystem.disableScissor();
+        }
     }
 }

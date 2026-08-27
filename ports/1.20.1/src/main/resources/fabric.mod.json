@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "nexus_pvp",
-  "version": "0.1.15-beta",
+  "version": "0.1.16-beta",
   "name": "NexusPVP",
-  "description": "NexusPVP v0.1.15-beta [Rosetta] - Advanced Visuals & Quality of Life Mod",
+  "description": "NexusPVP v0.1.16-beta [Horizon] - Advanced Visuals & Quality of Life Mod",
   "authors": [
     "NexusPVP"
   ],

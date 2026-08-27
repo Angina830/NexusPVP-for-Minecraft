@@ -53,21 +53,21 @@ public class LanguageManager {
         translations.put("NoSlowFOV", "Фикс угла обзора");
         translations.put("NoHurtCam", "Анти-тряска камеры");
         translations.put("Radio", "Радио SoundCloud");
-        translations.put("Particles", "Частицы удара");
+        translations.put("Particles", "Частицы");
         translations.put("JumpCircles", "Круги прыжка");
-        translations.put("Trails", "Следы за игроком");
+        translations.put("Trails", "Следы");
         translations.put("ChinaHat", "Китайская шляпа");
-        translations.put("Nimb", "Нимб ангела");
+        translations.put("Nimb", "Нимб");
         translations.put("JumpParticles", "Частицы прыжка");
         translations.put("Targeting", "Прицеливание");
         translations.put("HitColor", "Цвет удара");
-        translations.put("ViewModel", "Модель рук (ViewModel)");
-        translations.put("Ambience", "Окружение и небо");
+        translations.put("ViewModel", "Модель рук");
+        translations.put("Ambience", "Окружение");
         translations.put("HudModule", "Интерфейс (HUD)");
         translations.put("HUD", "Интерфейс (HUD)");
         translations.put("BabyMode", "Режим ребенка");
         translations.put("SwingAnimations", "Анимации удара");
-        translations.put("Zoom", "Приближение камеры (Zoom)");
+        translations.put("Zoom", "Приближение");
         translations.put("AttackVignette", "Виньетка готовности удара");
         translations.put("OverheadHealth", "Полоска здоровья над головой");
         translations.put("GalaxySky", "Галактическое небо");
@@ -77,8 +77,8 @@ public class LanguageManager {
         translations.put("TNTTimer", "Таймер ТНТ");
         translations.put("ClearWater", "Прозрачная вода");
         translations.put("ChatTweaks", "Твики чата");
-        translations.put("ClickGuiModule", "Меню настроек");
-        translations.put("ClickGui", "Меню настроек");
+        translations.put("ClickGuiModule", "Меню");
+        translations.put("ClickGui", "Меню");
         translations.put("DebugLogger", "Отладчик");
 
         // === MODULE DESCRIPTIONS ===
@@ -311,6 +311,7 @@ public class LanguageManager {
         translations.put("Cyan", "Киберпанк Циан");
 
         // === COMMON UI LABELS & BUTTONS ===
+        translations.put("Online", "В сети");
         translations.put("Search...", "Поиск модулей...");
         translations.put("Add Track...", "Ссылка на трек SoundCloud...");
         translations.put("Config Name...", "Имя профиля...");
