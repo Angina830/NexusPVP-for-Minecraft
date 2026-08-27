@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "nexus_pvp",
-  "version": "0.1.33-beta",
-  "name": "NexusPVP",
+  "version": "0.2.0-beta",
+  "name": "NexusPVP (Supernova)",
   "description": "NexusPVP v0.1.33-beta [Occlusion] - Advanced Visuals & Quality of Life Mod",
   "authors": [
     "NexusPVP"

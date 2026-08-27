@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Minecraft-1.16.5%20%7C%201.20.1%20%7C%201.21.1-blue?style=for-the-badge&logo=minecraft" alt="Minecraft Versions" />
   <img src="https://img.shields.io/badge/Fabric%20Loader-0.14+-black?style=for-the-badge&logo=fabric" alt="Fabric" />
   <img src="https://img.shields.io/badge/Fabric%20API-ОБЯЗАТЕЛЬНО%20%2F%20REQUIRED-critical?style=for-the-badge&logo=fabric" alt="Fabric API Required" />
-  <img src="https://img.shields.io/badge/Version-0.1.33--beta-purple?style=for-the-badge" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v0.2.0-beta%20%5BSupernova%5D-purple?style=for-the-badge" alt="Version" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
 </p>
 
@@ -141,9 +141,9 @@
 1. Скачайте и установите **[Fabric Loader](https://fabricmc.net/)** для вашей версии игры (`1.16.5`, `1.20.1` или `1.21.1`).
 2. **ОБЯЗАТЕЛЬНО:** Скачайте **[Fabric API](https://modrinth.com/mod/fabric-api)** для вашей версии игры и поместите его в папку `.minecraft/mods`.
 3. Скачайте `.jar` файл клиента нужной версии из раздела **[Releases](../../releases)**:
-   - `NexusPVP-1.16.5-v0.1.33-beta.jar`
-   - `NexusPVP-1.20.1-v0.1.33-beta.jar`
-   - `NexusPVP-1.21.1-v0.1.33-beta.jar`
+   - `NexusPVP-1.16.5-v0.2.0-beta [Supernova].jar`
+   - `NexusPVP-1.20.1-v0.2.0-beta [Supernova].jar`
+   - `NexusPVP-1.21.1-v0.2.0-beta [Supernova].jar`
 4. Поместите файл `NexusPVP-*.jar` в папку `.minecraft/mods`.
 5. Запустите игру и нажмите **`Right Shift`** для открытия меню!
 
@@ -272,9 +272,9 @@ Switch seamlessly between **4 uniquely designed GUI layouts** in real time:
 1. Download and install **[Fabric Loader](https://fabricmc.net/)** for your Minecraft version (`1.16.5`, `1.20.1`, or `1.21.1`).
 2. **REQUIRED:** Download **[Fabric API](https://modrinth.com/mod/fabric-api)** matching your version and put it in your `.minecraft/mods` folder.
 3. Download the matching `.jar` from **[Releases](../../releases)**:
-   - `NexusPVP-1.16.5-v0.1.33-beta.jar`
-   - `NexusPVP-1.20.1-v0.1.33-beta.jar`
-   - `NexusPVP-1.21.1-v0.1.33-beta.jar`
+   - `NexusPVP-1.16.5-v0.2.0-beta [Supernova].jar`
+   - `NexusPVP-1.20.1-v0.2.0-beta [Supernova].jar`
+   - `NexusPVP-1.21.1-v0.2.0-beta [Supernova].jar`
 4. Place `NexusPVP-*.jar` into your `.minecraft/mods` directory.
 5. Launch Minecraft and press **`Right Shift`** to open the menu!
 
