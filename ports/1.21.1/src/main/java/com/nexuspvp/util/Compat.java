@@ -6,10 +6,17 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.BufferRenderer;
+import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import org.joml.Matrix4f;
 
 public class Compat {
 
@@ -81,10 +88,8 @@ public class Compat {
 
     public static void drawItem(MatrixStack matrices, ItemStack stack, int x, int y) {
         if (stack == null || stack.isEmpty()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
         if (activeContext != null) {
             activeContext.drawItem(stack, x, y);
-            // overlay
         }
     }
 
@@ -93,19 +98,48 @@ public class Compat {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
         if (activeContext != null) {
-            activeContext.drawTexture(skin, x, y, 8, 8, 8, 8, size, size, 64, 64);
-            activeContext.drawTexture(skin, x, y, 40, 8, 8, 8, size, size, 64, 64);
+            // DrawContext: drawTexture(texture, x, y, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight)
+            // 1. Base head layer: U=8, V=8, Region=8x8, Texture=64x64
+            activeContext.drawTexture(skin, x, y, size, size, 8.0f, 8.0f, 8, 8, 64, 64);
+            // 2. Outer hat/helmet layer: U=40, V=8, Region=8x8, Texture=64x64
+            activeContext.drawTexture(skin, x, y, size, size, 40.0f, 8.0f, 8, 8, 64, 64);
+        } else {
+            RenderSystem.setShader(GameRenderer::getPositionTexProgram);
+            RenderSystem.setShaderTexture(0, skin);
+            Matrix4f mat = matrices.peek().getPositionMatrix();
+
+            Tessellator tessellator = Tessellator.getInstance();
+            BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
+
+            // 1. Base head layer
+            float u1 = 8.0f / 64.0f, v1 = 8.0f / 64.0f;
+            float u2 = 16.0f / 64.0f, v2 = 16.0f / 64.0f;
+            buffer.vertex(mat, x, y + size, 0).texture(u1, v2);
+            buffer.vertex(mat, x + size, y + size, 0).texture(u2, v2);
+            buffer.vertex(mat, x + size, y, 0).texture(u2, v1);
+            buffer.vertex(mat, x, y, 0).texture(u1, v1);
+
+            // 2. Outer hat layer
+            float hu1 = 40.0f / 64.0f, hv1 = 8.0f / 64.0f;
+            float hu2 = 48.0f / 64.0f, hv2 = 16.0f / 64.0f;
+            buffer.vertex(mat, x, y + size, 0).texture(hu1, hv2);
+            buffer.vertex(mat, x + size, y + size, 0).texture(hu2, hv2);
+            buffer.vertex(mat, x + size, y, 0).texture(hu2, hv1);
+            buffer.vertex(mat, x, y, 0).texture(hu1, hv1);
+
+            BufferRenderer.drawWithGlobalProgram(buffer.end());
         }
     }
 
     public static int getScaledWidth() {
         MinecraftClient mc = MinecraftClient.getInstance();
-        return mc.getWindow() != null ? mc.getWindow().getScaledWidth() : 800;
+        return mc.getWindow().getScaledWidth();
     }
 
     public static int getScaledHeight() {
         MinecraftClient mc = MinecraftClient.getInstance();
-        return mc.getWindow() != null ? mc.getWindow().getScaledHeight() : 600;
+        return mc.getWindow().getScaledHeight();
     }
 }
