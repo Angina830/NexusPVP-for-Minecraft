@@ -22,7 +22,7 @@ public class MixinEntityRenderDispatcher {
             if (instance != null && instance.getModuleManager() != null) {
                 OverheadHealth overhead = instance.getModuleManager().getModule(OverheadHealth.class);
                 if (overhead != null && overhead.isEnabled()) {
-                    overhead.renderOverhead((LivingEntity) entity, matrices, vertexConsumers, tickDelta, light);
+                    overhead.renderOverhead((LivingEntity) entity, x, y, z, matrices, vertexConsumers, tickDelta, light);
                 }
             }
         }

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "nexus_pvp",
-  "version": "0.1.28-beta",
+  "version": "0.1.29-beta",
   "name": "NexusPVP",
-  "description": "NexusPVP v0.1.28-beta [Vanguard] - Advanced Visuals & Quality of Life Mod",
+  "description": "NexusPVP v0.1.29-beta [Polaris] - Advanced Visuals & Quality of Life Mod",
   "authors": [
     "NexusPVP"
   ],

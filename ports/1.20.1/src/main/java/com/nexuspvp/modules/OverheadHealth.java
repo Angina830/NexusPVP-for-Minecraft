@@ -42,7 +42,7 @@ public class OverheadHealth extends Module {
         return trackers.size();
     }
 
-    public void renderOverhead(LivingEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, int light) {
+    public void renderOverhead(LivingEntity entity, double x, double y, double z, MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, int light) {
         if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisible()) return;
         if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
         if (entity.squaredDistanceTo(mc.player) > range.getValue() * range.getValue()) return;
@@ -101,7 +101,7 @@ public class OverheadHealth extends Module {
         float cardY = -cardH / 2.0f;
 
         matrices.push();
-        matrices.translate(0.0D, entity.getHeight() + 0.55F, 0.0D);
+        matrices.translate(x, y + entity.getHeight() + 0.55D, z);
         matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
         float scale = 0.020F;
