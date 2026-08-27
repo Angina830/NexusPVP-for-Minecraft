@@ -1,15 +1,19 @@
 package com.nexuspvp.modules;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.RenderUtils;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,159 +21,190 @@ import java.util.Map;
 public class OverheadHealth extends Module {
 
     private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
-    private final BooleanSetting showAbsorption = addSetting(new BooleanSetting("Absorption", true));
-    private final BooleanSetting showDotaGhost = addSetting(new BooleanSetting("DotaHealth", true));
-    private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 64.0, 1.0));
-    private final NumberSetting scale = addSetting(new NumberSetting("Scale", 1.0, 0.5, 2.0, 0.05));
-    private final NumberSetting yOffset = addSetting(new NumberSetting("YOffset", 0.0, -1.0, 2.0, 0.05));
+    private final NumberSetting range = addSetting(new NumberSetting("Range", 20.0, 5.0, 50.0, 1.0));
+    private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
 
-    // Per-entity Dota 2 damage ghost health tracking
-    private final Map<Integer, EntityHpData> hpMap = new HashMap<>();
+    private final Map<Integer, HealthTracker> trackerMap = new HashMap<>();
+
+    private static class HealthTracker {
+        float previousHealth = -1;
+        float animatedHealth = -1;
+        float damageGhostHealth = -1;
+        long lastDamageTime = 0;
+        float animatedAbsorption = 0;
+    }
 
     public OverheadHealth() {
-        super("OverheadHealth", "TargetHUD-style Dota 2 health bar floating above entities", Category.RENDER);
+        super("OverheadHealth", "Mini-TargetHUD floating health card above entities", Category.RENDER);
     }
 
     @Override
-    public void onTick() {
-        if (mc.world == null) return;
+    public void onRender3D(MatrixStack matrices, float tickDelta) {
+        if (mc.world == null || mc.player == null) return;
 
-        long now = System.currentTimeMillis();
-        for (Entity e : mc.world.getEntities()) {
-            if (e instanceof LivingEntity && e != mc.player) {
-                LivingEntity living = (LivingEntity) e;
-                float currentHealth = living.getHealth();
-                float currentAbs = living.getAbsorptionAmount();
+        double maxDistSq = range.getValue() * range.getValue();
+        Vec3d camPos = mc.gameRenderer.getCamera().getPos();
 
-                EntityHpData data = hpMap.computeIfAbsent(e.getEntityId(), id -> new EntityHpData(currentHealth, currentAbs));
+        for (Entity entity : mc.world.getEntities()) {
+            if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
+            if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) continue;
 
-                if (currentHealth < data.prevHealth) {
-                    data.lastDamageTime = now;
-                }
-                data.prevHealth = currentHealth;
+            LivingEntity living = (LivingEntity) entity;
+            if (!living.isAlive() || living.isInvisibleTo(mc.player)) continue;
 
-                // Smooth animated health
-                data.animatedHealth += (currentHealth - data.animatedHealth) * 0.25f;
+            double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
+            if (distSq > maxDistSq) continue;
 
-                // Dota 2 ghost catchup after 350ms
-                if (now - data.lastDamageTime > 350) {
-                    data.ghostHealth += (currentHealth - data.ghostHealth) * 0.15f;
-                }
-                if (data.ghostHealth < currentHealth) {
-                    data.ghostHealth = currentHealth;
-                }
+            matrices.push();
+            Vec3d interp = RenderUtils.getInterpolatedPos(living, tickDelta);
+            matrices.translate(interp.x - camPos.x, interp.y - camPos.y, interp.z - camPos.z);
 
-                data.animatedAbs += (currentAbs - data.animatedAbs) * 0.20f;
-            }
+            renderEntityHealth(matrices, living, tickDelta);
+
+            matrices.pop();
         }
-
-        // Clean up dead/despawned entities
-        hpMap.entrySet().removeIf(entry -> mc.world.getEntityById(entry.getKey()) == null);
     }
 
-    public void renderOverhead(LivingEntity entity, MatrixStack matrices, float tickDelta) {
-        if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisible()) return;
-        if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
+    private void renderEntityHealth(MatrixStack matrices, LivingEntity entity, float tickDelta) {
+        VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
+        int light = 0xF000F0;
 
-        double distSq = entity.squaredDistanceTo(mc.player);
-        if (distSq > range.getValue() * range.getValue()) return;
-
-        EntityHpData data = hpMap.computeIfAbsent(entity.getEntityId(), id -> new EntityHpData(entity.getHealth(), entity.getAbsorptionAmount()));
-
-        float userScale = scale.getFloatValue();
-        float yOff = yOffset.getFloatValue();
-
-        matrices.push();
-        // Translate right above entity model head
-        matrices.translate(0.0D, (double) (entity.getHeight() + 0.5F + yOff), 0.0D);
-        // Face camera smoothly
-        matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
-
-        float sc = 0.025F * userScale;
-        matrices.scale(-sc, -sc, sc);
-
-        renderOverheadCard(matrices, entity, data);
-
-        matrices.pop();
-    }
-
-    private void renderOverheadCard(MatrixStack matrices, LivingEntity entity, EntityHpData data) {
-        int cardW = 76;
-        int cardH = 17;
-        int halfW = cardW / 2;
-
-        // Dark Discord container
-        RenderUtils.drawRoundedRect(matrices, -halfW - 1, -cardH / 2 - 1, cardW + 2, cardH + 2, 4, 0xAA111214);
-        RenderUtils.drawRoundedRect(matrices, -halfW, -cardH / 2, cardW, cardH, 3, 0xEE1E1F22);
-
-        // Entity Name & HP Number
-        String name = entity.getName().asString();
-        if (mc.textRenderer.getWidth(name) > 42) {
-            name = name.substring(0, Math.min(name.length(), 6)) + "..";
-        }
-        mc.textRenderer.drawWithShadow(matrices, name, -halfW + 4, -cardH / 2 + 2, 0xFFF2F3F5);
+        HealthTracker tracker = trackerMap.computeIfAbsent(entity.getId(), id -> new HealthTracker());
 
         float currentHp = entity.getHealth();
-        float maxHp = Math.max(1.0f, entity.getMaxHealth());
-        String hpText = String.format("%.1f", currentHp);
-        int hpW = mc.textRenderer.getWidth(hpText);
-        mc.textRenderer.drawWithShadow(matrices, hpText, halfW - hpW - 4, -cardH / 2 + 2, 0xFF22C55E);
+        float maxHp = entity.getMaxHealth();
+        float currentAbs = entity.getAbsorptionAmount();
 
-        // Dota 2 Animated Health Bar
-        int barX = -halfW + 3;
-        int barY = 1;
-        int barW = cardW - 6;
-        int barH = 4;
-
-        // Bar background
-        RenderUtils.drawRoundedRect(matrices, barX, barY, barW, barH, 2, 0xFF351C1C);
-
-        // 1. Dota 2 White Damage Ghost Bar
-        if (showDotaGhost.isEnabled() && data.ghostHealth > currentHp) {
-            float ghostPct = MathHelper.clamp(data.ghostHealth / maxHp, 0.0f, 1.0f);
-            int ghostW = (int) (barW * ghostPct);
-            if (ghostW > 0) {
-                RenderUtils.drawRoundedRect(matrices, barX, barY, ghostW, barH, 2, 0xFFFFFFFF);
-            }
+        if (tracker.previousHealth < 0) {
+            tracker.previousHealth = currentHp;
+            tracker.animatedHealth = currentHp;
+            tracker.damageGhostHealth = currentHp;
+            tracker.animatedAbsorption = currentAbs;
         }
 
-        // 2. Main Animated Health Bar (Green / Yellow / Red based on HP%)
-        float hpPct = MathHelper.clamp(data.animatedHealth / maxHp, 0.0f, 1.0f);
-        int mainW = (int) (barW * hpPct);
-        if (mainW > 0) {
-            int hpColor;
-            if (hpPct > 0.5f) {
-                hpColor = 0xFF22C55E; // Emerald Green
-            } else if (hpPct > 0.25f) {
-                hpColor = 0xFFEAB308; // Yellow
-            } else {
-                hpColor = 0xFFEF4444; // Red
-            }
-            RenderUtils.drawRoundedRect(matrices, barX, barY, mainW, barH, 2, hpColor);
+        if (currentHp < tracker.previousHealth) {
+            tracker.damageGhostHealth = tracker.previousHealth;
+            tracker.lastDamageTime = System.currentTimeMillis();
+        }
+        tracker.previousHealth = currentHp;
+
+        tracker.animatedHealth = MathHelper.lerp(0.18f, tracker.animatedHealth, currentHp);
+        tracker.animatedAbsorption = MathHelper.lerp(0.18f, tracker.animatedAbsorption, currentAbs);
+
+        if (System.currentTimeMillis() - tracker.lastDamageTime > 280) {
+            tracker.damageGhostHealth = MathHelper.lerp(0.08f, tracker.damageGhostHealth, currentHp);
+        }
+        if (currentHp > tracker.damageGhostHealth) {
+            tracker.damageGhostHealth = currentHp;
         }
 
-        // 3. Absorption Golden Bar Overlay
-        if (showAbsorption.isEnabled() && data.animatedAbs > 0.01f) {
-            float absPct = MathHelper.clamp(data.animatedAbs / maxHp, 0.0f, 1.0f);
-            int absW = (int) (barW * absPct);
-            if (absW > 0) {
-                RenderUtils.drawRoundedRect(matrices, barX, barY + 2, absW, 2, 1, 0xFFF59E0B);
-            }
+        // Entity name
+        String name = entity.getName().getString();
+        if (name.length() > 14) {
+            name = name.substring(0, 12) + "..";
         }
-    }
 
-    private static class EntityHpData {
-        float prevHealth;
-        float animatedHealth;
-        float ghostHealth;
-        float animatedAbs;
-        long lastDamageTime = 0;
-
-        EntityHpData(float health, float abs) {
-            this.prevHealth = health;
-            this.animatedHealth = health;
-            this.ghostHealth = health;
-            this.animatedAbs = abs;
+        // HP text
+        String hpText = String.format("%.1f", currentHp) + " / " + String.format("%.0f", maxHp) + " \u2764";
+        if (currentAbs > 0) {
+            hpText += " (+" + String.format("%.1f", currentAbs) + ")";
         }
+
+        float healthPct = MathHelper.clamp(tracker.animatedHealth / maxHp, 0.0f, 1.0f);
+        float ghostPct = MathHelper.clamp(tracker.damageGhostHealth / maxHp, 0.0f, 1.0f);
+        int hpColor = healthPct > 0.6f ? 0xFF23A55A : (healthPct > 0.3f ? 0xFFFEE75C : 0xFFED4245);
+        int hpTextColor = currentAbs > 0 ? 0xFFFFD700 : hpColor;
+
+        int nameW = mc.textRenderer.getWidth(name);
+        int hpTextW = mc.textRenderer.getWidth(hpText);
+
+        // Compact card dimensions
+        int cardW = Math.max(nameW + hpTextW + 16, 95);
+        int cardH = 22;
+        float cardX = -cardW / 2.0f;
+        float cardY = -cardH / 2.0f;
+
+        matrices.push();
+        matrices.translate(0.0D, entity.getHeight() + 0.55F, 0.0D);
+        matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
+
+        float scale = 0.020F;
+        matrices.scale(scale, -scale, scale);
+
+        // Direct hardware rendering with depth test against world, but no depth write between HUD layers
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(false);
+
+        // 1. Blurple border (0xEE5865F2)
+        RenderUtils.drawQuad(matrices, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2);
+
+        // 2. Dark Discord background (0xFA1E1F22)
+        RenderUtils.drawQuad(matrices, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22);
+
+        // 3. Health bar
+        float barX = cardX + 4;
+        float barY = cardY + 13;
+        float barW = cardW - 8;
+        float barH = 5;
+
+        // Health bar track (0xFF2B2D31)
+        RenderUtils.drawQuad(matrices, barX, barY, barX + barW, barY + barH, 0xFF2B2D31);
+
+        // Ghost damage bar (White 0xFFF2F3F5)
+        if (ghostDamage.isEnabled() && ghostPct > 0) {
+            float ghostW = barW * ghostPct;
+            RenderUtils.drawQuad(matrices, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5);
+        }
+
+        // Active health bar (hpColor)
+        if (healthPct > 0) {
+            float fillW = barW * healthPct;
+            RenderUtils.drawQuad(matrices, barX, barY, barX + fillW, barY + barH, hpColor);
+        }
+
+        // Absorption bar (Gold 0xFFFFD700)
+        if (tracker.animatedAbsorption > 0) {
+            float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
+            float absW = barW * absPct;
+            RenderUtils.drawQuad(matrices, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700);
+        }
+
+        RenderSystem.depthMask(true);
+
+        // 4. Text rendered via TextRenderer
+        float textY = cardY + 3;
+
+        // Name on the left
+        mc.textRenderer.draw(
+            name,
+            cardX + 4,
+            textY,
+            0xFFF2F3F5,
+            false,
+            matrices.peek().getPositionMatrix(),
+            vertexConsumers,
+            TextRenderer.TextLayerType.NORMAL,
+            0,
+            light
+        );
+
+        // HP text on the right
+        float hpTextX = cardX + cardW - hpTextW - 4;
+        mc.textRenderer.draw(
+            hpText,
+            hpTextX,
+            textY,
+            hpTextColor,
+            false,
+            matrices.peek().getPositionMatrix(),
+            vertexConsumers,
+            TextRenderer.TextLayerType.NORMAL,
+            0,
+            light
+        );
+
+        matrices.pop();
     }
 }

@@ -28,11 +28,27 @@ public class MixinHeldItemRenderer {
         ViewModel viewModel = instance.getModuleManager().getModule(ViewModel.class);
         if (viewModel != null && viewModel.isEnabled()) {
             if (!viewModel.isOnlyMainHand() || hand == Hand.MAIN_HAND) {
+                Arm arm = (hand == Hand.MAIN_HAND) ? player.getMainArm() : player.getMainArm().getOpposite();
+                float armX = (arm == Arm.RIGHT ? 1.0f : -1.0f) * 0.56f;
+                float armY = -0.52f;
+                float armZ = -0.72f;
+
+                // 1. Move to hand's natural resting anchor point
+                matrices.translate(armX, armY, armZ);
+
+                // 2. Apply user custom translation
                 matrices.translate(viewModel.getTranslateX(), viewModel.getTranslateY(), viewModel.getTranslateZ());
+
+                // 3. Rotate around hand's own local center axis!
                 matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(viewModel.getRotateX()));
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(viewModel.getRotateY()));
                 matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(viewModel.getRotateZ()));
+
+                // 4. Scale around local center
                 matrices.scale(viewModel.getScaleX(), viewModel.getScaleY(), viewModel.getScaleZ());
+
+                // 5. Move back so subsequent item transforms position correctly relative to the rotated hand
+                matrices.translate(-armX, -armY, -armZ);
             }
         }
     }
@@ -68,24 +84,16 @@ public class MixinHeldItemRenderer {
                 matrices.translate((float) i * -0.15F * f1, -0.05F * f, 0.1F * f1);
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * (45.0F + f * -30.0F)));
                 matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((float) i * f1 * -35.0F));
-                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -65.0F));
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -80.0F));
             } else if (style.equalsIgnoreCase("Spin")) {
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * 45.0F));
-                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((float) i * progress * 360.0F));
-                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -50.0F));
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
+                matrices.translate((float) i * -0.1F * f1, 0.0F, 0.0F);
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * progress * 360.0F));
             } else if (style.equalsIgnoreCase("Push")) {
-                matrices.translate((float) i * -0.05F * f, 0.0F, -0.3F * f);
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * (45.0F + f * -15.0F)));
-                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((float) i * f1 * -10.0F));
-                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -50.0F));
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
+                matrices.translate(0.0F, 0.0F, -0.2F * f1);
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -20.0F));
             } else if (style.equalsIgnoreCase("Down")) {
-                matrices.translate(0.0F, -0.18F * f1, 0.0F);
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * 45.0F));
-                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * -90.0F));
-                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees((float) i * -45.0F));
+                matrices.translate(0.0F, -0.15F * f1, 0.0F);
+                matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(f1 * 30.0F));
             }
             ci.cancel();
         }

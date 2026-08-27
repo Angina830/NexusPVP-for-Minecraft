@@ -9,9 +9,11 @@ import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,44 +21,66 @@ import java.util.Map;
 public class OverheadHealth extends Module {
 
     private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
+    private final NumberSetting range = addSetting(new NumberSetting("Range", 20.0, 5.0, 50.0, 1.0));
     private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
-    private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 60.0, 1.0));
+
+    private final Map<Integer, HealthTracker> trackerMap = new HashMap<>();
 
     private static class HealthTracker {
-        float animatedHealth;
-        float damageGhostHealth;
-        float previousHealth;
-        float animatedAbsorption;
-        long lastDamageTime;
+        float previousHealth = -1;
+        float animatedHealth = -1;
+        float damageGhostHealth = -1;
+        long lastDamageTime = 0;
+        float animatedAbsorption = 0;
     }
-
-    private final Map<Integer, HealthTracker> trackers = new HashMap<>();
 
     public OverheadHealth() {
         super("OverheadHealth", "Mini-TargetHUD floating health card above entities", Category.RENDER);
-        setEnabled(true);
     }
 
-    public void renderOverhead(LivingEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, int light) {
-        if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisible()) return;
-        if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
-        if (entity.squaredDistanceTo(mc.player) > range.getValue() * range.getValue()) return;
-        if (!mc.player.canSee(entity)) return;
+    @Override
+    public void onRender3D(MatrixStack matrices, float tickDelta) {
+        if (mc.world == null || mc.player == null) return;
+
+        double maxDistSq = range.getValue() * range.getValue();
+        Vec3d camPos = mc.gameRenderer.getCamera().getPos();
+
+        for (Entity entity : mc.world.getEntities()) {
+            if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
+            if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) continue;
+
+            LivingEntity living = (LivingEntity) entity;
+            if (!living.isAlive() || living.isInvisibleTo(mc.player)) continue;
+
+            double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
+            if (distSq > maxDistSq) continue;
+
+            matrices.push();
+            Vec3d interp = RenderUtils.getInterpolatedPos(living, tickDelta);
+            matrices.translate(interp.x - camPos.x, interp.y - camPos.y, interp.z - camPos.z);
+
+            renderEntityHealth(matrices, living, tickDelta);
+
+            matrices.pop();
+        }
+    }
+
+    private void renderEntityHealth(MatrixStack matrices, LivingEntity entity, float tickDelta) {
+        VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
+        int light = 0xF000F0;
+
+        HealthTracker tracker = trackerMap.computeIfAbsent(entity.getId(), id -> new HealthTracker());
 
         float currentHp = entity.getHealth();
         float maxHp = entity.getMaxHealth();
         float currentAbs = entity.getAbsorptionAmount();
 
-        // Smooth animation and Dota-style Ghost Damage tracking
-        HealthTracker tracker = trackers.computeIfAbsent(entity.getId(), id -> {
-            HealthTracker t = new HealthTracker();
-            t.animatedHealth = currentHp;
-            t.damageGhostHealth = currentHp;
-            t.previousHealth = currentHp;
-            t.animatedAbsorption = currentAbs;
-            t.lastDamageTime = 0;
-            return t;
-        });
+        if (tracker.previousHealth < 0) {
+            tracker.previousHealth = currentHp;
+            tracker.animatedHealth = currentHp;
+            tracker.damageGhostHealth = currentHp;
+            tracker.animatedAbsorption = currentAbs;
+        }
 
         if (currentHp < tracker.previousHealth) {
             tracker.damageGhostHealth = tracker.previousHealth;
@@ -81,7 +105,7 @@ public class OverheadHealth extends Module {
         }
 
         // HP text
-        String hpText = String.format("%.1f", currentHp) + " / " + String.format("%.0f", maxHp) + " ❤";
+        String hpText = String.format("%.1f", currentHp) + " / " + String.format("%.0f", maxHp) + " \u2764";
         if (currentAbs > 0) {
             hpText += " (+" + String.format("%.1f", currentAbs) + ")";
         }
@@ -111,16 +135,13 @@ public class OverheadHealth extends Module {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(true);
+        RenderSystem.depthMask(false);
 
         // 1. Blurple border (0xEE5865F2)
         RenderUtils.drawQuad(matrices, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2);
 
-        // 2. Dark Discord background (writes to depth buffer so water and clouds never overlap!)
+        // 2. Dark Discord background (0xFA1E1F22)
         RenderUtils.drawQuad(matrices, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22);
-
-        matrices.push();
-        matrices.translate(0.0, 0.0, -0.02);
 
         // 3. Health bar
         float barX = cardX + 4;
@@ -150,7 +171,7 @@ public class OverheadHealth extends Module {
             RenderUtils.drawQuad(matrices, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700);
         }
 
-        matrices.pop();
+        RenderSystem.depthMask(true);
 
         // 4. Text rendered via TextRenderer
         float textY = cardY + 3;
