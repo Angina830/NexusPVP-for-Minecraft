@@ -9,9 +9,11 @@ import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,16 +39,43 @@ public class OverheadHealth extends Module {
         setEnabled(true);
     }
 
-    public void renderOverhead(LivingEntity entity, MatrixStack matrices, VertexConsumerProvider vertexConsumers, float tickDelta, int light) {
-        if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisible()) return;
-        if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
-        if (entity.squaredDistanceTo(mc.player) > range.getValue() * range.getValue()) return;
+    @Override
+    public void onRender3D(MatrixStack matrices, float tickDelta) {
+        if (mc.world == null || mc.player == null) return;
 
+        double maxDistSq = range.getValue() * range.getValue();
+        Vec3d camPos = mc.gameRenderer.getCamera().getPos();
+
+        for (Entity entity : mc.world.getEntities()) {
+            if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
+            if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) continue;
+
+            LivingEntity living = (LivingEntity) entity;
+            if (!living.isAlive() || living.isInvisibleTo(mc.player)) continue;
+
+            double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
+            if (distSq > maxDistSq) continue;
+
+            Vec3d interp = RenderUtils.getInterpolatedPos(living, tickDelta);
+
+            matrices.push();
+            matrices.translate(interp.x - camPos.x, interp.y - camPos.y + living.getHeight() + 0.55D, interp.z - camPos.z);
+            matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
+
+            float scale = 0.020F;
+            matrices.scale(-scale, -scale, scale);
+
+            renderEntityHealth(matrices, living);
+
+            matrices.pop();
+        }
+    }
+
+    private void renderEntityHealth(MatrixStack matrices, LivingEntity entity) {
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         float currentAbs = entity.getAbsorptionAmount();
 
-        // Smooth animation and Dota-style Ghost Damage tracking
         HealthTracker tracker = trackers.computeIfAbsent(entity.getId(), id -> {
             HealthTracker t = new HealthTracker();
             t.animatedHealth = currentHp;
@@ -99,17 +128,9 @@ public class OverheadHealth extends Module {
         float cardX = -cardW / 2.0f;
         float cardY = -cardH / 2.0f;
 
-        matrices.push();
-        matrices.translate(0.0D, entity.getHeight() + 0.55F, 0.0D);
-        matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
-
-        float scale = 0.020F;
-        matrices.scale(scale, -scale, scale);
-
-        // Direct hardware rendering with depth test against world, but no depth write between HUD layers
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.enableDepthTest();
+        RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
 
         // 1. Blurple border (0xEE5865F2)
@@ -146,7 +167,8 @@ public class OverheadHealth extends Module {
             RenderUtils.drawQuad(matrices, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700);
         }
 
-        // 4. Text rendered via TextRenderer
+        // 4. Text rendered with immediate flush
+        VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
         float textY = cardY + 3;
 
         // Name on the left
@@ -160,7 +182,7 @@ public class OverheadHealth extends Module {
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
             0,
-            light
+            0xF000F0
         );
 
         // HP text on the right
@@ -175,16 +197,12 @@ public class OverheadHealth extends Module {
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
             0,
-            light
+            0xF000F0
         );
 
-        if (vertexConsumers instanceof VertexConsumerProvider.Immediate) {
-            ((VertexConsumerProvider.Immediate) vertexConsumers).draw();
-        }
+        vertexConsumers.draw();
 
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
-
-        matrices.pop();
     }
 }

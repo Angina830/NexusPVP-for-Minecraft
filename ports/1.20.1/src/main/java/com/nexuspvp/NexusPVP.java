@@ -13,6 +13,11 @@ public class NexusPVP implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.LAST.register(context -> {
+            if (moduleManager != null) {
+                moduleManager.onRender3D(context.matrixStack(), context.tickDelta());
+            }
+        });
         instance = this;
         themeManager = new ThemeManager();
         moduleManager = new ModuleManager();
@@ -26,7 +31,7 @@ public class NexusPVP implements ClientModInitializer {
             }
         }));
 
-        System.out.println("[NexusPVP] Mod initialized! Version 0.1.20-beta [Aegis](Standalone)");
+        System.out.println("[NexusPVP] Mod initialized! Version 0.1.21-beta [Horizon](Standalone)");
     }
 
     public static NexusPVP getInstance() {

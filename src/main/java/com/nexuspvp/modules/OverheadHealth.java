@@ -6,12 +6,13 @@ import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.RenderUtils;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,11 +38,38 @@ public class OverheadHealth extends Module {
         setEnabled(true);
     }
 
-    public void renderOverhead(LivingEntity entity, MatrixStack matrices, float tickDelta) {
-        if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisible()) return;
-        if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
-        if (entity.squaredDistanceTo(mc.player) > range.getValue() * range.getValue()) return;
+    @Override
+    public void onRender3D(MatrixStack matrices, float tickDelta) {
+        if (mc.world == null || mc.player == null) return;
 
+        double maxDistSq = range.getValue() * range.getValue();
+        Vec3d camPos = mc.gameRenderer.getCamera().getPos();
+
+        for (Entity entity : mc.world.getEntities()) {
+            if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
+            if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) continue;
+
+            LivingEntity living = (LivingEntity) entity;
+            if (!living.isAlive() || living.isInvisibleTo(mc.player)) continue;
+
+            double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
+            if (distSq > maxDistSq) continue;
+
+            matrices.push();
+            Vec3d interp = RenderUtils.getInterpolatedPos(living, tickDelta);
+            matrices.translate(interp.x - camPos.x, interp.y - camPos.y + living.getHeight() + 0.55D, interp.z - camPos.z);
+            matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
+
+            float scale = 0.020F;
+            matrices.scale(-scale, -scale, scale);
+
+            renderEntityHealth(matrices, living);
+
+            matrices.pop();
+        }
+    }
+
+    private void renderEntityHealth(MatrixStack matrices, LivingEntity entity) {
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         float currentAbs = entity.getAbsorptionAmount();
@@ -97,16 +125,9 @@ public class OverheadHealth extends Module {
         float cardX = -cardW / 2.0f;
         float cardY = -cardH / 2.0f;
 
-        matrices.push();
-        matrices.translate(0.0D, entity.getHeight() + 0.55F, 0.0D);
-        matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
-
-        float scale = 0.020F;
-        matrices.scale(-scale, -scale, scale);
-
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.enableDepthTest();
+        RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
 
         // 1. Blurple border
@@ -173,7 +194,5 @@ public class OverheadHealth extends Module {
 
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
-
-        matrices.pop();
     }
 }
