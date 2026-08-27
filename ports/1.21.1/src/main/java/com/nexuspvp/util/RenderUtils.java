@@ -79,11 +79,8 @@ public class RenderUtils {
         int b = color.getBlue();
         int a = color.getAlpha();
 
-        // Outer bloom glow
         drawLine3D(matrices, x1, y1, z1, x2, y2, z2, new Color(r, g, b, (int) (a * 0.18f)), 6.0f);
-        // Inner bloom shell
         drawLine3D(matrices, x1, y1, z1, x2, y2, z2, new Color(r, g, b, (int) (a * 0.45f)), 3.5f);
-        // Vibrant core line
         int coreR = Math.min(255, (int) (r * 0.7f + 255 * 0.3f));
         int coreG = Math.min(255, (int) (g * 0.7f + 255 * 0.3f));
         int coreB = Math.min(255, (int) (b * 0.7f + 255 * 0.3f));
@@ -91,7 +88,6 @@ public class RenderUtils {
     }
 
     public static void drawBox3D(MatrixStack matrices, double x1, double y1, double z1, double x2, double y2, double z2, Color color, float width) {
-        // 12 box edges
         drawLine3D(matrices, x1, y1, z1, x2, y1, z1, color, width);
         drawLine3D(matrices, x2, y1, z1, x2, y1, z2, color, width);
         drawLine3D(matrices, x2, y1, z2, x1, y1, z2, color, width);
@@ -114,7 +110,6 @@ public class RenderUtils {
         int b = color.getBlue();
         int a = color.getAlpha();
 
-        // 1. Optional soft glowing face fill
         if (fill && fillAlpha > 0) {
             Matrix4f matrix = matrices.peek().getPositionMatrix();
             float fr = r / 255.0f;
@@ -127,13 +122,13 @@ public class RenderUtils {
             RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
             Tessellator tessellator = Tessellator.getInstance();
-            BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-            // Bottom face
+            BufferBuilder buffer = tessellator.getBuffer();
+            buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
             buffer.vertex(matrix, (float) x1, (float) y1, (float) z1).color(fr, fg, fb, fa);
             buffer.vertex(matrix, (float) x2, (float) y1, (float) z1).color(fr, fg, fb, fa);
             buffer.vertex(matrix, (float) x2, (float) y1, (float) z2).color(fr, fg, fb, fa);
             buffer.vertex(matrix, (float) x1, (float) y1, (float) z2).color(fr, fg, fb, fa);
-            // Top face
+
             buffer.vertex(matrix, (float) x1, (float) y2, (float) z1).color(fr, fg, fb, fa);
             buffer.vertex(matrix, (float) x1, (float) y2, (float) z2).color(fr, fg, fb, fa);
             buffer.vertex(matrix, (float) x2, (float) y2, (float) z2).color(fr, fg, fb, fa);
@@ -142,11 +137,8 @@ public class RenderUtils {
             RenderSystem.disableBlend();
         }
 
-        // 2. Outer bloom box
         drawBox3D(matrices, x1, y1, z1, x2, y2, z2, new Color(r, g, b, (int) (a * 0.22f)), 5.5f);
-        // 3. Middle bloom box
         drawBox3D(matrices, x1, y1, z1, x2, y2, z2, new Color(r, g, b, (int) (a * 0.55f)), 3.0f);
-        // 4. Sharp vibrant core box
         int coreR = Math.min(255, (int) (r * 0.75f + 255 * 0.25f));
         int coreG = Math.min(255, (int) (g * 0.75f + 255 * 0.25f));
         int coreB = Math.min(255, (int) (b * 0.75f + 255 * 0.25f));
@@ -174,14 +166,23 @@ public class RenderUtils {
         int b = color.getBlue();
         int a = color.getAlpha();
 
-        // Outer bloom halo
         drawCircle3D(matrices, x, y, z, radius, new Color(r, g, b, (int) (a * 0.20f)), 5.5f);
-        // Middle bloom
         drawCircle3D(matrices, x, y, z, radius, new Color(r, g, b, (int) (a * 0.50f)), 3.0f);
-        // Core line
         int coreR = Math.min(255, (int) (r * 0.75f + 255 * 0.25f));
         int coreG = Math.min(255, (int) (g * 0.75f + 255 * 0.25f));
         int coreB = Math.min(255, (int) (b * 0.75f + 255 * 0.25f));
         drawCircle3D(matrices, x, y, z, radius, new Color(coreR, coreG, coreB, a), 1.5f);
+    }
+
+    public static void startScissor(int x, int y, int width, int height) {
+        if (mc.getWindow() == null) return;
+        double scale = mc.getWindow().getScaleFactor();
+        int screenH = mc.getWindow().getScaledHeight();
+        int scissorY = (int) ((screenH - (y + height)) * scale);
+        RenderSystem.enableScissor((int) (x * scale), Math.max(0, scissorY), (int) (width * scale), (int) (height * scale));
+    }
+
+    public static void endScissor() {
+        RenderSystem.disableScissor();
     }
 }
