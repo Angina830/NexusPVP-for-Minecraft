@@ -10,10 +10,10 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Minecraft-1.16.5%20%7C%201.20.1%20%7C%201.21.1-blue?style=for-the-badge&logo=minecraft" alt="Minecraft Versions" />
-  <img src="https://img.shields.io/badge/Fabric-0.14+-black?style=for-the-badge&logo=fabric" alt="Fabric" />
+  <img src="https://img.shields.io/badge/Fabric%20Loader-0.14+-black?style=for-the-badge&logo=fabric" alt="Fabric" />
+  <img src="https://img.shields.io/badge/Fabric%20API-ОБЯЗАТЕЛЬНО%20%2F%20REQUIRED-critical?style=for-the-badge&logo=fabric" alt="Fabric API Required" />
   <img src="https://img.shields.io/badge/Version-0.1.33--beta-purple?style=for-the-badge" alt="Version" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
-  <img src="https://img.shields.io/badge/100%25-Free%20%26%20Clean-success?style=for-the-badge" alt="Free" />
 </p>
 
 <p align="center">
@@ -25,9 +25,22 @@
 
 # 🇷🇺 Русская версия
 
+> [!IMPORTANT]
+> **ОБЯЗАТЕЛЬНОЕ ТРЕБОВАНИЕ:** Для работы клиента **необходим [Fabric API](https://modrinth.com/mod/fabric-api)** соответствующей версии игры (`1.16.5`, `1.20.1` или `1.21.1`)! Без установленного Fabric API мод не запустится.
+
 ## 🌟 О проекте
 
 **NexusPVP** — это инновационный, полностью кастомизируемый визуальный PvP-клиент для Minecraft на платформе **Fabric** (`1.16.5`, `1.20.1`, `1.21.1`). Клиент создан специально для динамичных PvP-битв, анархии (**HolyWorld, FunTime, ReallyWorld**) и комфортной игры с максимальным FPS.
+
+---
+
+## 📋 Системные требования
+
+| Компонент | Требуемая версия | Ссылка |
+|---|---|---|
+| ☕ **Java** | Java 8 (для 1.16.5) / Java 17 (для 1.20.1) / Java 21 (для 1.21.1) | [Adoptium Temurin](https://adoptium.net/) |
+| 🧵 **Fabric Loader** | `0.14.0` или новее | [Fabric Installer](https://fabricmc.net/) |
+| 🧩 **Fabric API (ОБЯЗАТЕЛЬНО)** | Подходящий под вашу версию игры | **[Скачать Fabric API](https://modrinth.com/mod/fabric-api)** |
 
 ---
 
@@ -68,15 +81,15 @@
 
 ---
 
-## 📥 Установка
+## 📥 Пошаговая установка
 
 1. Скачайте и установите **[Fabric Loader](https://fabricmc.net/)** для вашей версии игры (`1.16.5`, `1.20.1` или `1.21.1`).
-2. Установите **[Fabric API](https://modrinth.com/mod/fabric-api)**.
-3. Скачайте `.jar` файл нужной версии из раздела **[Releases](../../releases)**:
+2. **ОБЯЗАТЕЛЬНО:** Скачайте **[Fabric API](https://modrinth.com/mod/fabric-api)** для вашей версии игры и поместите его в папку `.minecraft/mods`.
+3. Скачайте `.jar` файл клиента нужной версии из раздела **[Releases](../../releases)**:
    - `NexusPVP-1.16.5-v0.1.33-beta.jar`
    - `NexusPVP-1.20.1-v0.1.33-beta.jar`
    - `NexusPVP-1.21.1-v0.1.33-beta.jar`
-4. Поместите `.jar` файл в папку `.minecraft/mods`.
+4. Поместите файл `NexusPVP-*.jar` в папку `.minecraft/mods`.
 5. Запустите игру и нажмите **`Right Shift`** для открытия меню!
 
 ---
@@ -93,9 +106,22 @@
 
 # 🇬🇧 English Version
 
+> [!IMPORTANT]
+> **MANDATORY REQUIREMENT:** This mod **strictly requires [Fabric API](https://modrinth.com/mod/fabric-api)** for your corresponding Minecraft version (`1.16.5`, `1.20.1`, or `1.21.1`)! The mod will not start without Fabric API installed.
+
 ## 🌟 About NexusPVP
 
 **NexusPVP** is an advanced, fully customizable visual PvP client for Minecraft built on the **Fabric** platform supporting (`1.16.5`, `1.20.1`, `1.21.1`). Engineered specifically for competitive PvP, Anarchy servers, and crystal-clear high FPS performance.
+
+---
+
+## 📋 Requirements
+
+| Dependency | Required Version | Link |
+|---|---|---|
+| ☕ **Java** | Java 8 (for 1.16.5) / Java 17 (for 1.20.1) / Java 21 (for 1.21.1) | [Adoptium Temurin](https://adoptium.net/) |
+| 🧵 **Fabric Loader** | `0.14.0` or newer | [Fabric Installer](https://fabricmc.net/) |
+| 🧩 **Fabric API (REQUIRED)** | Matching your Minecraft version | **[Download Fabric API](https://modrinth.com/mod/fabric-api)** |
 
 ---
 
@@ -139,12 +165,12 @@ Switch seamlessly between **4 uniquely designed GUI layouts** in real time:
 ## 📥 Installation
 
 1. Download and install **[Fabric Loader](https://fabricmc.net/)** for your Minecraft version (`1.16.5`, `1.20.1`, or `1.21.1`).
-2. Install **[Fabric API](https://modrinth.com/mod/fabric-api)**.
+2. **REQUIRED:** Download **[Fabric API](https://modrinth.com/mod/fabric-api)** matching your version and put it in your `.minecraft/mods` folder.
 3. Download the matching `.jar` from **[Releases](../../releases)**:
    - `NexusPVP-1.16.5-v0.1.33-beta.jar`
    - `NexusPVP-1.20.1-v0.1.33-beta.jar`
    - `NexusPVP-1.21.1-v0.1.33-beta.jar`
-4. Place the `.jar` into your `.minecraft/mods` directory.
+4. Place `NexusPVP-*.jar` into your `.minecraft/mods` directory.
 5. Launch Minecraft and press **`Right Shift`** to open the menu!
 
 ---
