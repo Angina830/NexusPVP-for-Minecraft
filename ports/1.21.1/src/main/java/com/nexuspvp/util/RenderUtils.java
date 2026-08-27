@@ -122,8 +122,7 @@ public class RenderUtils {
             RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
             Tessellator tessellator = Tessellator.getInstance();
-            BufferBuilder buffer = tessellator.getBuffer();
-            buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+            BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
             buffer.vertex(matrix, (float) x1, (float) y1, (float) z1).color(fr, fg, fb, fa);
             buffer.vertex(matrix, (float) x2, (float) y1, (float) z1).color(fr, fg, fb, fa);
             buffer.vertex(matrix, (float) x2, (float) y1, (float) z2).color(fr, fg, fb, fa);
