@@ -216,7 +216,7 @@ public class ClickGui extends Screen {
         boolean draggingViewModel = false;
         for (List<ModuleButton> list : moduleCards.values()) {
             for (ModuleButton mb : list) {
-                if (mb.getModule() instanceof ViewModel && mb.isDraggingSlider()) {
+                if (mb.getModule() != null && mb.getModule().getName().equalsIgnoreCase("ViewModel") && mb.isDraggingSlider()) {
                     draggingViewModel = true;
                     break;
                 }
