@@ -20,6 +20,7 @@ import java.util.Map;
 
 public class OverheadHealth extends Module {
 
+    private final BooleanSetting wallCheck = addSetting(new BooleanSetting("WallCheck", true));
     private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
     private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
     private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 60.0, 1.0));
@@ -59,6 +60,9 @@ public class OverheadHealth extends Module {
 
             double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
             if (distSq > maxDistSq) continue;
+
+            // Line of Sight wall check: hide health card if behind solid walls/blocks
+            if (wallCheck.isEnabled() && !mc.player.canSee(living)) continue;
 
             double interpX = MathHelper.lerp((double) tickDelta, living.prevX, living.getX());
             double interpY = MathHelper.lerp((double) tickDelta, living.prevY, living.getY());
