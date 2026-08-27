@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "nexus_pvp",
-  "version": "0.1.22-beta",
+  "version": "0.1.23-beta",
   "name": "NexusPVP",
-  "description": "NexusPVP v0.1.22-beta [Nexus] - Advanced Visuals & Quality of Life Mod",
+  "description": "NexusPVP v0.1.23-beta [Apex] - Advanced Visuals & Quality of Life Mod",
   "authors": [
     "NexusPVP"
   ],

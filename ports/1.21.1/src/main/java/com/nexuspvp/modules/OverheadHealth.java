@@ -104,13 +104,14 @@ public class OverheadHealth extends Module {
         matrices.scale(-scale, -scale, scale);
 
         Matrix4f mat = matrices.peek().getPositionMatrix();
+        int fullLight = 0xF000F0;
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getTextBackground());
 
         // 1. Blurple border
-        drawBatchedQuad(buffer, mat, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2, light);
+        drawBatchedQuad(buffer, mat, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2, fullLight);
 
         // 2. Dark Discord background
-        drawBatchedQuad(buffer, mat, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22, light);
+        drawBatchedQuad(buffer, mat, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22, fullLight);
 
         // 3. Health bar
         float barX = cardX + 4;
@@ -119,25 +120,25 @@ public class OverheadHealth extends Module {
         float barH = 5;
 
         // Health bar track
-        drawBatchedQuad(buffer, mat, barX, barY, barX + barW, barY + barH, 0xFF2B2D31, light);
+        drawBatchedQuad(buffer, mat, barX, barY, barX + barW, barY + barH, 0xFF2B2D31, fullLight);
 
         // Ghost damage bar
         if (ghostDamage.isEnabled() && ghostPct > 0) {
             float ghostW = barW * ghostPct;
-            drawBatchedQuad(buffer, mat, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5, light);
+            drawBatchedQuad(buffer, mat, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5, fullLight);
         }
 
         // Active health bar
         if (healthPct > 0) {
             float fillW = barW * healthPct;
-            drawBatchedQuad(buffer, mat, barX, barY, barX + fillW, barY + barH, hpColor, light);
+            drawBatchedQuad(buffer, mat, barX, barY, barX + fillW, barY + barH, hpColor, fullLight);
         }
 
         // Absorption bar
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
-            drawBatchedQuad(buffer, mat, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700, light);
+            drawBatchedQuad(buffer, mat, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700, fullLight);
         }
 
         // 4. Text rendered via TextRenderer
@@ -153,7 +154,7 @@ public class OverheadHealth extends Module {
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
             0,
-            light
+            fullLight
         );
 
         float hpTextX = cardX + cardW - hpTextW - 4;
@@ -167,7 +168,7 @@ public class OverheadHealth extends Module {
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
             0,
-            light
+            fullLight
         );
 
         matrices.pop();
@@ -179,9 +180,9 @@ public class OverheadHealth extends Module {
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
 
+        buffer.vertex(mat, x1, y1, 0.0f).color(r, g, b, a).light(light);
         buffer.vertex(mat, x1, y2, 0.0f).color(r, g, b, a).light(light);
         buffer.vertex(mat, x2, y2, 0.0f).color(r, g, b, a).light(light);
         buffer.vertex(mat, x2, y1, 0.0f).color(r, g, b, a).light(light);
-        buffer.vertex(mat, x1, y1, 0.0f).color(r, g, b, a).light(light);
     }
 }
