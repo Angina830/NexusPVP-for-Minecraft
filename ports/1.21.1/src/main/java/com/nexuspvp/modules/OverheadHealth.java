@@ -5,12 +5,11 @@ import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.joml.Matrix4f;
 
@@ -82,111 +81,76 @@ public class OverheadHealth extends Module {
             name = name.substring(0, 12) + "..";
         }
 
-        String hpText = String.format("%.1f", currentHp) + " / " + String.format("%.0f", maxHp) + " \u2764";
-        if (currentAbs > 0) {
-            hpText += " (+" + String.format("%.1f", currentAbs) + ")";
-        }
-
         float healthPct = MathHelper.clamp(tracker.animatedHealth / maxHp, 0.0f, 1.0f);
         float ghostPct = MathHelper.clamp(tracker.damageGhostHealth / maxHp, 0.0f, 1.0f);
-        int hpColor = healthPct > 0.6f ? 0xFF23A55A : (healthPct > 0.3f ? 0xFFFEE75C : 0xFFED4245);
-        int hpTextColor = currentAbs > 0 ? 0xFFFFD700 : hpColor;
 
-        int nameW = mc.textRenderer.getWidth(name);
-        int hpTextW = mc.textRenderer.getWidth(hpText);
+        String hpColorCode = healthPct > 0.6f ? "§a" : (healthPct > 0.3f ? "§e" : "§c");
+        String hpText = String.format("%s%.1f §7/ %s%.0f §c❤", hpColorCode, currentHp, hpColorCode, maxHp);
+        if (currentAbs > 0) {
+            hpText += String.format(" §6(+%.1f)", currentAbs);
+        }
 
-        int cardW = Math.max(nameW + hpTextW + 16, 95);
-        int cardH = 22;
-        float cardX = -cardW / 2.0f;
-        float cardY = -cardH / 2.0f;
+        int totalBars = 20;
+        int filledBars = Math.round(healthPct * totalBars);
+        int ghostBars = Math.round(ghostPct * totalBars);
+
+        StringBuilder barBuilder = new StringBuilder();
+        for (int i = 0; i < totalBars; i++) {
+            if (i < filledBars) {
+                barBuilder.append(hpColorCode).append("■");
+            } else if (i < ghostBars && ghostDamage.isEnabled()) {
+                barBuilder.append("§f■");
+            } else {
+                barBuilder.append("§8■");
+            }
+        }
+        String barStr = barBuilder.toString();
+
+        String line1 = "§f§l" + name + "  " + hpText;
+        String line2 = barStr;
+
+        int w1 = mc.textRenderer.getWidth(line1);
+        int w2 = mc.textRenderer.getWidth(line2);
 
         matrices.push();
         matrices.translate(x, y + entity.getHeight() + 0.55D, z);
         matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
-        float scale = 0.020F;
+        float scale = 0.022F;
         matrices.scale(-scale, -scale, scale);
 
         Matrix4f mat = matrices.peek().getPositionMatrix();
         int fullLight = 0xF000F0;
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getTextBackground());
+        int bg = 0xB0111214;
 
-        // 1. Blurple border
-        drawBatchedQuad(buffer, mat, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2, fullLight);
-
-        // 2. Dark Discord background
-        drawBatchedQuad(buffer, mat, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22, fullLight);
-
-        // 3. Health bar
-        float barX = cardX + 4;
-        float barY = cardY + 13;
-        float barW = cardW - 8;
-        float barH = 5;
-
-        // Health bar track
-        drawBatchedQuad(buffer, mat, barX, barY, barX + barW, barY + barH, 0xFF2B2D31, fullLight);
-
-        // Ghost damage bar
-        if (ghostDamage.isEnabled() && ghostPct > 0) {
-            float ghostW = barW * ghostPct;
-            drawBatchedQuad(buffer, mat, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5, fullLight);
-        }
-
-        // Active health bar
-        if (healthPct > 0) {
-            float fillW = barW * healthPct;
-            drawBatchedQuad(buffer, mat, barX, barY, barX + fillW, barY + barH, hpColor, fullLight);
-        }
-
-        // Absorption bar
-        if (tracker.animatedAbsorption > 0) {
-            float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
-            float absW = barW * absPct;
-            drawBatchedQuad(buffer, mat, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700, fullLight);
-        }
-
-        // 4. Text rendered via TextRenderer
-        float textY = cardY + 3;
-
+        float x1 = -w1 / 2.0f;
         mc.textRenderer.draw(
-            name,
-            cardX + 4,
-            textY,
-            0xFFF2F3F5,
+            Text.literal(line1),
+            x1,
+            -10.0f,
+            0xFFFFFFFF,
             false,
             mat,
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
-            0,
+            bg,
             fullLight
         );
 
-        float hpTextX = cardX + cardW - hpTextW - 4;
+        float x2 = -w2 / 2.0f;
         mc.textRenderer.draw(
-            hpText,
-            hpTextX,
-            textY,
-            hpTextColor,
+            Text.literal(line2),
+            x2,
+            2.0f,
+            0xFFFFFFFF,
             false,
             mat,
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
-            0,
+            bg,
             fullLight
         );
 
         matrices.pop();
-    }
-
-    private void drawBatchedQuad(VertexConsumer buffer, Matrix4f mat, float x1, float y1, float x2, float y2, int color, int light) {
-        int a = (color >> 24) & 0xFF;
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-
-        buffer.vertex(mat, x1, y1, 0.0f).color(r, g, b, a).light(light);
-        buffer.vertex(mat, x1, y2, 0.0f).color(r, g, b, a).light(light);
-        buffer.vertex(mat, x2, y2, 0.0f).color(r, g, b, a).light(light);
-        buffer.vertex(mat, x2, y1, 0.0f).color(r, g, b, a).light(light);
     }
 }
