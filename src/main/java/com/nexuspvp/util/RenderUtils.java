@@ -10,15 +10,6 @@ import org.lwjgl.opengl.GL11;
 import java.awt.Color;
 
 public class RenderUtils {
-
-    public static void drawLine3D(MatrixStack matrices, double x1, double y1, double z1, double x2, double y2, double z2, Color color, float width) {
-        drawLine3D(new Vec3d(x1, y1, z1), new Vec3d(x2, y2, z2), color, width);
-    }
-
-    public static void drawCircle3D(MatrixStack matrices, double x, double y, double z, float radius, Color color, float lineWidth) {
-        drawCircle3D(new Vec3d(x, y, z), radius, 24, color, lineWidth);
-    }
-
     private static final MinecraftClient mc = MinecraftClient.getInstance();
 
     private static final java.util.Deque<int[]> scissorStack = new java.util.ArrayDeque<>();

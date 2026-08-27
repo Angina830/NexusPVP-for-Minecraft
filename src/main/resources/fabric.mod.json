@@ -1,24 +1,18 @@
 {
   "schemaVersion": 1,
   "id": "nexus_pvp",
-  "version": "0.1.7-beta",
+  "version": "${version}",
   "name": "NexusPVP",
-  "description": "NexusPVP v0.1.7-beta [Wraith] - Advanced Visuals & Quality of Life Mod",
-  "authors": [
-    "NexusPVP"
-  ],
+  "description": "Visual enhancements mod for Minecraft - beautiful particles, trails, animations and HUD customization",
+  "authors": ["NexusPVP"],
   "contact": {},
   "license": "MIT",
   "icon": "assets/nexus_pvp/icon.png",
   "environment": "client",
   "entrypoints": {
-    "client": [
-      "com.nexuspvp.NexusPVP"
-    ]
+    "client": ["com.nexuspvp.NexusPVP"]
   },
-  "mixins": [
-    "nexus_pvp.mixins.json"
-  ],
+  "mixins": ["nexus_pvp.mixins.json"],
   "depends": {
     "fabricloader": ">=0.14.0",
     "minecraft": "1.16.5",
