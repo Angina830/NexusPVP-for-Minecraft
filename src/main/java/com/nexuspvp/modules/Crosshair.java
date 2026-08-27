@@ -9,6 +9,7 @@ import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.hit.EntityHitResult;
@@ -191,25 +192,30 @@ public class Crosshair extends Module {
             }
         }
 
-        // Hitmarker animation
-        if (hitmarker.isEnabled() && (System.currentTimeMillis() - lastHitTime < 300)) {
-            float fade = 1.0f - ((System.currentTimeMillis() - lastHitTime) / 300.0f);
-            int alpha = (int) (fade * 255);
-            int hmColor = (alpha << 24) | 0xFF3333;
-            float hmSize = 6.0f;
-            float hmGap = 4.0f;
+        // Hitmarker animation (Crisp 45-degree CoD/Apex diagonal X)
+        if (hitmarker.isEnabled()) {
+            long elapsed = System.currentTimeMillis() - lastHitTime;
+            if (elapsed < 320) {
+                float alpha = 1.0f - (elapsed / 320.0f);
+                int a = (int) (alpha * 255);
+                int hmColor = (a << 24) | 0xFF3333; // Crisp red hitmarker
+                float hmSize = 5.5f;
+                float hmGap = 3.0f;
+                float thick = 1.5f;
+                float halfThick = thick / 2.0f;
 
-            RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy - hmGap - hmSize, hmSize, 1.0f, hmColor);
-            RenderUtils.drawRect(matrices, cx - hmGap - 1.0f, cy - hmGap - hmSize, 1.0f, hmSize, hmColor);
+                matrices.push();
+                matrices.translate(cx, cy, 0.0);
+                matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(45.0f));
 
-            RenderUtils.drawRect(matrices, cx + hmGap, cy - hmGap - hmSize, hmSize, 1.0f, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1.0f, cy - hmGap - hmSize, 1.0f, hmSize, hmColor);
+                // 4 arms rotated at 45 degrees
+                RenderUtils.drawRect(matrices, -halfThick, -hmGap - hmSize, thick, hmSize, hmColor);
+                RenderUtils.drawRect(matrices, -halfThick, hmGap, thick, hmSize, hmColor);
+                RenderUtils.drawRect(matrices, -hmGap - hmSize, -halfThick, hmSize, thick, hmColor);
+                RenderUtils.drawRect(matrices, hmGap, -halfThick, hmSize, thick, hmColor);
 
-            RenderUtils.drawRect(matrices, cx - hmGap - hmSize, cy + hmGap + hmSize - 1.0f, hmSize, 1.0f, hmColor);
-            RenderUtils.drawRect(matrices, cx - hmGap - 1.0f, cy + hmGap, 1.0f, hmSize, hmColor);
-
-            RenderUtils.drawRect(matrices, cx + hmGap, cy + hmGap + hmSize - 1.0f, hmSize, 1.0f, hmColor);
-            RenderUtils.drawRect(matrices, cx + hmGap + hmSize - 1.0f, cy + hmGap, 1.0f, hmSize, hmColor);
+                matrices.pop();
+            }
         }
     }
 }
