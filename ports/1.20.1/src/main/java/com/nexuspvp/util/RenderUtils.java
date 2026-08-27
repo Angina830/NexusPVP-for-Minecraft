@@ -195,4 +195,10 @@ public class RenderUtils {
             RenderSystem.disableScissor();
         }
     }
+    public static net.minecraft.util.math.Vec3d getInterpolatedPos(net.minecraft.entity.Entity entity, float tickDelta) {
+        double x = entity.prevX + (entity.getX() - entity.prevX) * tickDelta;
+        double y = entity.prevY + (entity.getY() - entity.prevY) * tickDelta;
+        double z = entity.prevZ + (entity.getZ() - entity.prevZ) * tickDelta;
+        return new net.minecraft.util.math.Vec3d(x, y, z);
+    }
 }

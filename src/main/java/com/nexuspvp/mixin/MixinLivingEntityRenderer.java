@@ -2,10 +2,8 @@ package com.nexuspvp.mixin;
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.HitColor;
-import com.nexuspvp.modules.OverheadHealth;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.util.math.MatrixStack;
@@ -25,19 +23,8 @@ public abstract class MixinLivingEntityRenderer<T extends LivingEntity, M extend
     private LivingEntity currentRenderEntity;
 
     @Inject(method = "render", at = @At("HEAD"))
-    private void onRenderHead(T entity, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
+    private void onRenderHead(T entity, float yaw, float tickDelta, MatrixStack matrices, net.minecraft.client.render.VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
         this.currentRenderEntity = entity;
-    }
-
-    @Inject(method = "render", at = @At("RETURN"))
-    private void onRenderReturn(T entity, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
-        NexusPVP instance = NexusPVP.getInstance();
-        if (instance != null && instance.getModuleManager() != null) {
-            OverheadHealth overhead = instance.getModuleManager().getModule(OverheadHealth.class);
-            if (overhead != null && overhead.isEnabled()) {
-                overhead.renderOverhead(entity, matrices, tickDelta);
-            }
-        }
     }
 
     @Inject(method = "getOverlay", at = @At("HEAD"), cancellable = true)
