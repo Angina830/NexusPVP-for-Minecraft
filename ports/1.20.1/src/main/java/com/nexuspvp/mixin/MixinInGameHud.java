@@ -4,6 +4,7 @@ import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.Crosshair;
 import com.nexuspvp.modules.ItemCooldowns;
 import com.nexuspvp.util.Compat;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,7 +36,7 @@ public class MixinInGameHud {
             Crosshair crosshair = instance.getModuleManager().getModule(Crosshair.class);
             if (crosshair != null && crosshair.isEnabled()) {
                 ci.cancel();
-                crosshair.renderCustomCrosshair(context);
+                crosshair.renderCustomCrosshair(context, MinecraftClient.getInstance().getTickDelta());
             }
         }
     }

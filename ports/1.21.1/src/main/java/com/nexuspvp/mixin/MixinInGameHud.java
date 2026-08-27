@@ -36,7 +36,7 @@ public class MixinInGameHud {
             Crosshair crosshair = instance.getModuleManager().getModule(Crosshair.class);
             if (crosshair != null && crosshair.isEnabled()) {
                 ci.cancel();
-                crosshair.renderCustomCrosshair(context);
+                crosshair.renderCustomCrosshair(context, tickCounter.getTickDelta(false));
             }
         }
     }

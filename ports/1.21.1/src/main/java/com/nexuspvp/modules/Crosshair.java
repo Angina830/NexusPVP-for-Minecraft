@@ -6,6 +6,7 @@ import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.ColorSetting;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
+import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.util.math.MatrixStack;
@@ -27,7 +28,7 @@ public class Crosshair extends Module {
     private final BooleanSetting dot = addSetting(new BooleanSetting("Dot", false));
     private final BooleanSetting hitmarker = addSetting(new BooleanSetting("Hitmarker", true));
 
-    // Dynamic Attack Readiness Spread
+    // Dynamic Attack Readiness Spread (60+ FPS Smooth)
     private final BooleanSetting dynamicSpread = addSetting(new BooleanSetting("DynamicSpread", true));
     private final NumberSetting minSpread = addSetting(new NumberSetting("MinSpread", 2.0, 0.0, 15.0, 0.5));
     private final NumberSetting maxSpread = addSetting(new NumberSetting("MaxSpread", 9.0, 2.0, 30.0, 0.5));
@@ -38,23 +39,24 @@ public class Crosshair extends Module {
     private final ColorSetting targetColor = addSetting(new ColorSetting("TargetColor", new Color(255, 50, 60)));
 
     private static long staticHitTime = 0;
+    private float smoothGap = 2.0f;
 
     public Crosshair() {
-        super("Crosshair", "Custom PvP crosshair with dynamic attack spread and target lock", Category.RENDER);
+        super("Crosshair", "Custom PvP crosshair with 60+ FPS dynamic spread and target lock", Category.RENDER);
     }
 
     public static void recordHit() {
         staticHitTime = System.currentTimeMillis();
     }
 
-    public void renderCustomCrosshair(DrawContext context) {
+    public void renderCustomCrosshair(DrawContext context, float tickDelta) {
         if (mc.player == null || mc.options.hudHidden) return;
         if (mc.options.getPerspective() != Perspective.FIRST_PERSON) return;
 
-        int screenW = mc.getWindow().getScaledWidth();
-        int screenH = mc.getWindow().getScaledHeight();
-        int cx = screenW / 2;
-        int cy = screenH / 2;
+        float screenW = mc.getWindow().getScaledWidth();
+        float screenH = mc.getWindow().getScaledHeight();
+        float cx = screenW / 2.0f;
+        float cy = screenH / 2.0f;
 
         // Check if player is aiming at an attackable living entity
         boolean isTargeting = false;
@@ -67,94 +69,94 @@ public class Crosshair extends Module {
             }
         }
 
-        // Active color (highlighted if aiming at target)
+        // Colors
         int c = (targetHighlight.isEnabled() && isTargeting) ?
                 (targetColor.getColor().getRGB() | 0xFF000000) :
                 (color.getColor().getRGB() | 0xFF000000);
         int tc = targetColor.getColor().getRGB() | 0xFF000000;
 
-        int s = (int) Math.round(size.getValue());
-        int t = (int) Math.max(1, Math.round(thickness.getValue()));
+        float s = size.getFloatValue();
+        float t = Math.max(1.0f, thickness.getFloatValue());
+        float halfT = t / 2.0f;
 
-        // Dynamic attack spread calculation
-        int g;
+        // 60+ FPS continuous tickDelta sub-tick interpolation for butter-smooth animation
+        float g;
         if (dynamicSpread.isEnabled()) {
-            float cd = mc.player.getAttackCooldownProgress(0.0f); // 0.0 (just attacked) -> 1.0 (fully charged)
+            float cd = mc.player.getAttackCooldownProgress(tickDelta); // Exact frame delta!
             float minG = minSpread.getFloatValue();
             float maxG = maxSpread.getFloatValue();
-            // When cd is 0 (not ready), gap is maxG. When cd is 1 (ready), gap is minG.
-            g = (int) Math.round(MathHelper.lerp(cd, maxG, minG));
+            float targetG = MathHelper.lerp(cd, maxG, minG);
+            smoothGap = MathHelper.lerp(0.35f, smoothGap, targetG);
+            g = smoothGap;
         } else {
-            g = (int) Math.round(gap.getValue());
+            g = gap.getFloatValue();
         }
 
+        MatrixStack matrices = context.getMatrices();
         String mode = style.getValue();
+
         if (mode.equalsIgnoreCase("Dot")) {
-            int d = Math.max(2, t * 2);
-            context.fill(cx - d / 2, cy - d / 2, cx + (d + 1) / 2, cy + (d + 1) / 2, c);
+            float d = Math.max(2.0f, t * 2.0f);
+            RenderUtils.drawQuad(matrices, cx - d / 2.0f, cy - d / 2.0f, cx + d / 2.0f, cy + d / 2.0f, c);
         } else if (mode.equalsIgnoreCase("Circle")) {
             for (int a = 0; a < 360; a += 15) {
                 double rad = Math.toRadians(a);
-                int px = (int) Math.round(cx + Math.cos(rad) * (s + g));
-                int py = (int) Math.round(cy + Math.sin(rad) * (s + g));
-                context.fill(px, py, px + t, py + t, c);
+                float px = (float) (cx + Math.cos(rad) * (s + g));
+                float py = (float) (cy + Math.sin(rad) * (s + g));
+                RenderUtils.drawQuad(matrices, px, py, px + t, py + t, c);
             }
-        } else { // Cross style
+        } else { // Cross style with sub-pixel float hardware quads
             // Top branch
-            context.fill(cx, cy - g - s, cx + t, cy - g, c);
+            RenderUtils.drawQuad(matrices, cx - halfT, cy - g - s, cx + halfT, cy - g, c);
             // Bottom branch
-            context.fill(cx, cy + g + 1, cx + t, cy + g + s + 1, c);
+            RenderUtils.drawQuad(matrices, cx - halfT, cy + g, cx + halfT, cy + g + s, c);
             // Left branch
-            context.fill(cx - g - s, cy, cx - g, cy + t, c);
+            RenderUtils.drawQuad(matrices, cx - g - s, cy - halfT, cx - g, cy + halfT, c);
             // Right branch
-            context.fill(cx + g + 1, cy, cx + g + s + 1, cy + t, c);
+            RenderUtils.drawQuad(matrices, cx + g, cy - halfT, cx + g + s, cy + halfT, c);
 
             if (dot.isEnabled()) {
-                context.fill(cx, cy, cx + t, cy + t, c);
+                RenderUtils.drawQuad(matrices, cx - halfT, cy - halfT, cx + halfT, cy + halfT, c);
             }
         }
 
-        // Target Acquisition Frames / Brackets along lines
+        // Target Acquisition Tactical Frames
         if (targetFrame.isEnabled() && isTargeting) {
-            int fDist = g + s + 3;
-            int arm = 4;
+            float fDist = g + s + 3.0f;
+            float arm = 4.0f;
 
-            // 1. Sleek tactical corner brackets [ ┌ ┐ └ ┘ ]
-            // Top-Left corner
-            context.fill(cx - fDist, cy - fDist, cx - fDist + arm, cy - fDist + 1, tc);
-            context.fill(cx - fDist, cy - fDist, cx - fDist + 1, cy - fDist + arm, tc);
+            // Corner brackets
+            RenderUtils.drawQuad(matrices, cx - fDist, cy - fDist, cx - fDist + arm, cy - fDist + 1.0f, tc);
+            RenderUtils.drawQuad(matrices, cx - fDist, cy - fDist, cx - fDist + 1.0f, cy - fDist + arm, tc);
 
-            // Top-Right corner
-            context.fill(cx + fDist - arm + 1, cy - fDist, cx + fDist + 1, cy - fDist + 1, tc);
-            context.fill(cx + fDist, cy - fDist, cx + fDist + 1, cy - fDist + arm, tc);
+            RenderUtils.drawQuad(matrices, cx + fDist - arm, cy - fDist, cx + fDist, cy - fDist + 1.0f, tc);
+            RenderUtils.drawQuad(matrices, cx + fDist - 1.0f, cy - fDist, cx + fDist, cy - fDist + arm, tc);
 
-            // Bottom-Left corner
-            context.fill(cx - fDist, cy + fDist, cx - fDist + arm, cy + fDist + 1, tc);
-            context.fill(cx - fDist, cy + fDist - arm + 1, cx - fDist + 1, cy + fDist + 1, tc);
+            RenderUtils.drawQuad(matrices, cx - fDist, cy + fDist - 1.0f, cx - fDist + arm, cy + fDist, tc);
+            RenderUtils.drawQuad(matrices, cx - fDist, cy + fDist - arm, cx - fDist + 1.0f, cy + fDist, tc);
 
-            // Bottom-Right corner
-            context.fill(cx + fDist - arm + 1, cy + fDist, cx + fDist + 1, cy + fDist + 1, tc);
-            context.fill(cx + fDist, cy + fDist - arm + 1, cx + fDist + 1, cy + fDist + 1, tc);
+            RenderUtils.drawQuad(matrices, cx + fDist - arm, cy + fDist - 1.0f, cx + fDist, cy + fDist, tc);
+            RenderUtils.drawQuad(matrices, cx + fDist - 1.0f, cy + fDist - arm, cx + fDist, cy + fDist, tc);
 
-            // 2. Line end-accent frames
-            context.fill(cx - 1, cy - g - s - 2, cx + t + 1, cy - g - s - 1, tc);
-            context.fill(cx - 1, cy + g + s + 1, cx + t + 1, cy + g + s + 2, tc);
-            context.fill(cx - g - s - 2, cy - 1, cx - g - s - 1, cy + t + 1, tc);
-            context.fill(cx + g + s + 1, cy - 1, cx + g + s + 2, cy + t + 1, tc);
+            // Line accent markers
+            RenderUtils.drawQuad(matrices, cx - halfT - 1.0f, cy - g - s - 2.0f, cx + halfT + 1.0f, cy - g - s - 1.0f, tc);
+            RenderUtils.drawQuad(matrices, cx - halfT - 1.0f, cy + g + s + 1.0f, cx + halfT + 1.0f, cy + g + s + 2.0f, tc);
+            RenderUtils.drawQuad(matrices, cx - g - s - 2.0f, cy - halfT - 1.0f, cx - g - s - 1.0f, cy + halfT + 1.0f, tc);
+            RenderUtils.drawQuad(matrices, cx + g + s + 1.0f, cy - halfT - 1.0f, cx + g + s + 2.0f, cy + halfT + 1.0f, tc);
         }
 
-        // Hitmarker animation on hit
+        // Hitmarker animation
         if (hitmarker.isEnabled()) {
             long elapsed = System.currentTimeMillis() - staticHitTime;
             if (elapsed < 300) {
                 float alpha = 1.0f - (elapsed / 300.0f);
                 int hmColor = new Color(255, 50, 50, (int) (alpha * 255)).getRGB();
-                int hms = 5;
-                for (int i = 2; i <= hms; i++) {
-                    context.fill(cx - i, cy - i, cx - i + 1, cy - i + 1, hmColor);
-                    context.fill(cx + i + 1, cy - i, cx + i + 2, cy - i + 1, hmColor);
-                    context.fill(cx - i, cy + i + 1, cx - i + 1, cy + i + 2, hmColor);
-                    context.fill(cx + i + 1, cy + i + 1, cx + i + 2, cy + i + 2, hmColor);
+                float hms = 5.0f;
+                for (float i = 2.0f; i <= hms; i += 1.0f) {
+                    RenderUtils.drawQuad(matrices, cx - i, cy - i, cx - i + 1.0f, cy - i + 1.0f, hmColor);
+                    RenderUtils.drawQuad(matrices, cx + i, cy - i, cx + i + 1.0f, cy - i + 1.0f, hmColor);
+                    RenderUtils.drawQuad(matrices, cx - i, cy + i, cx - i + 1.0f, cy + i + 1.0f, hmColor);
+                    RenderUtils.drawQuad(matrices, cx + i, cy + i, cx + i + 1.0f, cy + i + 1.0f, hmColor);
                 }
             }
         }
