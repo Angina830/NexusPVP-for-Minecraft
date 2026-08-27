@@ -206,9 +206,9 @@ public class TargetHUD extends Module {
     private void renderTargetFace(MatrixStack matrices, int x, int y, int size) {
         Identifier skin = null;
         if (target instanceof AbstractClientPlayerEntity) {
-            skin = ((AbstractClientPlayerEntity) target).getSkinTextures().texture();
+            skin = ((AbstractClientPlayerEntity) target).getSkinTexture();
         } else if (mc.player != null) {
-            skin = mc.player.getSkinTextures().texture();
+            skin = mc.player.getSkinTexture();
         }
 
         if (skin != null) {
