@@ -7,7 +7,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
@@ -111,25 +110,26 @@ public class Compat {
             Matrix4f mat = matrices.peek().getPositionMatrix();
 
             Tessellator tessellator = Tessellator.getInstance();
-            BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
+            BufferBuilder buffer = tessellator.getBuffer();
+            buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
 
             // 1. Base head layer
             float u1 = 8.0f / 64.0f, v1 = 8.0f / 64.0f;
             float u2 = 16.0f / 64.0f, v2 = 16.0f / 64.0f;
-            buffer.vertex(mat, x, y + size, 0).texture(u1, v2);
-            buffer.vertex(mat, x + size, y + size, 0).texture(u2, v2);
-            buffer.vertex(mat, x + size, y, 0).texture(u2, v1);
-            buffer.vertex(mat, x, y, 0).texture(u1, v1);
+            buffer.vertex(mat, x, y + size, 0).texture(u1, v2).next();
+            buffer.vertex(mat, x + size, y + size, 0).texture(u2, v2).next();
+            buffer.vertex(mat, x + size, y, 0).texture(u2, v1).next();
+            buffer.vertex(mat, x, y, 0).texture(u1, v1).next();
 
             // 2. Outer hat layer
             float hu1 = 40.0f / 64.0f, hv1 = 8.0f / 64.0f;
             float hu2 = 48.0f / 64.0f, hv2 = 16.0f / 64.0f;
-            buffer.vertex(mat, x, y + size, 0).texture(hu1, hv2);
-            buffer.vertex(mat, x + size, y + size, 0).texture(hu2, hv2);
-            buffer.vertex(mat, x + size, y, 0).texture(hu2, hv1);
-            buffer.vertex(mat, x, y, 0).texture(hu1, hv1);
+            buffer.vertex(mat, x, y + size, 0).texture(hu1, hv2).next();
+            buffer.vertex(mat, x + size, y + size, 0).texture(hu2, hv2).next();
+            buffer.vertex(mat, x + size, y, 0).texture(hu2, hv1).next();
+            buffer.vertex(mat, x, y, 0).texture(hu1, hv1).next();
 
-            BufferRenderer.drawWithGlobalProgram(buffer.end());
+            tessellator.draw();
         }
     }
 
