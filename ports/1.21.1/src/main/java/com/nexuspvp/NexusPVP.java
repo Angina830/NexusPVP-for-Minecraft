@@ -15,7 +15,7 @@ public class NexusPVP implements ClientModInitializer {
     public void onInitializeClient() {
         net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.LAST.register(context -> {
             if (moduleManager != null) {
-                moduleManager.onRender3D(context.matrixStack(), context.tickDelta());
+                moduleManager.onRender3D(context.matrixStack(), context.tickCounter().getTickDelta(false));
             }
         });
         instance = this;
