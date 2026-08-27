@@ -111,13 +111,16 @@ public class OverheadHealth extends Module {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(false);
+        RenderSystem.depthMask(true);
 
         // 1. Blurple border (0xEE5865F2)
         RenderUtils.drawQuad(matrices, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2);
 
-        // 2. Dark Discord background (0xFA1E1F22)
+        // 2. Dark Discord background (writes to depth buffer so water and clouds never overlap!)
         RenderUtils.drawQuad(matrices, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22);
+
+        matrices.push();
+        matrices.translate(0.0, 0.0, -0.02);
 
         // 3. Health bar
         float barX = cardX + 4;
@@ -147,7 +150,7 @@ public class OverheadHealth extends Module {
             RenderUtils.drawQuad(matrices, barX, barY + barH - 2, barX + absW, barY + barH, 0xFFFFD700);
         }
 
-        RenderSystem.depthMask(true);
+        matrices.pop();
 
         // 4. Text rendered via TextRenderer
         float textY = cardY + 3;

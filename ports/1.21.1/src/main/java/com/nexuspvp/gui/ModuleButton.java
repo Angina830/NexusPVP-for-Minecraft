@@ -87,12 +87,13 @@ public class ModuleButton {
         
         int totalH = getHeight();
 
+                float mAlpha = ClickGui.getMenuAlpha();
         int r = (int) (43 + (53 - 43) * hoverAnim);
         int g = (int) (45 + (55 - 45) * hoverAnim);
         int b = (int) (49 + (60 - 49) * hoverAnim);
-        int bgColor = (0xFF << 24) | (r << 16) | (g << 8) | b;
+        int bgColor = ClickGui.applyAlpha((0xFF << 24) | (r << 16) | (g << 8) | b, mAlpha);
 
-        int borderColor = (toggleAnim > 0.05f) ? accent : 0xFF1E1F22;
+        int borderColor = (toggleAnim > 0.05f) ? ClickGui.applyAlpha(accent, mAlpha) : ClickGui.applyAlpha(0xFF1E1F22, mAlpha);
         
         matrices.push();
         if (clickScale < 0.99f) {
@@ -109,19 +110,19 @@ public class ModuleButton {
         if (toggleAnim > 0.01f) {
             int pillH = (int) ((baseHeight - 8) * toggleAnim);
             int pillY = y + 4 + (baseHeight - 8 - pillH) / 2;
-            RenderUtils.drawRoundedRect(matrices, x + 2, pillY, 3, pillH, 2, accent);
+            RenderUtils.drawRoundedRect(matrices, x + 2, pillY, 3, pillH, 2, ClickGui.applyAlpha(accent, mAlpha));
         }
         
         String translatedName = LanguageManager.getInstance().get(module.getName());
         int textX = x + (int) (8 + 3 * toggleAnim);
-        Compat.drawWithShadow(null, matrices, translatedName, textX, y + 4, 0xFFF2F3F5);
+        Compat.drawWithShadow(null, matrices, translatedName, textX, y + 4, ClickGui.applyAlpha(0xFFF2F3F5, Math.max(0.45f, mAlpha)));
         
         String desc = LanguageManager.getInstance().get(module.getDescription());
         if (desc != null && !desc.isEmpty()) {
             if (MinecraftClient.getInstance().textRenderer.getWidth(desc) > width - 110) {
                 desc = desc.substring(0, Math.min(desc.length(), 28)) + "...";
             }
-            Compat.drawWithShadow(null, matrices, desc, textX, y + 15, 0xFF949BA4);
+            Compat.drawWithShadow(null, matrices, desc, textX, y + 15, ClickGui.applyAlpha(0xFF949BA4, Math.max(0.35f, mAlpha)));
         }
 
         // 1. In-Card Interactive Keybind Button
@@ -131,12 +132,12 @@ public class ModuleButton {
         int bindY = y + 7;
         boolean bindHover = mouseX >= bindX && mouseX <= bindX + bindW && mouseY >= bindY && mouseY <= bindY + bindH;
         int bindBg = binding ? accent : (bindHover ? 0xFF35373C : 0xFF2B2D31);
-        RenderUtils.drawRoundedRect(matrices, bindX, bindY, bindW, bindH, 3, bindBg);
+        RenderUtils.drawRoundedRect(matrices, bindX, bindY, bindW, bindH, 3, ClickGui.applyAlpha(bindBg, mAlpha));
 
         String keyText = binding ? "..." : getKeyName(module.getKeyBind());
         int ktw = MinecraftClient.getInstance().textRenderer.getWidth(keyText);
         int keyCol = binding ? 0xFFFFFFFF : (module.getKeyBind() > 0 ? accent : 0xFF949BA4);
-        Compat.drawWithShadow(null, matrices, keyText, bindX + (bindW - ktw) / 2, bindY + 3, keyCol);
+        Compat.drawWithShadow(null, matrices, keyText, bindX + (bindW - ktw) / 2, bindY + 3, ClickGui.applyAlpha(keyCol, Math.max(0.4f, mAlpha)));
         
         // 2. Toggle Switch
         int toggleW = 20;
@@ -148,14 +149,14 @@ public class ModuleButton {
         int swG = (int) (80 + (((accent >> 8) & 0xFF) - 80) * toggleAnim);
         int swB = (int) (88 + ((accent & 0xFF) - 88) * toggleAnim);
         int switchBg = (0xFF << 24) | (swR << 16) | (swG << 8) | swB;
-        RenderUtils.drawRoundedRect(matrices, toggleX, toggleY, toggleW, toggleH, 6, switchBg);
+        RenderUtils.drawRoundedRect(matrices, toggleX, toggleY, toggleW, toggleH, 6, ClickGui.applyAlpha(switchBg, mAlpha));
 
         int thumbRadius = 4;
         int thumbStartX = toggleX + 2;
         int thumbEndX = toggleX + toggleW - thumbRadius * 2 - 2;
         int thumbX = (int) (thumbStartX + (thumbEndX - thumbStartX) * toggleAnim);
         int thumbY = toggleY + 2;
-        RenderUtils.drawRoundedRect(matrices, thumbX, thumbY, thumbRadius * 2, thumbRadius * 2, thumbRadius, 0xFFFFFFFF);
+        RenderUtils.drawRoundedRect(matrices, thumbX, thumbY, thumbRadius * 2, thumbRadius * 2, thumbRadius, ClickGui.applyAlpha(0xFFFFFFFF, mAlpha));
         
         // 3. Settings dropdown chevron
         if (!settingComponents.isEmpty()) {
@@ -163,7 +164,7 @@ public class ModuleButton {
             int chevronY = y + 9;
             String chevron = expanded ? "v" : ">";
             int chCol = expanded ? accent : 0xFF949BA4;
-            Compat.drawWithShadow(null, matrices, chevron, chevronX, chevronY, chCol);
+            Compat.drawWithShadow(null, matrices, chevron, chevronX, chevronY, ClickGui.applyAlpha(chCol, Math.max(0.4f, mAlpha)));
         }
         
         // 4. Render expanded settings

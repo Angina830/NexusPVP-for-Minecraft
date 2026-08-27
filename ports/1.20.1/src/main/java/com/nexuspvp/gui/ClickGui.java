@@ -23,7 +23,16 @@ import java.awt.Color;
 import java.util.*;
 
 public class ClickGui extends Screen {
-    private float menuAlpha = 1.0f;
+    private static float menuAlpha = 1.0f;
+    public static float getMenuAlpha() { return menuAlpha; }
+    public static int applyAlpha(int color, float alpha) {
+        int a = (color >> 24) & 0xFF;
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        int newA = Math.max(0, Math.min(255, (int) (a * Math.max(0.08f, alpha))));
+        return (newA << 24) | (r << 16) | (g << 8) | b;
+    }
 
     private static int applyAlpha(int color, float alpha) {
         int a = (color >> 24) & 0xFF;
