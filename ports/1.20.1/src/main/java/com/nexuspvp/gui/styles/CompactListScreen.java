@@ -426,14 +426,4 @@ public class CompactListScreen extends Screen {
         if (NexusPVP.getInstance().getConfigManager() != null) {
             NexusPVP.getInstance().getConfigManager().saveConfig();
         }
-        NexusPVP.getInstance().getModuleManager().getModuleByName("ClickGui").ifPresent(m -> {
-            if (m.isEnabled()) {
-                m.toggle();
-            }
-        });
-    }
-
-    @Override
-    
-
 }
