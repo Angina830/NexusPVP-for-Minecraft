@@ -5,5 +5,4 @@ import org.spongepowered.asm.mixin.Mixin;
 
 @Mixin(LivingEntityRenderer.class)
 public abstract class MixinLivingEntityRenderer {
-    // Left completely clean to preserve mob model shaders and textures
 }
