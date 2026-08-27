@@ -34,16 +34,6 @@ public class ClickGui extends Screen {
         return (newA << 24) | (r << 16) | (g << 8) | b;
     }
 
-    private static int applyAlpha(int color, float alpha) {
-        int a = (color >> 24) & 0xFF;
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-        int newA = Math.max(8, (int) (a * Math.max(0.12f, alpha)));
-        return (newA << 24) | (r << 16) | (g << 8) | b;
-    }
-
-
     public enum Tab {
         PVP("PvP & Combat", "Damage, TargetHUD & Hit feedback", "\u2694"),
         HUD("HUD & Screen", "ArmorHUD, Potions & Screen elements", "\u25C6"),
