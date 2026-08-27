@@ -9,12 +9,12 @@ import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3f;
 
 import java.awt.Color;
 
@@ -206,7 +206,7 @@ public class Crosshair extends Module {
 
                 matrices.push();
                 matrices.translate(cx, cy, 0.0);
-                matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(45.0f));
+                matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(45.0f));
 
                 // 4 arms rotated at 45 degrees
                 RenderUtils.drawRect(matrices, -halfThick, -hmGap - hmSize, thick, hmSize, hmColor);
