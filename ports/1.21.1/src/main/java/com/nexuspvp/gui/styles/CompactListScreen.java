@@ -434,8 +434,6 @@ public class CompactListScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
-        return false;
-    }
+    
 
 }

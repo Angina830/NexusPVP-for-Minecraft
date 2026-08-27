@@ -428,8 +428,6 @@ public class ClassicGuiScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
-        return false;
-    }
+    
 
 }
