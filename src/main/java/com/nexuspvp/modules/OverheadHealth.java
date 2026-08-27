@@ -146,40 +146,49 @@ public class OverheadHealth extends Module {
         RenderSystem.disableAlphaTest();
         RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 
-        // 1. Blurple border
-        drawDirectQuad(cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
-
-        // 2. Dark Discord background
-        drawDirectQuad(cardX, cardY, cardW, cardH, 0xFA1E1F22);
-
-        // 3. Health bar track
         float barX = cardX + 4;
         float barY = cardY + 13;
         float barW = cardW - 8;
         float barH = 5;
 
-        drawDirectQuad(barX, barY, barW, barH, 0xFF2B2D31);
+        // Draw ALL card rectangles in ONE single atomic Draw Call!
+        RenderSystem.disableTexture();
+        BufferBuilder buffer = Tessellator.getInstance().getBuffer();
+        buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
 
-        // Active health bar (Green / Yellow / Red)
+        // 1. Blurple border
+        addQuad(buffer, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
+
+        // 2. Dark Discord background
+        addQuad(buffer, cardX, cardY, cardW, cardH, 0xFA1E1F22);
+
+        // 3. Health bar track
+        addQuad(buffer, barX, barY, barW, barH, 0xFF2B2D31);
+
+        // 4. Active health bar (Green / Yellow / Red)
         if (healthPct > 0) {
             float fillW = barW * healthPct;
-            drawDirectQuad(barX, barY, fillW, barH, hpColor);
+            addQuad(buffer, barX, barY, fillW, barH, hpColor);
         }
 
-        // Ghost damage bar: ONLY draw the trailing damage lost segment when ghost > active health
+        // 5. Ghost damage bar (only trailing lost damage chunk)
         if (ghostDamage.isEnabled() && ghostPct > healthPct + 0.005f) {
             float ghostStart = barX + (barW * healthPct);
             float ghostWidth = barW * (ghostPct - healthPct);
-            drawDirectQuad(ghostStart, barY, ghostWidth, barH, 0xFFF2F3F5);
+            addQuad(buffer, ghostStart, barY, ghostWidth, barH, 0xFFF2F3F5);
         }
 
-        // Absorption bar
+        // 6. Absorption bar
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
-            drawDirectQuad(barX, barY + barH - 2, absW, 2, 0xFFFFD700);
+            addQuad(buffer, barX, barY + barH - 2, absW, 2, 0xFFFFD700);
         }
 
+        Tessellator.getInstance().draw();
+        RenderSystem.enableTexture();
+
+        // Draw text
         float textY = cardY + 3;
         VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
 
@@ -222,26 +231,15 @@ public class OverheadHealth extends Module {
         RenderSystem.enableDepthTest();
     }
 
-    private void drawDirectQuad(float x, float y, float width, float height, int color) {
+    private void addQuad(BufferBuilder buffer, float x, float y, float width, float height, int color) {
         float a = (color >> 24 & 0xFF) / 255.0f;
         float r = (color >> 16 & 0xFF) / 255.0f;
         float g = (color >> 8 & 0xFF) / 255.0f;
         float b = (color & 0xFF) / 255.0f;
 
-        RenderSystem.disableTexture();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
-        buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
-        buffer.vertex(x, y + height, 0).color(r, g, b, a).next();
-        buffer.vertex(x + width, y + height, 0).color(r, g, b, a).next();
-        buffer.vertex(x + width, y, 0).color(r, g, b, a).next();
-        buffer.vertex(x, y, 0).color(r, g, b, a).next();
-        tessellator.draw();
-
-        RenderSystem.enableTexture();
+        buffer.vertex(x, y + height, 0.0D).color(r, g, b, a).next();
+        buffer.vertex(x + width, y + height, 0.0D).color(r, g, b, a).next();
+        buffer.vertex(x + width, y, 0.0D).color(r, g, b, a).next();
+        buffer.vertex(x, y, 0.0D).color(r, g, b, a).next();
     }
 }
