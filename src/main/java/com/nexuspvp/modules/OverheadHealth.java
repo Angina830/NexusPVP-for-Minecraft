@@ -8,11 +8,9 @@ import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,46 +40,14 @@ public class OverheadHealth extends Module {
         return trackers.size();
     }
 
-    @Override
-    public void onRender3D(MatrixStack matrices, float tickDelta) {
-        if (mc.world == null || mc.player == null) return;
+    public void renderOverhead(LivingEntity entity, MatrixStack matrices, float tickDelta) {
+        if (mc.player == null || entity == mc.player || !entity.isAlive() || entity.isInvisibleTo(mc.player)) return;
+        if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) return;
+        if (entity.squaredDistanceTo(mc.player) > range.getValue() * range.getValue()) return;
 
-        double maxDistSq = range.getValue() * range.getValue();
-        Vec3d camPos = mc.gameRenderer.getCamera().getPos();
+        // Never show through walls: strictly require direct line of sight
+        if (!mc.player.canSee(entity)) return;
 
-        for (Entity entity : mc.world.getEntities()) {
-            if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
-            if (playersOnly.isEnabled() && !(entity instanceof PlayerEntity)) continue;
-
-            LivingEntity living = (LivingEntity) entity;
-            if (!living.isAlive() || living.isInvisibleTo(mc.player)) continue;
-
-            double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
-            if (distSq > maxDistSq) continue;
-
-            // Never show through walls
-            if (!mc.player.canSee(living)) continue;
-
-            double interpX = MathHelper.lerp((double) tickDelta, living.lastRenderX, living.getX());
-            double interpY = MathHelper.lerp((double) tickDelta, living.lastRenderY, living.getY());
-            double interpZ = MathHelper.lerp((double) tickDelta, living.lastRenderZ, living.getZ());
-
-            matrices.push();
-            // In 1.16.5 WorldRenderer matrix stack: matrices already has camera translation (-camPos)!
-            // So we translate directly to the interpolated entity world coordinates!
-            matrices.translate(interpX, interpY + living.getHeight() + 0.55D, interpZ);
-            matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
-
-            float scale = 0.020F;
-            matrices.scale(-scale, -scale, scale);
-
-            renderGraphicalCard(matrices, living);
-
-            matrices.pop();
-        }
-    }
-
-    private void renderGraphicalCard(MatrixStack matrices, LivingEntity entity) {
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         float currentAbs = entity.getAbsorptionAmount();
@@ -134,6 +100,13 @@ public class OverheadHealth extends Module {
         int cardH = 22;
         float cardX = -cardW / 2.0f;
         float cardY = -cardH / 2.0f;
+
+        matrices.push();
+        matrices.translate(0.0D, entity.getHeight() + 0.55D, 0.0D);
+        matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
+
+        float scale = 0.020F;
+        matrices.scale(-scale, -scale, scale);
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -206,5 +179,7 @@ public class OverheadHealth extends Module {
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
+
+        matrices.pop();
     }
 }
