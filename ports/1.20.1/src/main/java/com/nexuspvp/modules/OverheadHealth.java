@@ -48,7 +48,7 @@ public class OverheadHealth extends Module {
         float maxHp = entity.getMaxHealth();
         float currentAbs = entity.getAbsorptionAmount();
 
-        // TargetHUD-identical smooth animation and Dota-style Ghost Damage tracking
+        // TargetHUD smooth animation and Dota-style Ghost Damage tracking
         HealthTracker tracker = trackers.computeIfAbsent(entity.getId(), id -> {
             HealthTracker t = new HealthTracker();
             t.animatedHealth = currentHp;
@@ -75,10 +75,10 @@ public class OverheadHealth extends Module {
             tracker.damageGhostHealth = currentHp;
         }
 
-        // Entity name
+        // Entity name (shortened if too long)
         String name = entity.getName().getString();
-        if (name.length() > 16) {
-            name = name.substring(0, 14) + "..";
+        if (name.length() > 14) {
+            name = name.substring(0, 12) + "..";
         }
 
         // HP text
@@ -96,11 +96,10 @@ public class OverheadHealth extends Module {
         int hpTextW = mc.textRenderer.getWidth(hpText);
 
         // Compact Mini-TargetHUD card dimensions
-        int contentW = Math.max(nameW + hpTextW + 12, 85);
-        int cardW = contentW + 8;
+        int cardW = Math.max(nameW + hpTextW + 16, 95);
         int cardH = 22;
-        int cardX = -cardW / 2;
-        int cardY = -cardH / 2;
+        float cardX = -cardW / 2.0f;
+        float cardY = -cardH / 2.0f;
 
         matrices.push();
         matrices.translate(0.0D, entity.getHeight() + 0.55F, 0.0D);
@@ -112,42 +111,47 @@ public class OverheadHealth extends Module {
         Matrix4f matrix = matrices.peek().getPositionMatrix();
         VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getTextBackground());
 
-        // 1. Blurple border (identical to TargetHUD 0xEE5865F2)
-        drawQuad(matrix, vc, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0.01f, 0xEE5865F2, light);
+        // Back-to-front layer ordering (negative Z is closer to camera in view space)
+        // 1. Blurple border (0xEE5865F2) - furthest back (z = 0.030f)
+        drawQuad(matrix, vc, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0.030f, 0xEE5865F2, light);
 
-        // 2. Dark Discord background (identical to TargetHUD 0xFA1E1F22)
-        drawQuad(matrix, vc, cardX, cardY, cardW, cardH, 0.008f, 0xFA1E1F22, light);
+        // 2. Dark Discord background (0xFA1E1F22) - (z = 0.020f)
+        drawQuad(matrix, vc, cardX, cardY, cardW, cardH, 0.020f, 0xFA1E1F22, light);
 
-        // 3. Health bar
-        int barX = cardX + 4;
-        int barY = cardY + 13;
-        int barW = cardW - 8;
-        int barH = 5;
+        // 3. Health bar at bottom
+        float barX = cardX + 4;
+        float barY = cardY + 13;
+        float barW = cardW - 8;
+        float barH = 5;
 
-        // Health bar track background (0xFF2B2D31)
-        drawQuad(matrix, vc, barX, barY, barW, barH, 0.006f, 0xFF2B2D31, light);
+        // Health bar track background (0xFF2B2D31) - (z = 0.015f)
+        drawQuad(matrix, vc, barX, barY, barW, barH, 0.015f, 0xFF2B2D31, light);
 
-        // Ghost damage bar (White 0xFFF2F3F5)
+        // Ghost damage bar (White 0xFFF2F3F5) - (z = 0.010f)
         if (ghostDamage.isEnabled() && ghostPct > 0) {
             float ghostW = barW * ghostPct;
-            drawQuad(matrix, vc, barX, barY, ghostW, barH, 0.004f, 0xFFF2F3F5, light);
+            drawQuad(matrix, vc, barX, barY, ghostW, barH, 0.010f, 0xFFF2F3F5, light);
         }
 
-        // Active health bar (hpColor)
+        // Active health bar (hpColor) - (z = 0.005f)
         if (healthPct > 0) {
             float fillW = barW * healthPct;
-            drawQuad(matrix, vc, barX, barY, fillW, barH, 0.002f, hpColor, light);
+            drawQuad(matrix, vc, barX, barY, fillW, barH, 0.005f, hpColor, light);
         }
 
-        // Absorption bar (Gold 0xFFFFD700)
+        // Absorption bar (Gold 0xFFFFD700) - (z = 0.001f)
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
-            drawQuad(matrix, vc, barX, barY + barH - 2, absW, 2, 0.0f, 0xFFFFD700, light);
+            drawQuad(matrix, vc, barX, barY + barH - 2, absW, 2, 0.001f, 0xFFFFD700, light);
         }
 
-        // 4. Text - rendered via normal TextRenderer (depth tested)
-        int textY = cardY + 3;
+        // 4. Text - pushed in front (z = -0.010f) so it is never occluded by card quads
+        matrices.push();
+        matrices.translate(0.0, 0.0, -0.010);
+        Matrix4f textMatrix = matrices.peek().getPositionMatrix();
+
+        float textY = cardY + 3;
 
         // Name on the left
         mc.textRenderer.draw(
@@ -156,7 +160,7 @@ public class OverheadHealth extends Module {
             textY,
             0xFFF2F3F5,
             false,
-            matrix,
+            textMatrix,
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
             0,
@@ -164,21 +168,22 @@ public class OverheadHealth extends Module {
         );
 
         // HP text on the right
-        int hpTextX = cardX + cardW - hpTextW - 4;
+        float hpTextX = cardX + cardW - hpTextW - 4;
         mc.textRenderer.draw(
             hpText,
             hpTextX,
             textY,
             hpTextColor,
             false,
-            matrix,
+            textMatrix,
             vertexConsumers,
             TextRenderer.TextLayerType.NORMAL,
             0,
             light
         );
 
-        matrices.pop();
+        matrices.pop(); // text translate pop
+        matrices.pop(); // main matrix pop
     }
 
     private void drawQuad(Matrix4f matrix, VertexConsumer vc, float x, float y, float w, float h, float z, int color, int light) {
