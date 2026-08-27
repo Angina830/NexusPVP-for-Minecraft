@@ -103,7 +103,7 @@ public class OverheadHealth extends Module {
         matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
         float scale = 0.020F;
-        matrices.scale(scale, -scale, scale);
+        matrices.scale(-scale, -scale, scale);
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -115,6 +115,10 @@ public class OverheadHealth extends Module {
 
         // 2. Dark Discord background
         RenderUtils.drawRect(matrices, cardX, cardY, cardW, cardH, 0xFA1E1F22);
+
+        // Step 2: Disable depth testing for foreground layers so they NEVER Z-fight with background card!
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
 
         // 3. Health bar
         float barX = cardX + 4;

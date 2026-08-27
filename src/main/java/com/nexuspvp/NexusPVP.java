@@ -55,7 +55,7 @@ public class NexusPVP implements ClientModInitializer {
             }
         });
         
-        System.out.println("[NexusPVP] Mod initialized! Version 0.1.24-beta [Sentinel]");
+        System.out.println("[NexusPVP] Mod initialized! Version 0.1.25-beta [Prism]");
     }
 
     public static NexusPVP getInstance() {

@@ -9,30 +9,72 @@ import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.Compat;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class DebugLogger extends Module {
 
     private final BooleanSetting showHUD = addSetting(new BooleanSetting("ShowHUD", true));
+    private final BooleanSetting fileLogging = addSetting(new BooleanSetting("FileLogging", true));
     private final BooleanSetting targetInfo = addSetting(new BooleanSetting("TargetInfo", true));
     private final BooleanSetting renderStats = addSetting(new BooleanSetting("RenderStats", true));
     private final BooleanSetting systemInfo = addSetting(new BooleanSetting("SystemInfo", true));
     private final NumberSetting posX = addSetting(new NumberSetting("PosX", 10.0, 0.0, 1000.0, 5.0));
     private final NumberSetting posY = addSetting(new NumberSetting("PosY", 60.0, 0.0, 1000.0, 5.0));
 
+    private static File logFile = null;
+    private long lastLogTime = 0;
+
     public DebugLogger() {
-        super("DebugLogger", "Realtime In-Game Diagnostics, Entity Inspector & Pipeline Monitor", Category.MISC);
+        super("DebugLogger", "Realtime Diagnostics, Entity Inspector & Disk Log Recorder", Category.MISC);
+        initLogFile();
+    }
+
+    private static void initLogFile() {
+        try {
+            File runDir = MinecraftClient.getInstance().runDirectory;
+            File logDir = new File(runDir, "logs");
+            if (!logDir.exists()) logDir.mkdirs();
+            logFile = new File(logDir, "nexus_debug.log");
+            log("INIT", "=== NexusPVP Debug Logger Started ===");
+        } catch (Exception ignored) {}
+    }
+
+    public static synchronized void log(String tag, String message) {
+        String timestamp = new SimpleDateFormat("HH:mm:ss.SSS").format(new Date());
+        String entry = String.format("[%s] [%s] %s", timestamp, tag, message);
+        System.out.println("[NexusPVP-Debug] " + entry);
+        if (logFile != null) {
+            try (FileWriter fw = new FileWriter(logFile, true); PrintWriter pw = new PrintWriter(fw)) {
+                pw.println(entry);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    @Override
+    public void onTick() {
+        if (!fileLogging.isEnabled() || mc.player == null || mc.world == null) return;
+        long now = System.currentTimeMillis();
+        if (now - lastLogTime > 2000) { // Log summary every 2 seconds
+            lastLogTime = now;
+            OverheadHealth oh = NexusPVP.getInstance().getModuleManager().getModule(OverheadHealth.class);
+            int tracked = oh != null ? oh.getTrackedEntitiesCount() : 0;
+            log("STATS", String.format("FPS: %d | Tracked Mobs: %d | Pos: [%.1f, %.1f, %.1f]", 
+                MinecraftClient.getInstance().getCurrentFps(), tracked, mc.player.getX(), mc.player.getY(), mc.player.getZ()));
+        }
     }
 
     @Override
@@ -40,8 +82,6 @@ public class DebugLogger extends Module {
         if (!showHUD.isEnabled() || mc.player == null || mc.world == null) return;
 
         List<String> lines = new ArrayList<>();
-        int accent = ThemeManager.getInstance().getAccentColor().getRGB();
-
         lines.add("§l[NexusPVP Diagnostic Sentinel]");
 
         // 1. Target & Entity Inspection
@@ -83,9 +123,9 @@ public class DebugLogger extends Module {
             lines.add(String.format("§6Memory: §f%dMB / %dMB §7| §6FPS: §f%d", usedMem, maxMem, MinecraftClient.getInstance().getCurrentFps()));
             lines.add(String.format("§6Player: §f[%.1f, %.1f, %.1f] §7(Yaw: §e%.1f§7, Pitch: §e%.1f§7)", 
                 mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYaw(), mc.player.getPitch()));
+            lines.add("§aLog File: §f.minecraft/logs/nexus_debug.log");
         }
 
-        // Draw sleek diagnostic container
         int x = posX.getValue().intValue();
         int y = posY.getValue().intValue();
         int maxW = 0;

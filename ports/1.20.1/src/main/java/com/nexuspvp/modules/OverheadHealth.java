@@ -104,19 +104,23 @@ public class OverheadHealth extends Module {
         matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
 
         float scale = 0.020F;
-        matrices.scale(scale, -scale, scale);
+        matrices.scale(-scale, -scale, scale);
 
-        // 1. Enable blend and write depth buffer so water & clouds cannot overlap!
+        // Step 1: Draw background card with depth writing so water/clouds cannot draw over it
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(true);
 
-        // 1. Blurple border (0xEE5865F2)
+        // 1. Blurple border
         RenderUtils.drawQuad(matrices, cardX - 1, cardY - 1, cardX + cardW + 1, cardY + cardH + 1, 0xEE5865F2);
 
-        // 2. Dark Discord background (0xFA1E1F22)
+        // 2. Dark Discord background (writes to depth buffer)
         RenderUtils.drawQuad(matrices, cardX, cardY, cardX + cardW, cardY + cardH, 0xFA1E1F22);
+
+        // Step 2: Disable depth testing for foreground layers so they NEVER Z-fight with background card!
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
 
         // 3. Health bar
         float barX = cardX + 4;
@@ -124,22 +128,22 @@ public class OverheadHealth extends Module {
         float barW = cardW - 8;
         float barH = 5;
 
-        // Health bar track (0xFF2B2D31)
+        // Health bar track
         RenderUtils.drawQuad(matrices, barX, barY, barX + barW, barY + barH, 0xFF2B2D31);
 
-        // Ghost damage bar (White 0xFFF2F3F5)
+        // Ghost damage bar
         if (ghostDamage.isEnabled() && ghostPct > 0) {
             float ghostW = barW * ghostPct;
             RenderUtils.drawQuad(matrices, barX, barY, barX + ghostW, barY + barH, 0xFFF2F3F5);
         }
 
-        // Active health bar (hpColor)
+        // Active health bar
         if (healthPct > 0) {
             float fillW = barW * healthPct;
             RenderUtils.drawQuad(matrices, barX, barY, barX + fillW, barY + barH, hpColor);
         }
 
-        // Absorption bar (Gold 0xFFFFD700)
+        // Absorption bar
         if (tracker.animatedAbsorption > 0) {
             float absPct = MathHelper.clamp(tracker.animatedAbsorption / 20.0f, 0.0f, 1.0f);
             float absW = barW * absPct;
@@ -183,7 +187,7 @@ public class OverheadHealth extends Module {
             ((VertexConsumerProvider.Immediate) vertexConsumers).draw();
         }
 
-        // Restore clean OpenGL state
+        // Step 3: Restore depth testing
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
 
