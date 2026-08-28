@@ -20,7 +20,8 @@ public class MixinInGameHud {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null) {
             Compat.setContext(context);
-            instance.getModuleManager().onRender2D(context.getMatrices(), tickCounter.getTickDelta(false));
+            float tickDelta = (tickCounter != null) ? tickCounter.getTickDelta(true) : 1.0f;
+            instance.getModuleManager().onRender2D(context.getMatrices(), tickDelta);
             ItemCooldowns cd = instance.getModuleManager().getModule(ItemCooldowns.class);
             if (cd != null && cd.isEnabled()) {
                 cd.renderHotbarCooldowns(context);
@@ -36,7 +37,7 @@ public class MixinInGameHud {
             Crosshair crosshair = instance.getModuleManager().getModule(Crosshair.class);
             if (crosshair != null && crosshair.isEnabled()) {
                 ci.cancel();
-                crosshair.renderCustomCrosshair(context, tickCounter.getTickDelta(false));
+                crosshair.renderCustomCrosshair(context, 1.0f);
             }
         }
     }
