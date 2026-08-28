@@ -58,6 +58,9 @@ public class ThemeManager {
     public void setTheme(String theme) {
         if (themes.containsKey(theme)) {
             this.currentTheme = theme;
+            if (com.nexuspvp.NexusPVP.getInstance() != null && com.nexuspvp.NexusPVP.getInstance().getConfigManager() != null) {
+                com.nexuspvp.NexusPVP.getInstance().getConfigManager().saveConfig();
+            }
         }
     }
 
@@ -76,6 +79,9 @@ public class ThemeManager {
     public void setStyle(GuiStyle style) {
         if (style != null) {
             this.currentStyle = style;
+            if (com.nexuspvp.NexusPVP.getInstance() != null && com.nexuspvp.NexusPVP.getInstance().getConfigManager() != null) {
+                com.nexuspvp.NexusPVP.getInstance().getConfigManager().saveConfig();
+            }
         }
     }
 

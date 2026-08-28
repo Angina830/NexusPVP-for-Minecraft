@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.gui.ClickGui;
@@ -15,7 +17,7 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.util.math.Matrix4f;
+import org.joml.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
 
@@ -53,7 +55,6 @@ public class DamageIndicator extends Module {
 
     public DamageIndicator() {
         super("DamageIndicator", "Displays dealt damage on screen and world", Category.PVP);
-        setEnabled(true);
     }
 
     public NumberSetting getComboOffsetX() { return comboOffsetX; }
@@ -84,16 +85,16 @@ public class DamageIndicator extends Module {
             if (e instanceof LivingEntity && e != mc.player) {
                 LivingEntity living = (LivingEntity) e;
                 float currentHealth = living.getHealth() + living.getAbsorptionAmount();
-                Float prev = trackedHealth.get(e.getEntityId());
+                Float prev = trackedHealth.get(e.getId());
 
                 if (prev != null && currentHealth < prev) {
                     float damage = prev - currentHealth;
                     
-                    Long attackTime = myAttacks.get(e.getEntityId());
-                    boolean wasHitByMe = (attackTime != null && (now - attackTime <= 2000)) || (mc.player != null && mc.player.distanceTo(living) <= 4.5);
+                    Long attackTime = myAttacks.get(e.getId());
+                    boolean wasHitByMe = attackTime != null && (now - attackTime <= 800);
 
                     if (onlyMyDamage.isEnabled() && !wasHitByMe) {
-                        trackedHealth.put(e.getEntityId(), currentHealth);
+                        trackedHealth.put(e.getId(), currentHealth);
                         continue;
                     }
 
@@ -118,7 +119,7 @@ public class DamageIndicator extends Module {
                     }
                 }
 
-                trackedHealth.put(e.getEntityId(), currentHealth);
+                trackedHealth.put(e.getId(), currentHealth);
             }
         }
 
@@ -155,7 +156,7 @@ public class DamageIndicator extends Module {
 
             int tw = mc.textRenderer.getWidth(text);
             RenderUtils.drawRoundedRect(matrices, -tw / 2 - 3, -5, tw + 6, 12, 3, (alphaInt / 2 << 24) | 0x00111214);
-            mc.textRenderer.drawWithShadow(matrices, text, -tw / 2, -3, finalColor);
+            mc.textRenderer.draw(text, -tw / 2.0f, -3.0f, finalColor, false, matrices.peek().getPositionMatrix(), mc.getBufferBuilders().getEntityVertexConsumers(), net.minecraft.client.font.TextRenderer.TextLayerType.SEE_THROUGH, 0, 0xF000F0);
 
             matrices.pop();
         }
@@ -165,8 +166,8 @@ public class DamageIndicator extends Module {
     public void onRender2D(MatrixStack matrices, float tickDelta) {
         if (mc.player == null) return;
 
-        int screenW = mc.getWindow().getScaledWidth();
-        int screenH = mc.getWindow().getScaledHeight();
+        int screenW = Compat.getScaledWidth();
+        int screenH = Compat.getScaledHeight();
 
         if (screenDisplay.isEnabled() && !screenPopups.isEmpty()) {
             int cx = screenW / 2;
@@ -189,7 +190,7 @@ public class DamageIndicator extends Module {
                 int finalColor = ((int) (a * 255) << 24) | (col & 0x00FFFFFF);
 
                 int tw = mc.textRenderer.getWidth(text);
-                mc.textRenderer.drawWithShadow(matrices, text, -tw / 2, 0, finalColor);
+                Compat.drawText(matrices, text, -tw / 2, 0, finalColor);
                 matrices.pop();
             }
         }
@@ -216,8 +217,8 @@ public class DamageIndicator extends Module {
             int boxH = 24;
 
             RenderUtils.drawRoundedRect(matrices, -boxW / 2, -boxH / 2, boxW, boxH, 4, ((int) (a * 220) << 24) | 0x001E1F22);
-            mc.textRenderer.drawWithShadow(matrices, comboText, -w1 / 2, -boxH / 2 + 4, ((int) (a * 255) << 24) | 0x00FFDD55);
-            mc.textRenderer.drawWithShadow(matrices, dmgText, -w2 / 2, -boxH / 2 + 13, ((int) (a * 255) << 24) | 0x00FF4444);
+            Compat.drawText(matrices, comboText, -w1 / 2, -boxH / 2 + 4, ((int) (a * 255) << 24) | 0x00FFDD55);
+            Compat.drawText(matrices, dmgText, -w2 / 2, -boxH / 2 + 13, ((int) (a * 255) << 24) | 0x00FF4444);
 
             matrices.pop();
         }
@@ -232,8 +233,8 @@ public class DamageIndicator extends Module {
         final long maxLifetime = 900;
 
         WorldDamagePopup(double x, double y, double z, float damage, boolean isCrit) {
-            this.x = x;
-            this.y = y;
+            this.x = (x);
+            this.y = (y);
             this.z = z;
             this.damage = damage;
             this.isCrit = isCrit;

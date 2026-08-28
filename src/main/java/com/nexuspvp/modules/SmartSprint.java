@@ -1,4 +1,6 @@
 package com.nexuspvp.modules;
+import com.nexuspvp.util.Compat;
+
 
 import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
@@ -22,7 +24,7 @@ public class SmartSprint extends Module {
         long handle = mc.getWindow().getHandle();
         boolean ctrlDown = InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_LEFT_CONTROL) 
                         || InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_RIGHT_CONTROL);
-        boolean sDown = InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_S) || mc.options.keyBack.isPressed();
+        boolean sDown = InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_S) || mc.options.backKey.isPressed();
 
         if (ctrlDown) {
             if (pauseOnS.isEnabled() && sDown) {
