@@ -13,14 +13,16 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class OverheadHealth extends Module {
 
-        private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
+    private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
     private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
     private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 60.0, 1.0));
 
@@ -30,6 +32,7 @@ public class OverheadHealth extends Module {
         float previousHealth;
         float animatedAbsorption;
         long lastDamageTime;
+        long lastSeenTime;
     }
 
     private final Map<Integer, HealthTracker> trackers = new HashMap<>();
@@ -44,11 +47,25 @@ public class OverheadHealth extends Module {
     }
 
     @Override
+    public void onTick() {
+        if (trackers.isEmpty()) return;
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<Integer, HealthTracker>> it = trackers.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Integer, HealthTracker> entry = it.next();
+            if (now - entry.getValue().lastSeenTime > 4000) {
+                it.remove();
+            }
+        }
+    }
+
+    @Override
     public void onRender3D(MatrixStack matrices, float tickDelta) {
         if (mc.world == null || mc.player == null) return;
 
         double maxDistSq = range.getValue() * range.getValue();
         Vec3d camPos = mc.gameRenderer.getCamera().getPos();
+        long now = System.currentTimeMillis();
 
         for (Entity entity : mc.world.getEntities()) {
             if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
@@ -60,27 +77,27 @@ public class OverheadHealth extends Module {
             double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
             if (distSq > maxDistSq) continue;
 
-            // Line of Sight wall check: hide health card if behind solid walls/blocks
-            if (!mc.player.canSee(living)) continue;
-
             double interpX = MathHelper.lerp((double) tickDelta, living.prevX, living.getX());
             double interpY = MathHelper.lerp((double) tickDelta, living.prevY, living.getY());
             double interpZ = MathHelper.lerp((double) tickDelta, living.prevZ, living.getZ());
 
             matrices.push();
             matrices.translate(interpX - camPos.x, interpY - camPos.y + living.getHeight() + 0.55D, interpZ - camPos.z);
-            matrices.multiply(mc.getEntityRenderDispatcher().getRotation());
+            
+            // Proper camera billboard rotation
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-mc.gameRenderer.getCamera().getYaw() + 180.0F));
+            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(mc.gameRenderer.getCamera().getPitch()));
 
             float scale = 0.020F;
-            matrices.scale(-scale, -scale, scale);
+            matrices.scale(scale, -scale, scale);
 
-            renderGraphicalCard(matrices, living);
+            renderGraphicalCard(matrices, living, now);
 
             matrices.pop();
         }
     }
 
-    private void renderGraphicalCard(MatrixStack matrices, LivingEntity entity) {
+    private void renderGraphicalCard(MatrixStack matrices, LivingEntity entity, long now) {
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         float currentAbs = entity.getAbsorptionAmount();
@@ -92,19 +109,22 @@ public class OverheadHealth extends Module {
             t.previousHealth = currentHp;
             t.animatedAbsorption = currentAbs;
             t.lastDamageTime = 0;
+            t.lastSeenTime = now;
             return t;
         });
 
+        tracker.lastSeenTime = now;
+
         if (currentHp < tracker.previousHealth) {
             tracker.damageGhostHealth = tracker.previousHealth;
-            tracker.lastDamageTime = System.currentTimeMillis();
+            tracker.lastDamageTime = now;
         }
         tracker.previousHealth = currentHp;
 
         tracker.animatedHealth = MathHelper.lerp(0.20f, tracker.animatedHealth, currentHp);
         tracker.animatedAbsorption = MathHelper.lerp(0.20f, tracker.animatedAbsorption, currentAbs);
 
-        if (System.currentTimeMillis() - tracker.lastDamageTime > 280) {
+        if (now - tracker.lastDamageTime > 280) {
             tracker.damageGhostHealth = MathHelper.lerp(0.08f, tracker.damageGhostHealth, currentHp);
         }
         if (currentHp > tracker.damageGhostHealth) {
@@ -155,17 +175,16 @@ public class OverheadHealth extends Module {
         // Health bar track
         RenderUtils.drawQuad(matrices, barX, barY, barX + barW, barY + barH, 0xFF2B2D31);
 
-        // Active health bar
+        // Ghost damage bar (behind active or trailing chunk)
+        if (ghostDamage.isEnabled() && ghostPct > 0) {
+            float ghostWidth = barW * ghostPct;
+            RenderUtils.drawQuad(matrices, barX, barY, barX + ghostWidth, barY + barH, 0xFFF2F3F5);
+        }
+
+        // Active health bar (Green / Yellow / Red) from left to right
         if (healthPct > 0) {
             float fillW = barW * healthPct;
             RenderUtils.drawQuad(matrices, barX, barY, barX + fillW, barY + barH, hpColor);
-        }
-
-        // Ghost damage bar (only trailing lost damage chunk)
-        if (ghostDamage.isEnabled() && ghostPct > healthPct + 0.005f) {
-            float ghostStart = barX + (barW * healthPct);
-            float ghostWidth = barW * (ghostPct - healthPct);
-            RenderUtils.drawQuad(matrices, ghostStart, barY, ghostStart + ghostWidth, barY + barH, 0xFFF2F3F5);
         }
 
         // Absorption bar
