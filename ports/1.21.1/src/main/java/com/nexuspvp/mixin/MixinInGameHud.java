@@ -4,9 +4,9 @@ import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.Crosshair;
 import com.nexuspvp.modules.ItemCooldowns;
 import com.nexuspvp.util.Compat;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.client.render.RenderTickCounter;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -16,10 +16,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinInGameHud {
 
     @Inject(method = "render", at = @At("RETURN"))
-    private void onRender(DrawContext context, float tickDelta, CallbackInfo ci) {
+    private void onRender(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null) {
             Compat.setContext(context);
+            float tickDelta = (tickCounter != null) ? tickCounter.getTickDelta(true) : 1.0f;
             instance.getModuleManager().onRender2D(context.getMatrices(), tickDelta);
             ItemCooldowns cd = instance.getModuleManager().getModule(ItemCooldowns.class);
             if (cd != null && cd.isEnabled()) {
@@ -30,7 +31,7 @@ public class MixinInGameHud {
     }
 
     @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true)
-    private void onRenderCrosshair(DrawContext context, CallbackInfo ci) {
+    private void onRenderCrosshair(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance != null && instance.getModuleManager() != null) {
             Crosshair crosshair = instance.getModuleManager().getModule(Crosshair.class);
