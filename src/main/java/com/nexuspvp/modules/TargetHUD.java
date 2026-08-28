@@ -187,7 +187,12 @@ public class TargetHUD extends Module {
             if (entity != null) {
                 int itemX = cardX + cardW - 60;
                 int itemY = cardY + 5;
+                java.util.List<ItemStack> armorList = new java.util.ArrayList<>();
                 for (ItemStack stack : entity.getArmorItems()) {
+                    armorList.add(stack);
+                }
+                java.util.Collections.reverse(armorList);
+                for (ItemStack stack : armorList) {
                     if (!stack.isEmpty()) {
                         mc.getItemRenderer().renderInGui(stack, itemX, itemY);
                         itemX += 13;

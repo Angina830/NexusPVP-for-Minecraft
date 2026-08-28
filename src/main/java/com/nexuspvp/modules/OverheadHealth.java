@@ -19,6 +19,7 @@ import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class OverheadHealth extends Module {
@@ -33,6 +34,7 @@ public class OverheadHealth extends Module {
         float previousHealth;
         float animatedAbsorption;
         long lastDamageTime;
+        long lastSeenTime;
     }
 
     private final Map<Integer, HealthTracker> trackers = new HashMap<>();
@@ -47,11 +49,25 @@ public class OverheadHealth extends Module {
     }
 
     @Override
+    public void onTick() {
+        if (trackers.isEmpty()) return;
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<Integer, HealthTracker>> it = trackers.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Integer, HealthTracker> entry = it.next();
+            if (now - entry.getValue().lastSeenTime > 4000) {
+                it.remove();
+            }
+        }
+    }
+
+    @Override
     public void onRender3D(MatrixStack matrices, float tickDelta) {
         if (mc.world == null || mc.player == null) return;
 
         double maxDistSq = range.getValue() * range.getValue();
         Vec3d camPos = mc.gameRenderer.getCamera().getPos();
+        long now = System.currentTimeMillis();
 
         for (Entity entity : mc.world.getEntities()) {
             if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
@@ -63,28 +79,25 @@ public class OverheadHealth extends Module {
             double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
             if (distSq > maxDistSq) continue;
 
-            // Strictly require direct line of sight
-            if (!mc.player.canSee(living)) continue;
-
             double interpX = MathHelper.lerp((double) tickDelta, living.lastRenderX, living.getX());
             double interpY = MathHelper.lerp((double) tickDelta, living.lastRenderY, living.getY());
             double interpZ = MathHelper.lerp((double) tickDelta, living.lastRenderZ, living.getZ());
 
             RenderSystem.pushMatrix();
             RenderSystem.translated(interpX - camPos.x, interpY - camPos.y + living.getHeight() + 0.55D, interpZ - camPos.z);
-            RenderSystem.rotatef(-mc.gameRenderer.getCamera().getYaw(), 0.0F, 1.0F, 0.0F);
+            RenderSystem.rotatef(-mc.gameRenderer.getCamera().getYaw() + 180.0F, 0.0F, 1.0F, 0.0F);
             RenderSystem.rotatef(mc.gameRenderer.getCamera().getPitch(), 1.0F, 0.0F, 0.0F);
 
             float scale = 0.020F;
-            RenderSystem.scalef(-scale, -scale, scale);
+            RenderSystem.scalef(scale, -scale, scale);
 
-            renderGraphicalCard(living);
+            renderGraphicalCard(living, now);
 
             RenderSystem.popMatrix();
         }
     }
 
-    private void renderGraphicalCard(LivingEntity entity) {
+    private void renderGraphicalCard(LivingEntity entity, long now) {
         float currentHp = entity.getHealth();
         float maxHp = Math.max(1.0f, entity.getMaxHealth());
         float currentAbs = entity.getAbsorptionAmount();
@@ -96,19 +109,22 @@ public class OverheadHealth extends Module {
             t.previousHealth = currentHp;
             t.animatedAbsorption = currentAbs;
             t.lastDamageTime = 0;
+            t.lastSeenTime = now;
             return t;
         });
 
+        tracker.lastSeenTime = now;
+
         if (currentHp < tracker.previousHealth) {
             tracker.damageGhostHealth = tracker.previousHealth;
-            tracker.lastDamageTime = System.currentTimeMillis();
+            tracker.lastDamageTime = now;
         }
         tracker.previousHealth = currentHp;
 
         tracker.animatedHealth = MathHelper.lerp(0.20f, tracker.animatedHealth, currentHp);
         tracker.animatedAbsorption = MathHelper.lerp(0.20f, tracker.animatedAbsorption, currentAbs);
 
-        if (System.currentTimeMillis() - tracker.lastDamageTime > 280) {
+        if (now - tracker.lastDamageTime > 280) {
             tracker.damageGhostHealth = MathHelper.lerp(0.08f, tracker.damageGhostHealth, currentHp);
         }
         if (currentHp > tracker.damageGhostHealth) {
@@ -166,17 +182,16 @@ public class OverheadHealth extends Module {
         // 3. Health bar track
         addQuad(buffer, barX, barY, barW, barH, 0xFF2B2D31);
 
-        // 4. Active health bar (Green / Yellow / Red)
+        // 4. Ghost damage bar (behind active or trailing chunk)
+        if (ghostDamage.isEnabled() && ghostPct > 0) {
+            float ghostWidth = barW * ghostPct;
+            addQuad(buffer, barX, barY, ghostWidth, barH, 0xFFF2F3F5);
+        }
+
+        // 5. Active health bar (Green / Yellow / Red) from left to right
         if (healthPct > 0) {
             float fillW = barW * healthPct;
             addQuad(buffer, barX, barY, fillW, barH, hpColor);
-        }
-
-        // 5. Ghost damage bar (only trailing lost damage chunk)
-        if (ghostDamage.isEnabled() && ghostPct > healthPct + 0.005f) {
-            float ghostStart = barX + (barW * healthPct);
-            float ghostWidth = barW * (ghostPct - healthPct);
-            addQuad(buffer, ghostStart, barY, ghostWidth, barH, 0xFFF2F3F5);
         }
 
         // 6. Absorption bar
