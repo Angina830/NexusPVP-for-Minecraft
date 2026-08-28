@@ -1,6 +1,4 @@
 package com.nexuspvp.mixin;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.Crosshair;
@@ -22,7 +20,7 @@ public class MixinClientPlayerInteractionManager {
     @Inject(method = "attackEntity", at = @At("HEAD"))
     private void onAttackEntity(PlayerEntity player, Entity target, CallbackInfo ci) {
         if (target != null) {
-            DamageIndicator.recordAttack(target.getId());
+            DamageIndicator.recordAttack(target.getEntityId());
             Crosshair.recordHit();
 
             NexusPVP instance = NexusPVP.getInstance();

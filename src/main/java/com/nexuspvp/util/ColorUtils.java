@@ -1,6 +1,4 @@
 package com.nexuspvp.util;
-import com.nexuspvp.util.Compat;
-
 
 import java.awt.*;
 

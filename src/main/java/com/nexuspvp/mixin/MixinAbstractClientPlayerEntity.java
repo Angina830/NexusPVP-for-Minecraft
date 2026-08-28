@@ -11,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(AbstractClientPlayerEntity.class)
 public abstract class MixinAbstractClientPlayerEntity {
 
-    @Inject(method = "getFovMultiplier", at = @At("RETURN"), cancellable = true)
-    private void onGetFovMultiplier(CallbackInfoReturnable<Float> cir) {
+    @Inject(method = "getSpeed", at = @At("RETURN"), cancellable = true)
+    private void onGetSpeed(CallbackInfoReturnable<Float> cir) {
         NexusPVP instance = NexusPVP.getInstance();
         if (instance == null || instance.getModuleManager() == null) return;
 

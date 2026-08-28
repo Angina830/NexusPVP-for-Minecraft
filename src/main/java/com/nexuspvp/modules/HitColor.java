@@ -1,6 +1,4 @@
 package com.nexuspvp.modules;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.module.Module;
 import com.nexuspvp.module.Category;
@@ -31,11 +29,11 @@ public class HitColor extends Module {
             if (e instanceof LivingEntity) {
                 LivingEntity living = (LivingEntity) e;
                 float health = living.getHealth() + living.getAbsorptionAmount();
-                Float prev = lastHealth.get(e.getId());
+                Float prev = lastHealth.get(e.getEntityId());
                 if (prev != null && health < prev) {
-                    hitTimes.put(e.getId(), System.currentTimeMillis());
+                    hitTimes.put(e.getEntityId(), System.currentTimeMillis());
                 }
-                lastHealth.put(e.getId(), health);
+                lastHealth.put(e.getEntityId(), health);
             }
         }
     }

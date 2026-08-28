@@ -16,10 +16,11 @@ public class MixinInGameOverlayRenderer {
     @Inject(method = "renderFireOverlay", at = @At("HEAD"))
     private static void onRenderFireOverlay(MinecraftClient client, MatrixStack matrices, CallbackInfo ci) {
         NexusPVP instance = NexusPVP.getInstance();
-        if (instance == null || instance.getModuleManager() == null) return;
-        LowFire lowFire = instance.getModuleManager().getModule(LowFire.class);
-        if (lowFire != null && lowFire.isEnabled()) {
-            matrices.translate(0.0, -lowFire.getOffset(), 0.0);
+        if (instance != null && instance.getModuleManager() != null) {
+            LowFire lowFire = instance.getModuleManager().getModule(LowFire.class);
+            if (lowFire != null && lowFire.isEnabled()) {
+                matrices.translate(0.0, -lowFire.getOffset(), 0.0);
+            }
         }
     }
 }

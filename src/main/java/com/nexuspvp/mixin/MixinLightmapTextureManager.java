@@ -1,6 +1,4 @@
 package com.nexuspvp.mixin;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.Ambience;
@@ -29,7 +27,7 @@ public class MixinLightmapTextureManager {
             if (image != null) {
                 for (int x = 0; x < 16; x++) {
                     for (int y = 0; y < 16; y++) {
-                        image.setColor(x, y, 0xFFFFFFFF);
+                        image.setPixelColor(x, y, 0xFFFFFFFF);
                     }
                 }
                 this.texture.upload();

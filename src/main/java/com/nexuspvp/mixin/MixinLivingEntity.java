@@ -1,6 +1,4 @@
 package com.nexuspvp.mixin;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.modules.TotemPop;
 import net.minecraft.entity.Entity;

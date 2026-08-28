@@ -7,12 +7,12 @@ import com.nexuspvp.setting.ColorSetting;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.ColorUtils;
+import com.nexuspvp.util.RenderUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -58,8 +58,8 @@ public class SwordSlash extends Module {
     private void spawnSlashArc() {
         if (mc.player == null) return;
         Vec3d eyePos = mc.player.getCameraPosVec(1.0f);
-        float yaw = mc.player.getYaw();
-        float pitch = mc.player.getPitch();
+        float yaw = mc.player.yaw;
+        float pitch = mc.player.pitch;
         Color c = rainbow.isEnabled() ? ColorUtils.rainbow(0) : color.getColor();
         activeArcs.add(new SlashArc(eyePos, yaw, pitch, c));
     }
@@ -68,12 +68,10 @@ public class SwordSlash extends Module {
     public void onRender3D(MatrixStack matrices, float tickDelta) {
         if (mc.player == null || mc.world == null || activeArcs.isEmpty()) return;
 
+        RenderUtils.setupBloom3D();
         Vec3d cam = mc.gameRenderer.getCamera().getPos();
+        String curStyle = style.getValue();
         float rMax = arcRadius.getFloatValue();
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
@@ -81,23 +79,33 @@ public class SwordSlash extends Module {
         for (SlashArc arc : activeArcs) {
             if (arc.alpha <= 0.01f) continue;
 
-            matrices.push();
-            matrices.translate(arc.origin.x - cam.x, arc.origin.y - cam.y, arc.origin.z - cam.z);
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-arc.yaw));
-            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(arc.pitch));
-            matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-25f));
-            Matrix4f matrix = matrices.peek().getPositionMatrix();
+            RenderSystem.pushMatrix();
+            RenderSystem.translated(arc.origin.x - cam.x, arc.origin.y - cam.y, arc.origin.z - cam.z);
+
+            RenderSystem.rotatef(-arc.yaw, 0f, 1f, 0f);
+            RenderSystem.rotatef(arc.pitch, 1f, 0f, 0f);
+            RenderSystem.rotatef(-25f, 0f, 0f, 1f);
 
             int alpha = (int) (arc.color.getAlpha() * arc.alpha);
             int r = arc.color.getRed();
             int g = arc.color.getGreen();
             int b = arc.color.getBlue();
 
+            if (curStyle.equals("FlameSlash")) {
+                r = 255;
+                g = (int) (120 * arc.alpha);
+                b = 20;
+            } else if (curStyle.equals("Electric")) {
+                r = 160;
+                g = 230;
+                b = 255;
+            }
+
             int segments = 24;
             double startAngle = -Math.PI * 0.45;
             double endAngle = Math.PI * 0.45;
 
-            buffer.begin(VertexFormat.DrawMode.TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
+            buffer.begin(GL11.GL_TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
             for (int i = 0; i <= segments; i++) {
                 double t = (double) i / segments;
                 double angle = startAngle + (endAngle - startAngle) * t;
@@ -109,15 +117,27 @@ public class SwordSlash extends Module {
                 float cos = (float) Math.cos(angle);
                 float sin = (float) Math.sin(angle);
 
-                buffer.vertex(matrix, cos * rInner, sin * rInner, 0f).color(r, g, b, 0).next();
-                buffer.vertex(matrix, cos * rOuter, sin * rOuter, 0f).color(r, g, b, alpha).next();
+                buffer.vertex(cos * rInner, sin * rInner, 0f).color(r, g, b, 0).next();
+                buffer.vertex(cos * rOuter, sin * rOuter, 0f).color(r, g, b, alpha).next();
             }
             tessellator.draw();
 
-            matrices.pop();
+            GL11.glLineWidth(2.5f);
+            buffer.begin(GL11.GL_LINE_STRIP, VertexFormats.POSITION_COLOR);
+            for (int i = 0; i <= segments; i++) {
+                double t = (double) i / segments;
+                double angle = startAngle + (endAngle - startAngle) * t;
+                float cos = (float) Math.cos(angle);
+                float sin = (float) Math.sin(angle);
+                int edgeA = (int) (alpha * Math.sin(t * Math.PI));
+                buffer.vertex(cos * rMax, sin * rMax, 0f).color(255, 255, 255, edgeA).next();
+            }
+            tessellator.draw();
+
+            RenderSystem.popMatrix();
         }
 
-        RenderSystem.disableBlend();
+        RenderUtils.cleanupBloom3D();
     }
 
     private static class SlashArc {

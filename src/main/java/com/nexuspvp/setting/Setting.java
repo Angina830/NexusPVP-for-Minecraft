@@ -1,6 +1,4 @@
 package com.nexuspvp.setting;
-import com.nexuspvp.util.Compat;
-
 
 public abstract class Setting<T> {
     private final String name;

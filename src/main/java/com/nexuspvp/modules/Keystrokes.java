@@ -1,6 +1,4 @@
 package com.nexuspvp.modules;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.gui.ThemeManager;
 import com.nexuspvp.module.Category;
@@ -72,13 +70,13 @@ public class Keystrokes extends Module {
         float sc = scale.getFloatValue();
         int accent = ThemeManager.getInstance().getAccentColor().getRGB();
 
-        boolean wDown = mc.options.forwardKey.isPressed();
-        boolean aDown = mc.options.leftKey.isPressed();
-        boolean sDown = mc.options.backKey.isPressed();
-        boolean dDown = mc.options.rightKey.isPressed();
-        boolean spaceDown = mc.options.jumpKey.isPressed();
-        boolean lmbDown = mc.options.attackKey.isPressed();
-        boolean rmbDown = mc.options.useKey.isPressed();
+        boolean wDown = mc.options.keyForward.isPressed();
+        boolean aDown = mc.options.keyLeft.isPressed();
+        boolean sDown = mc.options.keyBack.isPressed();
+        boolean dDown = mc.options.keyRight.isPressed();
+        boolean spaceDown = mc.options.keyJump.isPressed();
+        boolean lmbDown = mc.options.keyAttack.isPressed();
+        boolean rmbDown = mc.options.keyUse.isPressed();
 
         wAnim += ((wDown ? 1.0f : 0.0f) - wAnim) * 0.35f;
         aAnim += ((aDown ? 1.0f : 0.0f) - aAnim) * 0.35f;
@@ -138,7 +136,7 @@ public class Keystrokes extends Module {
 
         int textW = mc.textRenderer.getWidth(name);
         int textCol = anim > 0.5f ? 0xFFFFFFFF : 0xFFDBDEE1;
-        Compat.drawText(matrices, name, kx + (kw - textW) / 2.0f, ky + (kh - 8) / 2.0f, textCol);
+        mc.textRenderer.drawWithShadow(matrices, name, kx + (kw - textW) / 2.0f, ky + (kh - 8) / 2.0f, textCol);
     }
 
     private void drawMouseKey(MatrixStack matrices, int kx, int ky, int kw, int kh, String name, int cps, float anim, int accent) {
@@ -150,12 +148,12 @@ public class Keystrokes extends Module {
 
         int textW = mc.textRenderer.getWidth(name);
         int textCol = anim > 0.5f ? 0xFFFFFFFF : 0xFFDBDEE1;
-        Compat.drawText(matrices, name, kx + (kw - textW) / 2.0f, ky + 3, textCol);
+        mc.textRenderer.drawWithShadow(matrices, name, kx + (kw - textW) / 2.0f, ky + 3, textCol);
 
         if (showCPS.isEnabled()) {
             String cpsText = cps + " CPS";
             int cpsW = mc.textRenderer.getWidth(cpsText);
-            Compat.drawText(matrices, cpsText, kx + (kw - cpsW) / 2.0f, ky + 13, 0xFF949BA4);
+            mc.textRenderer.drawWithShadow(matrices, cpsText, kx + (kw - cpsW) / 2.0f, ky + 13, 0xFF949BA4);
         }
     }
 

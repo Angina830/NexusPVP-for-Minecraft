@@ -6,7 +6,6 @@ import com.nexuspvp.module.Category;
 import com.nexuspvp.module.Module;
 import com.nexuspvp.setting.BooleanSetting;
 import com.nexuspvp.setting.NumberSetting;
-import com.nexuspvp.util.Compat;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
@@ -68,12 +67,13 @@ public class DebugLogger extends Module {
     public void onTick() {
         if (!fileLogging.isEnabled() || mc.player == null || mc.world == null) return;
         long now = System.currentTimeMillis();
-        if (now - lastLogTime > 2000) { // Log summary every 2 seconds
+        if (now - lastLogTime > 2000) {
             lastLogTime = now;
             OverheadHealth oh = NexusPVP.getInstance().getModuleManager().getModule(OverheadHealth.class);
             int tracked = oh != null ? oh.getTrackedEntitiesCount() : 0;
-            log("STATS", String.format("FPS: %d | Tracked Mobs: %d | Pos: [%.1f, %.1f, %.1f]", 
-                MinecraftClient.getInstance().getCurrentFps(), tracked, mc.player.getX(), mc.player.getY(), mc.player.getZ()));
+            String fpsStr = mc.fpsDebugString != null ? mc.fpsDebugString.split(" ")[0] : "0";
+            log("STATS", String.format("FPS: %s | Tracked Mobs: %d | Pos: [%.1f, %.1f, %.1f]", 
+                fpsStr, tracked, mc.player.getX(), mc.player.getY(), mc.player.getZ()));
         }
     }
 
@@ -91,7 +91,7 @@ public class DebugLogger extends Module {
                 float hp = target.getHealth();
                 float maxHp = target.getMaxHealth();
                 double dist = Math.sqrt(target.squaredDistanceTo(mc.player));
-                lines.add(String.format("§bTarget: §f%s §7(ID: %d)", target.getName().getString(), target.getId()));
+                lines.add(String.format("§bTarget: §f%s §7(ID: %d)", target.getName().getString(), target.getEntityId()));
                 lines.add(String.format("§bHP: §a%.1f / %.1f §7| Dist: §e%.1fm", hp, maxHp, dist));
                 lines.add(String.format("§bTarget Pos: §7[%.1f, %.1f, %.1f]", target.getX(), target.getY(), target.getZ()));
             } else {
@@ -110,7 +110,7 @@ public class DebugLogger extends Module {
             for (Entity e : mc.world.getEntities()) {
                 if (e instanceof LivingEntity && e != mc.player) livingInWorld++;
             }
-            lines.add(String.format("§dWorld Entities: §f%d §7(Living: §e%d§7)", mc.world.getRegularEntityCount(), livingInWorld));
+            lines.add(String.format("§dLiving Entities: §e%d§7", livingInWorld));
         }
 
         // 3. System & Position Stats
@@ -119,10 +119,11 @@ public class DebugLogger extends Module {
             long totalMem = Runtime.getRuntime().totalMemory() / 1024 / 1024;
             long freeMem = Runtime.getRuntime().freeMemory() / 1024 / 1024;
             long usedMem = totalMem - freeMem;
+            String fpsStr = mc.fpsDebugString != null ? mc.fpsDebugString.split(" ")[0] : "0";
 
-            lines.add(String.format("§6Memory: §f%dMB / %dMB §7| §6FPS: §f%d", usedMem, maxMem, MinecraftClient.getInstance().getCurrentFps()));
+            lines.add(String.format("§6Memory: §f%dMB / %dMB §7| §6FPS: §f%s", usedMem, maxMem, fpsStr));
             lines.add(String.format("§6Player: §f[%.1f, %.1f, %.1f] §7(Yaw: §e%.1f§7, Pitch: §e%.1f§7)", 
-                mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.getYaw(), mc.player.getPitch()));
+                mc.player.getX(), mc.player.getY(), mc.player.getZ(), mc.player.yaw, mc.player.pitch));
             lines.add("§aLog File: §f.minecraft/logs/nexus_debug.log");
         }
 
@@ -141,7 +142,7 @@ public class DebugLogger extends Module {
 
         int lineY = y + pad;
         for (String s : lines) {
-            Compat.drawWithShadow(null, matrices, s, x + pad, lineY, 0xFFFFFFFF);
+            mc.textRenderer.drawWithShadow(matrices, s, x + pad, lineY, 0xFFFFFFFF);
             lineY += 11;
         }
     }

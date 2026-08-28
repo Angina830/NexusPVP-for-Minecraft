@@ -1,6 +1,4 @@
 package com.nexuspvp.mixin;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.HitColor;
@@ -39,7 +37,7 @@ public class MixinOverlayTexture {
                     // The damage overlay is at V=3 in 1.16.5, let's just write all V rows to be safe, or V=3.
                     // Vanilla does: for i=0..15 { image.setColor(i, 3, red_tint); }
                     for (int i = 0; i < 16; i++) {
-                        image.setColor(i, 3, color);
+                        image.setPixelColor(i, 3, color);
                     }
                     this.texture.upload();
                     return;
@@ -53,8 +51,8 @@ public class MixinOverlayTexture {
             int vanillaColor = (170 << 24) | (0 << 16) | (0 << 8) | 255; // ABGR for red (alpha 170, blue 0, green 0, red 255) in vanilla
             for (int i = 0; i < 16; i++) {
                 // To be safe, check if it's already vanilla to avoid uploading every frame
-                if (image.getColor(i, 3) != vanillaColor) {
-                    image.setColor(i, 3, vanillaColor);
+                if (image.getPixelColor(i, 3) != vanillaColor) {
+                    image.setPixelColor(i, 3, vanillaColor);
                 }
             }
             this.texture.upload();

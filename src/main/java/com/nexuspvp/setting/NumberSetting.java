@@ -1,6 +1,4 @@
 package com.nexuspvp.setting;
-import com.nexuspvp.util.Compat;
-
 
 public class NumberSetting extends Setting<Double> {
     private final double min;

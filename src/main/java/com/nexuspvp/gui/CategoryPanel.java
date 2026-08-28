@@ -1,6 +1,4 @@
 package com.nexuspvp.gui;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.module.Category;
@@ -28,8 +26,8 @@ public class CategoryPanel {
 
     public CategoryPanel(Category category, int x, int y) {
         this.category = category;
-        this.x = (x);
-        this.y = (y);
+        this.x = x;
+        this.y = y;
 
         List<Module> modules = NexusPVP.getInstance().getModuleManager().getModulesByCategory(category);
         for (Module m : modules) {
@@ -72,13 +70,13 @@ public class CategoryPanel {
         int startX = x + 8;
         int textY = y + (headerHeight - 8) / 2;
         
-        Compat.drawWithShadow(null, matrices, hashTag, startX, textY, 0x80949BA4);
-        Compat.drawWithShadow(null, matrices, translatedName, startX + hashWidth, textY, 0xFFF2F3F5);
+        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, hashTag, startX, textY, 0x80949BA4);
+        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, translatedName, startX + hashWidth, textY, 0xFFF2F3F5);
         
         // Discord expand arrow icon (v / >)
         String expandIcon = expanded ? "v" : ">";
         int iconWidth = MinecraftClient.getInstance().textRenderer.getWidth(expandIcon);
-        Compat.drawWithShadow(null, matrices, expandIcon, x + width - iconWidth - 8, textY, 0xFF949BA4);
+        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, expandIcon, x + width - iconWidth - 8, textY, 0xFF949BA4);
 
         if (expanded) {
             int currentY = y + headerHeight + scrollOffset;
@@ -138,7 +136,7 @@ public class CategoryPanel {
 
     public void mouseScrolled(double mouseX, double mouseY, double amount) {
         if (expanded && isHovered(mouseX, mouseY)) {
-            scrollOffset += (int)(amount * 10);
+            scrollOffset += amount * 10;
             // simple clamp could go here
         }
     }

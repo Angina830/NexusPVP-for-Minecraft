@@ -1,6 +1,4 @@
 package com.nexuspvp.module;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.setting.*;
 import net.minecraft.client.MinecraftClient;

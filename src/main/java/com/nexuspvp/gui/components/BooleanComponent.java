@@ -1,6 +1,4 @@
 package com.nexuspvp.gui.components;
-import com.nexuspvp.util.Compat;
-
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.gui.ModuleButton;
@@ -25,7 +23,7 @@ public class BooleanComponent extends SettingComponent {
     @Override
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
         String translatedName = com.nexuspvp.gui.LanguageManager.getInstance().get(boolSetting.getName());
-        Compat.drawWithShadow(null, matrices, translatedName, x + 4, y + 3, 0xFFDBDEE1);
+        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, translatedName, x + 4, y + 3, 0xFFDBDEE1);
         
         int toggleW = 18;
         int toggleH = 10;

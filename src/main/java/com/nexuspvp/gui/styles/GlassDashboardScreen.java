@@ -1,9 +1,4 @@
 package com.nexuspvp.gui.styles;
-import com.nexuspvp.util.Compat;
-
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.util.math.MatrixStack;
-
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.gui.ClickGui;
@@ -14,7 +9,7 @@ import com.nexuspvp.setting.*;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.Text;
+import net.minecraft.text.LiteralText;
 import org.lwjgl.glfw.GLFW;
 
 import java.awt.Color;
@@ -52,7 +47,7 @@ public class GlassDashboardScreen extends Screen {
     private int modalScrollY = 0;
 
     public GlassDashboardScreen() {
-        super(Text.literal("NexusPVP - Glass Dashboard"));
+        super(new LiteralText("NexusPVP - Glass Dashboard"));
         for (Category cat : Category.values()) {
             List<Module> mods = NexusPVP.getInstance().getModuleManager().getModulesByCategory(cat);
             List<Module> valid = new ArrayList<>();
@@ -67,9 +62,7 @@ public class GlassDashboardScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        Compat.setContext(context);
-        MatrixStack matrices = context.getMatrices();
+    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
         int accent = ThemeManager.getInstance().getAccentColor().getRGB();
 
         // 1. Dark translucent backdrop
@@ -90,8 +83,8 @@ public class GlassDashboardScreen extends Screen {
         RenderUtils.drawRect(matrices, panelX, panelY + navH - 1, panelW, 1, 0x22FFFFFF);
 
         // Logo
-        Compat.drawWithShadow(null, matrices, "GLEBKA", panelX + 16, panelY + 12, accent);
-        Compat.drawWithShadow(null, matrices, "VISUALS", panelX + 62, panelY + 12, 0xFFFFFFFF);
+        textRenderer.drawWithShadow(matrices, "GLEBKA", panelX + 16, panelY + 12, accent);
+        textRenderer.drawWithShadow(matrices, "VISUALS", panelX + 62, panelY + 12, 0xFFFFFFFF);
 
         // Nav Tabs
         DashTab[] tabs = DashTab.values();
@@ -112,7 +105,7 @@ public class GlassDashboardScreen extends Screen {
             }
 
             int tw = textRenderer.getWidth(t.title);
-            Compat.drawWithShadow(null, matrices, t.title, tx + (tabW - tw) / 2, ty + 6, active ? 0xFFFFFFFF : 0xFF949BA4);
+            textRenderer.drawWithShadow(matrices, t.title, tx + (tabW - tw) / 2, ty + 6, active ? 0xFFFFFFFF : 0xFF949BA4);
         }
 
         // 4. Content Area (2-Column Grid)
@@ -149,12 +142,12 @@ public class GlassDashboardScreen extends Screen {
                     RenderUtils.drawRoundedRect(matrices, cardX, cardY, colW, cardH, 4, cardBg);
 
                     // Module Title & Desc
-                    Compat.drawWithShadow(null, matrices, m.getName(), cardX + 10, cardY + 8, enabled ? 0xFFFFFFFF : 0xFFDBDEE1);
+                    textRenderer.drawWithShadow(matrices, m.getName(), cardX + 10, cardY + 8, enabled ? 0xFFFFFFFF : 0xFFDBDEE1);
                     String desc = m.getDescription();
                     if (desc != null && textRenderer.getWidth(desc) > colW - 70) {
                         desc = desc.substring(0, Math.min(desc.length(), 22)) + "..";
                     }
-                    Compat.drawWithShadow(null, matrices, desc, cardX + 10, cardY + 22, 0xFF8A93A4);
+                    textRenderer.drawWithShadow(matrices, desc, cardX + 10, cardY + 22, 0xFF8A93A4);
 
                     // Settings Gear Button
                     int gearW = 16;
@@ -163,7 +156,7 @@ public class GlassDashboardScreen extends Screen {
                     int gearY = cardY + 16;
                     boolean gearHover = mouseX >= gearX && mouseX <= gearX + gearW && mouseY >= gearY && mouseY <= gearY + gearH;
                     RenderUtils.drawRoundedRect(matrices, gearX, gearY, gearW, gearH, 3, gearHover ? 0xFF404654 : 0xFF2A2F3D);
-                    Compat.drawWithShadow(null, matrices, "\u2699", gearX + 4, gearY + 3, gearHover ? accent : 0xFF949BA4);
+                    textRenderer.drawWithShadow(matrices, "\u2699", gearX + 4, gearY + 3, gearHover ? accent : 0xFF949BA4);
 
                     // iOS-style Toggle Switch
                     int swW = 28;
@@ -185,8 +178,7 @@ public class GlassDashboardScreen extends Screen {
             renderSettingsModal(matrices, panelX, panelY, panelW, panelH, mouseX, mouseY);
         }
 
-        super.render(context, mouseX, mouseY, delta);
-        Compat.setContext(null);
+        super.render(matrices, mouseX, mouseY, delta);
     }
 
     private void renderSettingsModal(MatrixStack matrices, int px, int py, int pw, int ph, int mouseX, int mouseY) {
@@ -209,7 +201,7 @@ public class GlassDashboardScreen extends Screen {
         RenderUtils.drawRoundedRect(matrices, mx, my, mw, mHeadH, 6, 0xFF10141C);
         RenderUtils.drawRect(matrices, mx, my + mHeadH - 1, mw, 1, 0x22FFFFFF);
 
-        Compat.drawWithShadow(null, matrices, selectedModule.getName() + " Settings", mx + 12, my + 10, 0xFFFFFFFF);
+        textRenderer.drawWithShadow(matrices, selectedModule.getName() + " Settings", mx + 12, my + 10, 0xFFFFFFFF);
 
         // Keybind button in header
         String keyText = bindingKey ? "..." : (selectedModule.getKeyBind() > 0 ? "[" + GLFW.glfwGetKeyName(selectedModule.getKeyBind(), 0) + "]" : "[BIND]");
@@ -217,13 +209,13 @@ public class GlassDashboardScreen extends Screen {
         int kx = mx + mw - kw - 38;
         int ky = my + 8;
         RenderUtils.drawRoundedRect(matrices, kx - 3, ky - 1, kw + 6, 16, 3, bindingKey ? accent : 0xFF2A2E3B);
-        Compat.drawWithShadow(null, matrices, keyText, kx, ky + 3, bindingKey ? 0xFFFFFFFF : accent);
+        textRenderer.drawWithShadow(matrices, keyText, kx, ky + 3, bindingKey ? 0xFFFFFFFF : accent);
 
         // Close Button 'X'
         int closeX = mx + mw - 24;
         int closeY = my + 8;
         boolean closeHover = mouseX >= closeX && mouseX <= closeX + 16 && mouseY >= closeY && mouseY <= closeY + 16;
-        Compat.drawWithShadow(null, matrices, "X", closeX + 4, closeY + 3, closeHover ? 0xFFED4245 : 0xFF949BA4);
+        textRenderer.drawWithShadow(matrices, "X", closeX + 4, closeY + 3, closeHover ? 0xFFED4245 : 0xFF949BA4);
 
         // Modal Settings List
         int sListX = mx + 12;
@@ -237,7 +229,7 @@ public class GlassDashboardScreen extends Screen {
         List<Setting<?>> settings = selectedModule.getSettings();
 
         if (settings.isEmpty()) {
-            Compat.drawWithShadow(null, matrices, "No configurable settings for this module.", sListX + 10, sListY + 20, 0xFF8A93A4);
+            textRenderer.drawWithShadow(matrices, "No configurable settings for this module.", sListX + 10, sListY + 20, 0xFF8A93A4);
         } else {
             for (Setting<?> s : settings) {
                 if (s instanceof BooleanSetting) {
@@ -246,7 +238,7 @@ public class GlassDashboardScreen extends Screen {
                     int rowH = 24;
 
                     RenderUtils.drawRoundedRect(matrices, sListX, curY, sListW, rowH, 4, 0xFF1E2330);
-                    Compat.drawWithShadow(null, matrices, s.getName(), sListX + 10, curY + 7, 0xFFDBDEE1);
+                    textRenderer.drawWithShadow(matrices, s.getName(), sListX + 10, curY + 7, 0xFFDBDEE1);
 
                     int swW = 24;
                     int swH = 12;
@@ -262,11 +254,11 @@ public class GlassDashboardScreen extends Screen {
                     int rowH = 34;
 
                     RenderUtils.drawRoundedRect(matrices, sListX, curY, sListW, rowH, 4, 0xFF1E2330);
-                    Compat.drawWithShadow(null, matrices, s.getName(), sListX + 10, curY + 5, 0xFFDBDEE1);
+                    textRenderer.drawWithShadow(matrices, s.getName(), sListX + 10, curY + 5, 0xFFDBDEE1);
 
                     String valStr = String.format("%.2f", ns.getValue());
                     int vw = textRenderer.getWidth(valStr);
-                    Compat.drawWithShadow(null, matrices, valStr, sListX + sListW - vw - 10, curY + 5, accent);
+                    textRenderer.drawWithShadow(matrices, valStr, sListX + sListW - vw - 10, curY + 5, accent);
 
                     int sliderX = sListX + 10;
                     int sliderY = curY + 20;
@@ -286,13 +278,13 @@ public class GlassDashboardScreen extends Screen {
                     int rowH = 26;
 
                     RenderUtils.drawRoundedRect(matrices, sListX, curY, sListW, rowH, 4, 0xFF1E2330);
-                    Compat.drawWithShadow(null, matrices, s.getName(), sListX + 10, curY + 8, 0xFFDBDEE1);
+                    textRenderer.drawWithShadow(matrices, s.getName(), sListX + 10, curY + 8, 0xFFDBDEE1);
 
                     String modeVal = "< " + ms.getValue() + " >";
                     int mw2 = textRenderer.getWidth(modeVal);
                     int mx2 = sListX + sListW - mw2 - 10;
                     RenderUtils.drawRoundedRect(matrices, mx2 - 4, curY + 4, mw2 + 8, 16, 3, 0xFF2B3245);
-                    Compat.drawWithShadow(null, matrices, modeVal, mx2, curY + 8, accent);
+                    textRenderer.drawWithShadow(matrices, modeVal, mx2, curY + 8, accent);
 
                     curY += rowH + 6;
                 } else if (s instanceof ColorSetting) {
@@ -300,7 +292,7 @@ public class GlassDashboardScreen extends Screen {
                     int rowH = 26;
 
                     RenderUtils.drawRoundedRect(matrices, sListX, curY, sListW, rowH, 4, 0xFF1E2330);
-                    Compat.drawWithShadow(null, matrices, s.getName(), sListX + 10, curY + 8, 0xFFDBDEE1);
+                    textRenderer.drawWithShadow(matrices, s.getName(), sListX + 10, curY + 8, 0xFFDBDEE1);
 
                     int colBoxW = 30;
                     int colBoxH = 14;
@@ -317,7 +309,7 @@ public class GlassDashboardScreen extends Screen {
     }
 
     private void renderThemesTab(MatrixStack matrices, int x, int y, int w, int mouseX, int mouseY) {
-        Compat.drawWithShadow(null, matrices, "SELECT GUI LAYOUT STYLE:", x + 4, y + 4, 0xFFFFFFFF);
+        textRenderer.drawWithShadow(matrices, "SELECT GUI LAYOUT STYLE:", x + 4, y + 4, 0xFFFFFFFF);
 
         com.nexuspvp.gui.GuiStyle[] styles = com.nexuspvp.gui.GuiStyle.values();
         int btnW = (w - 12) / 2;
@@ -335,8 +327,8 @@ public class GlassDashboardScreen extends Screen {
             int accent = ThemeManager.getInstance().getAccentColor().getRGB();
 
             RenderUtils.drawRoundedRect(matrices, bx, by, btnW, btnH, 5, active ? accent : (hovered ? 0xFF2E3440 : 0xFF1C212B));
-            Compat.drawWithShadow(null, matrices, s.getIcon() + " " + s.getDisplayName(), bx + 10, by + 8, active ? 0xFFFFFFFF : 0xFFD8DEE9);
-            Compat.drawWithShadow(null, matrices, s.getDescription(), bx + 10, by + 22, 0xFF8892B0);
+            textRenderer.drawWithShadow(matrices, s.getIcon() + " " + s.getDisplayName(), bx + 10, by + 8, active ? 0xFFFFFFFF : 0xFFD8DEE9);
+            textRenderer.drawWithShadow(matrices, s.getDescription(), bx + 10, by + 22, 0xFF8892B0);
         }
     }
 
@@ -534,13 +526,13 @@ public class GlassDashboardScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (selectedModule != null) {
-            modalScrollY += (int) (verticalAmount * 16);
+            modalScrollY += (int) (amount * 16);
             if (modalScrollY > 0) modalScrollY = 0;
             return true;
         }
-        scrollY += (int) (verticalAmount * 20);
+        scrollY += (int) (amount * 20);
         if (scrollY > 0) scrollY = 0;
         return true;
     }
@@ -563,34 +555,14 @@ public class GlassDashboardScreen extends Screen {
         }
 
         if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) {
-            close();
+            onClose();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    public boolean shouldPause() {
+    @Override
+    public boolean isPauseScreen() {
         return false;
     }
-
-    @Override
-    public void close() {
-        if (this.client != null) {
-            Compat.setScreen(client, null);
-        }
-        if (NexusPVP.getInstance().getConfigManager() != null) {
-            NexusPVP.getInstance().getConfigManager().saveConfig();
-        }
-        NexusPVP.getInstance().getModuleManager().getModuleByName("ClickGui").ifPresent(m -> {
-            if (m.isEnabled()) {
-                m.toggle();
-            }
-        });
-    }
-
-    @Override
-    public void renderInGameBackground(DrawContext context) {
-        // Disable 1.21 post-processing background blur shader
-    }
-
 }

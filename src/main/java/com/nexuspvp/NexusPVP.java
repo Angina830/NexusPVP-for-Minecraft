@@ -30,7 +30,7 @@ public class NexusPVP implements ClientModInitializer {
 
         WorldRenderEvents.LAST.register(context -> {
             if (moduleManager != null && context.matrixStack() != null) {
-                moduleManager.onRender3D(context.matrixStack(), context.tickCounter().getTickDelta(false));
+                moduleManager.onRender3D(context.matrixStack(), context.tickDelta());
             }
         });
 
@@ -40,7 +40,7 @@ public class NexusPVP implements ClientModInitializer {
             }
         }));
 
-        System.out.println("[NexusPVP] Mod initialized! Version 0.1.33-beta [Occlusion](Standalone)");
+        System.out.println("[NexusPVP] Mod initialized! Version 0.2.0-beta [Supernova]");
     }
 
     public static NexusPVP getInstance() {

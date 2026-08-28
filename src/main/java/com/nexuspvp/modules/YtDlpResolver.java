@@ -1,6 +1,4 @@
 package com.nexuspvp.modules;
-import com.nexuspvp.util.Compat;
-
 
 import net.minecraft.client.MinecraftClient;
 import java.io.*;
@@ -37,7 +35,7 @@ public class YtDlpResolver {
                 out.write(buffer, 0, read);
                 total += read;
                 if (fileSize > 0) {
-                    int percent = (int)((total * 100L) / Math.max(1L, fileSize));
+                    int percent = (int)((total * 100L) / fileSize);
                     Radio.downloadProgress = title + ": " + percent + "% (" + (total / 1024 / 1024) + "MB)";
                 } else {
                     Radio.downloadProgress = title + ": " + (total / 1024 / 1024) + "MB";

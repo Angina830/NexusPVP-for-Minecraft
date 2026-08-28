@@ -6,13 +6,13 @@ import com.nexuspvp.setting.NumberSetting;
 
 public class LowFire extends Module {
 
-    private final NumberSetting height = addSetting(new NumberSetting("Height", 35, 0, 80, 5));
+    private final NumberSetting offset = addSetting(new NumberSetting("Height", 0.35, 0.0, 0.8, 0.05));
 
     public LowFire() {
-        super("LowFire", "Lowers screen fire height for better visibility", Category.RENDER);
+        super("LowFire", "Lowers screen fire height for better visibility", Category.HUD);
     }
 
     public float getOffset() {
-        return (height.getIntValue() / 100.0f) * 0.7f;
+        return offset.getFloatValue();
     }
 }

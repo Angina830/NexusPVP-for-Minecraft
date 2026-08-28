@@ -1,16 +1,11 @@
 package com.nexuspvp.gui;
-import com.nexuspvp.util.Compat;
-
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.util.math.MatrixStack;
-
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.ViewModel;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.Text;
+import net.minecraft.text.LiteralText;
 import org.lwjgl.glfw.GLFW;
 
 public class ViewModelEditorScreen extends Screen {
@@ -22,18 +17,18 @@ public class ViewModelEditorScreen extends Screen {
     private boolean showHelp = false;
 
     public ViewModelEditorScreen(Screen parent) {
-        super(Text.literal("ViewModel Blender Editor"));
+        super(new LiteralText("ViewModel Blender Editor"));
         this.parent = parent;
         this.viewModel = NexusPVP.getInstance().getModuleManager().getModule(ViewModel.class);
     }
 
-    public boolean shouldPause() {
+    @Override
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        MatrixStack matrices = context.getMatrices();
+    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
         int w = this.width;
         int h = this.height;
 
@@ -50,7 +45,7 @@ public class ViewModelEditorScreen extends Screen {
 
         String title = "🖐 " + LanguageManager.getInstance().get("BLENDER VIEWMODEL EDITOR");
         int tw = this.textRenderer.getWidth(title);
-        Compat.drawText(matrices, title, w / 2 - tw / 2, 16, 0xFFFFB020);
+        this.textRenderer.drawWithShadow(matrices, title, w / 2 - tw / 2, 16, 0xFFFFB020);
 
         // Top-Left Action Buttons Row
         // 1. Back Button
@@ -58,21 +53,21 @@ public class ViewModelEditorScreen extends Screen {
         int backBg = backHover ? 0xFF5865F2 : 0xDD2B2D31;
         RenderUtils.drawRoundedRect(matrices, 10, 10, 70, 20, 4, backBg);
         String backText = "< " + LanguageManager.getInstance().get("Back");
-        Compat.drawText(matrices, backText, 16, 16, 0xFFFFFFFF);
+        this.textRenderer.drawWithShadow(matrices, backText, 16, 16, 0xFFFFFFFF);
 
         // 2. Reset Button
         boolean resetHover = mouseX >= 86 && mouseX <= 156 && mouseY >= 10 && mouseY <= 30;
         int resetBg = resetHover ? 0xFFDA373C : 0xDD2B2D31;
         RenderUtils.drawRoundedRect(matrices, 86, 10, 70, 20, 4, resetBg);
         String resetText = "↺ " + LanguageManager.getInstance().get("Reset");
-        Compat.drawText(matrices, resetText, 92, 16, 0xFFFFFFFF);
+        this.textRenderer.drawWithShadow(matrices, resetText, 92, 16, 0xFFFFFFFF);
 
         // 3. Help / Tutorial Button
         boolean helpHover = mouseX >= 162 && mouseX <= 262 && mouseY >= 10 && mouseY <= 30;
         int helpBg = showHelp ? 0xFF5865F2 : (helpHover ? 0xFF4752C4 : 0xDD2B2D31);
         RenderUtils.drawRoundedRect(matrices, 162, 10, 100, 20, 4, helpBg);
         String helpBtnText = "? " + (LanguageManager.getInstance().isRussian() ? "Инструкция" : "Help Guide");
-        Compat.drawText(matrices, helpBtnText, 168, 16, 0xFFFFFFFF);
+        this.textRenderer.drawWithShadow(matrices, helpBtnText, 168, 16, 0xFFFFFFFF);
 
         // Top-Right Live Transform Inspector Card
         if (viewModel != null) {
@@ -83,30 +78,30 @@ public class ViewModelEditorScreen extends Screen {
 
             RenderUtils.drawRoundedRect(matrices, cardX, cardY, cardW, cardH, 6, 0xEE1E1F22);
             RenderUtils.drawRoundedRect(matrices, cardX, cardY, cardW, 16, 4, 0xFF2B2D31);
-            Compat.drawText(matrices, "⚙ " + LanguageManager.getInstance().get("TRANSFORM"), cardX + 8, cardY + 4, 0xFFE87D0D);
+            this.textRenderer.drawWithShadow(matrices, "⚙ " + LanguageManager.getInstance().get("TRANSFORM"), cardX + 8, cardY + 4, 0xFFE87D0D);
 
             // Position
             String posX = String.format("%.2f", viewModel.getTranslateX());
             String posY = String.format("%.2f", viewModel.getTranslateY());
             String posZ = String.format("%.2f", viewModel.getTranslateZ());
-            Compat.drawText(matrices, "Pos:", cardX + 8, cardY + 22, 0xFF949BA4);
-            Compat.drawText(matrices, "X " + posX, cardX + 36, cardY + 22, 0xFFFF5555);
-            Compat.drawText(matrices, "Y " + posY, cardX + 80, cardY + 22, 0xFF55FF55);
-            Compat.drawText(matrices, "Z " + posZ, cardX + 120, cardY + 22, 0xFF5599FF);
+            this.textRenderer.drawWithShadow(matrices, "Pos:", cardX + 8, cardY + 22, 0xFF949BA4);
+            this.textRenderer.drawWithShadow(matrices, "X " + posX, cardX + 36, cardY + 22, 0xFFFF5555);
+            this.textRenderer.drawWithShadow(matrices, "Y " + posY, cardX + 80, cardY + 22, 0xFF55FF55);
+            this.textRenderer.drawWithShadow(matrices, "Z " + posZ, cardX + 120, cardY + 22, 0xFF5599FF);
 
             // Rotation
             String rotX = String.format("%.0f°", viewModel.getRotateX());
             String rotY = String.format("%.0f°", viewModel.getRotateY());
             String rotZ = String.format("%.0f°", viewModel.getRotateZ());
-            Compat.drawText(matrices, "Rot:", cardX + 8, cardY + 42, 0xFF949BA4);
-            Compat.drawText(matrices, rotX, cardX + 36, cardY + 42, 0xFFFF8888);
-            Compat.drawText(matrices, rotY, cardX + 80, cardY + 42, 0xFF88FF88);
-            Compat.drawText(matrices, rotZ, cardX + 120, cardY + 42, 0xFF88BBFF);
+            this.textRenderer.drawWithShadow(matrices, "Rot:", cardX + 8, cardY + 42, 0xFF949BA4);
+            this.textRenderer.drawWithShadow(matrices, rotX, cardX + 36, cardY + 42, 0xFFFF8888);
+            this.textRenderer.drawWithShadow(matrices, rotY, cardX + 80, cardY + 42, 0xFF88FF88);
+            this.textRenderer.drawWithShadow(matrices, rotZ, cardX + 120, cardY + 42, 0xFF88BBFF);
 
             // Scale
             String scX = String.format("%.2fx", viewModel.getScaleX());
-            Compat.drawText(matrices, "Scale:", cardX + 8, cardY + 62, 0xFF949BA4);
-            Compat.drawText(matrices, scX, cardX + 46, cardY + 62, 0xFFFFD700);
+            this.textRenderer.drawWithShadow(matrices, "Scale:", cardX + 8, cardY + 62, 0xFF949BA4);
+            this.textRenderer.drawWithShadow(matrices, scX, cardX + 46, cardY + 62, 0xFFFFD700);
         }
 
         // Center 3D Axis Gizmo Reticle
@@ -115,12 +110,12 @@ public class ViewModelEditorScreen extends Screen {
         // Red X axis arrow
         RenderUtils.drawRect(matrices, cx, cy - 1, 24, 2, 0xFFFF4444);
         RenderUtils.drawRect(matrices, cx + 22, cy - 3, 2, 6, 0xFFFF4444);
-        Compat.drawText(matrices, "X", cx + 28, cy - 4, 0xFFFF4444);
+        this.textRenderer.drawWithShadow(matrices, "X", cx + 28, cy - 4, 0xFFFF4444);
 
         // Green Y axis arrow
         RenderUtils.drawRect(matrices, cx - 1, cy - 24, 2, 24, 0xFF44FF44);
         RenderUtils.drawRect(matrices, cx - 3, cy - 24, 6, 2, 0xFF44FF44);
-        Compat.drawText(matrices, "Y", cx - 3, cy - 34, 0xFF44FF44);
+        this.textRenderer.drawWithShadow(matrices, "Y", cx - 3, cy - 34, 0xFF44FF44);
 
         // Blue Z axis dot
         RenderUtils.drawRoundedRect(matrices, cx - 3, cy - 3, 6, 6, 3, 0xFF4488FF);
@@ -141,7 +136,7 @@ public class ViewModelEditorScreen extends Screen {
         int actW = this.textRenderer.getWidth(activeAction) + 16;
         int actY = h - 56;
         RenderUtils.drawRoundedRect(matrices, w / 2 - actW / 2, actY, actW, 16, 4, 0xEE1E1F22);
-        Compat.drawText(matrices, activeAction, w / 2 - this.textRenderer.getWidth(activeAction) / 2, actY + 4, modeColor);
+        this.textRenderer.drawWithShadow(matrices, activeAction, w / 2 - this.textRenderer.getWidth(activeAction) / 2, actY + 4, modeColor);
 
         // Bottom Legend Control Bar
         int legendH = 22;
@@ -154,7 +149,7 @@ public class ViewModelEditorScreen extends Screen {
             "[ ЛКМ ]: Позиция X/Y  |  [ Shift+ЛКМ ]: Глубина Z  |  [ ПКМ ]: Вращение  |  [ Колёсико ]: Масштаб  |  [ R ]: Сброс  |  [ ESC ]: Сохранить" :
             "[ LMB ]: Drag X/Y  |  [ Shift+LMB ]: Depth Z  |  [ RMB ]: Rotate  |  [ Scroll ]: Scale  |  [ R ]: Reset  |  [ ESC ]: Save";
         int lw = this.textRenderer.getWidth(legend);
-        Compat.drawText(matrices, legend, w / 2 - lw / 2, legendY + 7, 0xFFDBDEE1);
+        this.textRenderer.drawWithShadow(matrices, legend, w / 2 - lw / 2, legendY + 7, 0xFFDBDEE1);
 
         // =========================================================================
         // INTERACTIVE HELP / TUTORIAL MODAL WINDOW
@@ -174,11 +169,11 @@ public class ViewModelEditorScreen extends Screen {
             RenderUtils.drawRoundedRect(matrices, modalX, modalY, 4, 26, 2, 0xFF5865F2);
 
             String modalHeader = "📖 " + (LanguageManager.getInstance().isRussian() ? "КАК УПРАВЛЯТЬ РУКОЙ В РЕДАКТОРЕ" : "HOW TO USE THE 3D GIZMO EDITOR");
-            Compat.drawText(matrices, modalHeader, modalX + 12, modalY + 8, 0xFFFFFFFF);
+            this.textRenderer.drawWithShadow(matrices, modalHeader, modalX + 12, modalY + 8, 0xFFFFFFFF);
 
             // Close (X) button on modal
             boolean closeHover = mouseX >= modalX + modalW - 22 && mouseX <= modalX + modalW - 6 && mouseY >= modalY + 6 && mouseY <= modalY + 20;
-            Compat.drawText(matrices, "X", modalX + modalW - 16, modalY + 8, closeHover ? 0xFFDA373C : 0xFF949BA4);
+            this.textRenderer.drawWithShadow(matrices, "X", modalX + modalW - 16, modalY + 8, closeHover ? 0xFFDA373C : 0xFF949BA4);
 
             int rowY = modalY + 34;
             int lineHeight = 21;
@@ -210,16 +205,16 @@ public class ViewModelEditorScreen extends Screen {
             RenderUtils.drawRoundedRect(matrices, okX, okY, okW, okH, 4, okHover ? 0xFF4752C4 : 0xFF5865F2);
             String okText = LanguageManager.getInstance().isRussian() ? "Понятно, настроить!" : "Got it, start editing!";
             int otw = this.textRenderer.getWidth(okText);
-            Compat.drawText(matrices, okText, okX + (okW - otw) / 2, okY + 6, 0xFFFFFFFF);
+            this.textRenderer.drawWithShadow(matrices, okText, okX + (okW - otw) / 2, okY + 6, 0xFFFFFFFF);
         }
 
-        super.render(context, mouseX, mouseY, delta);
+        super.render(matrices, mouseX, mouseY, delta);
     }
 
     private void drawHelpRow(MatrixStack matrices, String key, String desc, int x, int y, int keyColor) {
-        Compat.drawText(matrices, key, x, y, keyColor);
+        this.textRenderer.drawWithShadow(matrices, key, x, y, keyColor);
         int kw = this.textRenderer.getWidth(key);
-        Compat.drawText(matrices, " - " + desc, x + kw, y, 0xFFDBDEE1);
+        this.textRenderer.drawWithShadow(matrices, " - " + desc, x + kw, y, 0xFFDBDEE1);
     }
 
     @Override
@@ -255,7 +250,7 @@ public class ViewModelEditorScreen extends Screen {
 
         // Back button
         if (mouseX >= 10 && mouseX <= 80 && mouseY >= 10 && mouseY <= 30 && button == 0) {
-            Compat.setScreen(client, parent);
+            this.client.openScreen(parent);
             return true;
         }
 
@@ -311,16 +306,16 @@ public class ViewModelEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (showHelp) return false;
         if (viewModel != null) {
-            float step = (float) (verticalAmount * 0.05);
+            float step = (float) (amount * 0.05);
             viewModel.setScaleX(viewModel.getScaleX() + step);
             viewModel.setScaleY(viewModel.getScaleY() + step);
             viewModel.setScaleZ(viewModel.getScaleZ() + step);
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+        return super.mouseScrolled(mouseX, mouseY, amount);
     }
 
     @Override
@@ -342,7 +337,7 @@ public class ViewModelEditorScreen extends Screen {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            Compat.setScreen(client, parent);
+            this.client.openScreen(parent);
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);

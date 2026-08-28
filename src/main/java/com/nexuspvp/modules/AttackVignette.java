@@ -1,6 +1,4 @@
 package com.nexuspvp.modules;
-import com.nexuspvp.util.Compat;
-
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.nexuspvp.module.Category;
@@ -25,7 +23,7 @@ public class AttackVignette extends Module {
     private float readyFlashAnim = 0.0f;
     private boolean wasReady = false;
 
-    private static final Identifier VIGNETTE_TEXTURE = Identifier.of("minecraft", "textures/misc/vignette.png");
+    private static final Identifier VIGNETTE_TEXTURE = new Identifier("textures/misc/vignette.png");
 
     public AttackVignette() {
         super("AttackVignette", "Screen vignette transitions red to green on attack cooldown", Category.PVP);
@@ -57,8 +55,8 @@ public class AttackVignette extends Module {
         }
 
         float progress = mc.player.getAttackCooldownProgress(tickDelta);
-        int screenW = Compat.getScaledWidth();
-        int screenH = Compat.getScaledHeight();
+        int screenW = mc.getWindow().getScaledWidth();
+        int screenH = mc.getWindow().getScaledHeight();
 
         // Calculate smooth color from Red (0.0) -> Orange -> Yellow -> Green (1.0)
         float r, g, b;

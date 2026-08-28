@@ -1,6 +1,4 @@
 package com.nexuspvp.setting;
-import com.nexuspvp.util.Compat;
-
 
 public class BooleanSetting extends Setting<Boolean> {
 

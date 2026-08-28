@@ -15,7 +15,7 @@ public class Ambience extends Module {
     private final ColorSetting skyColor = new ColorSetting("SkyColor", new Color(120, 170, 255));
     private final BooleanSetting customSky = new BooleanSetting("CustomSky", false);
     
-    private final NumberSetting brightness = new NumberSetting("Brightness", 1.0, 0.0, 1.0, 0.05);
+    private final NumberSetting brightness = new NumberSetting("Brightness", 1.0, 0.0, 15.0, 0.1);
     private final BooleanSetting fullbright = new BooleanSetting("Fullbright", false);
 
     public Ambience() {
@@ -46,7 +46,7 @@ public class Ambience extends Module {
 
     public float getBrightness() {
         if (fullbright.isEnabled()) {
-            return 1.0f;
+            return 15.0f;
         }
         return brightness.getFloatValue();
     }
@@ -61,8 +61,10 @@ public class Ambience extends Module {
             mc.world.setTimeOfDay(getTime());
         }
         if (mc.options != null && isEnabled()) {
-            if (brightness.getFloatValue() != 1.0f) {
-                mc.options.getGamma().setValue((double) Math.min(1.0, Math.max(0.0, brightness.getFloatValue())));
+            if (fullbright.isEnabled()) {
+                mc.options.gamma = 15.0;
+            } else if (brightness.getFloatValue() != 1.0f) {
+                mc.options.gamma = (double) brightness.getFloatValue();
             }
         }
     }
@@ -70,7 +72,7 @@ public class Ambience extends Module {
     @Override
     public void onDisable() {
         if (mc.options != null) {
-            mc.options.getGamma().setValue(1.0);
+            mc.options.gamma = 1.0;
         }
     }
 }
