@@ -36,8 +36,7 @@ public class OverheadHealth extends Module {
     private static class HealthTracker {
         float animatedHealth;
         float damageGhostHealth;
-        float healFromHp;
-        float healToHp;
+        float healTargetHp;
         float previousHealth;
         long lastHealTime;
         float animatedAbsorption;
@@ -144,21 +143,26 @@ public class OverheadHealth extends Module {
         if (currentHp < tracker.previousHealth - 0.1f) {
             tracker.damageGhostHealth = tracker.previousHealth;
             tracker.lastDamageTime = now;
-            tracker.healFromHp = currentHp;
-            tracker.healToHp = currentHp;
+            tracker.healTargetHp = currentHp;
         } else if (currentHp > tracker.previousHealth + 0.1f) {
-            tracker.healFromHp = tracker.previousHealth;
-            tracker.healToHp = currentHp;
+            tracker.healTargetHp = currentHp;
             tracker.lastHealTime = now;
             tracker.damageGhostHealth = currentHp;
         }
         tracker.previousHealth = currentHp;
 
-        tracker.animatedHealth = MathHelper.lerp(0.20f, tracker.animatedHealth, currentHp);
-        tracker.animatedAbsorption = MathHelper.lerp(0.20f, tracker.animatedAbsorption, currentAbs);
+        // Smooth liquid fill interpolation
+        if (currentHp > tracker.animatedHealth) {
+            tracker.animatedHealth = MathHelper.lerp(0.065f, tracker.animatedHealth, currentHp);
+            if (Math.abs(currentHp - tracker.animatedHealth) < 0.05f) tracker.animatedHealth = currentHp;
+        } else {
+            tracker.animatedHealth = MathHelper.lerp(0.20f, tracker.animatedHealth, currentHp);
+            if (Math.abs(currentHp - tracker.animatedHealth) < 0.05f) tracker.animatedHealth = currentHp;
+        }
+        tracker.animatedAbsorption = MathHelper.lerp(0.18f, tracker.animatedAbsorption, currentAbs);
 
         if (now - tracker.lastDamageTime > 280) {
-            tracker.damageGhostHealth = MathHelper.lerp(0.08f, tracker.damageGhostHealth, currentHp);
+            tracker.damageGhostHealth = MathHelper.lerp(0.07f, tracker.damageGhostHealth, currentHp);
         }
         if (currentHp > tracker.damageGhostHealth) {
             tracker.damageGhostHealth = currentHp;
@@ -224,22 +228,18 @@ public class OverheadHealth extends Module {
             addQuad(buffer, barX, barY, ghostWidth, barH, 0xFFF2F3F5);
         }
 
-        // 4.5. Electric Neon Green Ghost Heal Bar
-        long healElapsed = now - tracker.lastHealTime;
-        if (healElapsed < 900 && tracker.healToHp > tracker.healFromHp) {
-            float fromX = barX + MathHelper.clamp(tracker.healFromHp / maxHp, 0.0f, 1.0f) * barW;
-            float toX = barX + MathHelper.clamp(tracker.healToHp / maxHp, 0.0f, 1.0f) * barW;
-            float healW = Math.max(1, toX - fromX);
-
-            float pulse = 0.85f + (float) Math.sin((healElapsed / 75.0f) * Math.PI) * 0.15f;
-            int gCol = (int) (255 * pulse);
-            int neonGreen = ((int)(0xFF * op) << 24) | (0x00 << 16) | (gCol << 8) | 0x88;
-            addQuad(buffer, fromX, barY, healW, barH, neonGreen);
+        // 4.5. Liquid Ghost Heal Bar (Target heal zone being filled)
+        if (tracker.healTargetHp > tracker.animatedHealth + 0.1f && now - tracker.lastHealTime < 1500) {
+            float healPct = MathHelper.clamp(tracker.healTargetHp / maxHp, 0.0f, 1.0f);
+            float healW = barW * healPct;
+            if (healW > 0) {
+                int neonGreen = ((int)(0xEE * op) << 24) | 0x57F287;
+                addQuad(buffer, barX, barY, healW, barH, neonGreen);
+            }
         }
 
-        // 5. Active health bar
-        float baseHp = (healElapsed < 900 && tracker.healToHp > tracker.healFromHp) ? Math.min(tracker.animatedHealth, tracker.healFromHp) : tracker.animatedHealth;
-        float fillPct = MathHelper.clamp(baseHp / maxHp, 0.0f, 1.0f);
+        // 5. Smoothly Rising Main Health Bar
+        float fillPct = MathHelper.clamp(tracker.animatedHealth / maxHp, 0.0f, 1.0f);
         if (fillPct > 0) {
             float fillW = barW * fillPct;
             addQuad(buffer, barX, barY, fillW, barH, hpColor);

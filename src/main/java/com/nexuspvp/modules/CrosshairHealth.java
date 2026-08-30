@@ -27,18 +27,17 @@ public class CrosshairHealth extends Module {
     private long lastTargetTime = 0;
     private float fadeAlpha = 0.0f;
 
-    // Dota 2 style health bar animation (Damage Ghost & Heal Ghost)
+    // Silky smooth animations
     private float animatedHealth = 20.0f;
     private float damageGhostHealth = 20.0f;
-    private float healFromHp = 20.0f;
-    private float healToHp = 20.0f;
+    private float healTargetHp = 20.0f;
     private float previousTargetHealth = 20.0f;
     private long lastDamageTime = 0;
     private long lastHealTime = 0;
     private float animatedAbsorption = 0.0f;
 
     public CrosshairHealth() {
-        super("CrosshairHealth", "Minimalistic under-crosshair health bar with Dota ghost damage, electric ghost heal & gold absorption", Category.PVP);
+        super("CrosshairHealth", "Minimalistic under-crosshair health bar with smooth Dota ghost damage, liquid ghost heal & gold absorption", Category.PVP);
         setEnabled(true);
     }
 
@@ -51,8 +50,7 @@ public class CrosshairHealth extends Module {
                 this.target = entity;
                 this.animatedHealth = entity.getHealth();
                 this.damageGhostHealth = entity.getHealth();
-                this.healFromHp = entity.getHealth();
-                this.healToHp = entity.getHealth();
+                this.healTargetHp = entity.getHealth();
                 this.previousTargetHealth = entity.getHealth();
                 this.animatedAbsorption = entity.getAbsorptionAmount();
             }
@@ -105,8 +103,8 @@ public class CrosshairHealth extends Module {
         float maxHp = isPreview ? 20.0f : (target != null ? target.getMaxHealth() : 20.0f);
         float currentHp;
         if (isPreview) {
-            long cycle = (System.currentTimeMillis() / 1500) % 4;
-            currentHp = cycle == 0 ? 20.0f : (cycle == 1 ? 12.0f : (cycle == 2 ? 18.0f : 6.0f));
+            long cycle = (System.currentTimeMillis() / 1800) % 4;
+            currentHp = cycle == 0 ? 20.0f : (cycle == 1 ? 9.0f : (cycle == 2 ? 18.0f : 5.0f));
         } else {
             currentHp = target != null ? target.getHealth() : 20.0f;
         }
@@ -118,24 +116,29 @@ public class CrosshairHealth extends Module {
         if (currentHp < previousTargetHealth - 0.1f) {
             damageGhostHealth = previousTargetHealth;
             lastDamageTime = now;
-            healFromHp = currentHp;
-            healToHp = currentHp;
+            healTargetHp = currentHp;
         }
         // 2. Detect Heal
         else if (currentHp > previousTargetHealth + 0.1f) {
-            healFromHp = previousTargetHealth;
-            healToHp = currentHp;
+            healTargetHp = currentHp;
             lastHealTime = now;
             damageGhostHealth = currentHp;
         }
         previousTargetHealth = currentHp;
 
-        animatedHealth = MathHelper.lerp(0.18f, animatedHealth, currentHp);
+        // Smooth liquid interpolation: graceful fill on heal, quick drop on damage
+        if (currentHp > animatedHealth) {
+            animatedHealth = MathHelper.lerp(0.065f, animatedHealth, currentHp);
+            if (Math.abs(currentHp - animatedHealth) < 0.05f) animatedHealth = currentHp;
+        } else {
+            animatedHealth = MathHelper.lerp(0.20f, animatedHealth, currentHp);
+            if (Math.abs(currentHp - animatedHealth) < 0.05f) animatedHealth = currentHp;
+        }
         animatedAbsorption = MathHelper.lerp(0.18f, animatedAbsorption, currentAbs);
 
         // Melt Damage Ghost (White)
         if (now - lastDamageTime > 260) {
-            damageGhostHealth = MathHelper.lerp(0.08f, damageGhostHealth, currentHp);
+            damageGhostHealth = MathHelper.lerp(0.07f, damageGhostHealth, currentHp);
         }
         if (currentHp > damageGhostHealth) {
             damageGhostHealth = currentHp;
@@ -154,7 +157,7 @@ public class CrosshairHealth extends Module {
 
         // 2. Compact Numeric Text
         if (showNumbers.isEnabled()) {
-            String hpText = String.format("%.1f", currentHp) + " \u2764";
+            String hpText = String.format("%.1f", animatedHealth) + " \u2764";
             if (currentAbs > 0.1f) {
                 hpText += " §6(+" + String.format("%.1f", currentAbs) + ")";
             }
@@ -167,8 +170,8 @@ public class CrosshairHealth extends Module {
         // 3. Main Health Bar Groove
         RenderUtils.drawRoundedRect(matrices, barX, barY, barW, barH, 2, (globalAlpha << 24) | 0x2B2D31);
 
-        // 4. White Damage Ghost Bar
-        if (ghostDamage.isEnabled()) {
+        // 4. White Damage Ghost Bar (Trails behind on damage)
+        if (ghostDamage.isEnabled() && damageGhostHealth > animatedHealth + 0.1f) {
             float ghostPct = MathHelper.clamp(damageGhostHealth / maxHp, 0.0f, 1.0f);
             float ghostW = barW * ghostPct;
             if (ghostW > 0) {
@@ -176,23 +179,17 @@ public class CrosshairHealth extends Module {
             }
         }
 
-        // 5. Electric Neon Green Ghost Heal Bar (Shows the exact healed portion!)
-        long healElapsed = now - lastHealTime;
-        if (ghostHeal.isEnabled() && healElapsed < 900 && healToHp > healFromHp) {
-            float fromX = barX + MathHelper.clamp(healFromHp / maxHp, 0.0f, 1.0f) * barW;
-            float toX = barX + MathHelper.clamp(healToHp / maxHp, 0.0f, 1.0f) * barW;
-            float healW = Math.max(1, toX - fromX);
-
-            // Flashing vibrant neon emerald (#00FF88)
-            float pulse = 0.85f + (float) Math.sin((healElapsed / 75.0f) * Math.PI) * 0.15f;
-            int gCol = (int) (255 * pulse);
-            int neonGreen = (globalAlpha << 24) | (0x00 << 16) | (gCol << 8) | 0x88;
-            RenderUtils.drawRoundedRect(matrices, (int) fromX, barY, (int) healW, barH, 1, neonGreen);
+        // 5. Liquid Emerald Ghost Heal (Target heal zone smoothly being filled!)
+        if (ghostHeal.isEnabled() && healTargetHp > animatedHealth + 0.1f && now - lastHealTime < 1500) {
+            float healPct = MathHelper.clamp(healTargetHp / maxHp, 0.0f, 1.0f);
+            float healW = barW * healPct;
+            if (healW > 0) {
+                RenderUtils.drawRoundedRect(matrices, barX, barY, (int) healW, barH, 2, (globalAlpha << 24) | 0x57F287);
+            }
         }
 
-        // 6. Active Health Bar Fill
-        float baseHp = (healElapsed < 900 && healToHp > healFromHp) ? Math.min(animatedHealth, healFromHp) : animatedHealth;
-        float healthPct = MathHelper.clamp(baseHp / maxHp, 0.0f, 1.0f);
+        // 6. Smoothly Rising Main Health Bar
+        float healthPct = MathHelper.clamp(animatedHealth / maxHp, 0.0f, 1.0f);
         float fillW = barW * healthPct;
         if (fillW > 0) {
             float actualPct = MathHelper.clamp(currentHp / maxHp, 0.0f, 1.0f);

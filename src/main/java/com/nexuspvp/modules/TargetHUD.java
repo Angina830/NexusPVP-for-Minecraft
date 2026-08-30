@@ -29,8 +29,7 @@ public class TargetHUD extends Module {
     // Dota 2 style health bar animation variables
     private float animatedHealth = 20.0f;
     private float damageGhostHealth = 20.0f;
-    private float healFromHp = 20.0f;
-    private float healToHp = 20.0f;
+    private float healTargetHp = 20.0f;
     private float previousTargetHealth = 20.0f;
     private long lastDamageTime = 0;
     private long lastHealTime = 0;
@@ -118,21 +117,26 @@ public class TargetHUD extends Module {
         if (currentHp < previousTargetHealth - 0.1f) {
             damageGhostHealth = previousTargetHealth;
             lastDamageTime = now;
-            healFromHp = currentHp;
-            healToHp = currentHp;
+            healTargetHp = currentHp;
         } else if (currentHp > previousTargetHealth + 0.1f) {
-            healFromHp = previousTargetHealth;
-            healToHp = currentHp;
+            healTargetHp = currentHp;
             lastHealTime = now;
             damageGhostHealth = currentHp;
         }
         previousTargetHealth = currentHp;
 
-        animatedHealth = MathHelper.lerp(0.18f, animatedHealth, currentHp);
+        // Smooth liquid interpolation
+        if (currentHp > animatedHealth) {
+            animatedHealth = MathHelper.lerp(0.065f, animatedHealth, currentHp);
+            if (Math.abs(currentHp - animatedHealth) < 0.05f) animatedHealth = currentHp;
+        } else {
+            animatedHealth = MathHelper.lerp(0.20f, animatedHealth, currentHp);
+            if (Math.abs(currentHp - animatedHealth) < 0.05f) animatedHealth = currentHp;
+        }
         animatedAbsorption = MathHelper.lerp(0.18f, animatedAbsorption, currentAbs);
 
         if (now - lastDamageTime > 280) {
-            damageGhostHealth = MathHelper.lerp(0.08f, damageGhostHealth, currentHp);
+            damageGhostHealth = MathHelper.lerp(0.07f, damageGhostHealth, currentHp);
         }
         if (currentHp > damageGhostHealth) {
             damageGhostHealth = currentHp;
@@ -178,22 +182,17 @@ public class TargetHUD extends Module {
             RenderUtils.drawRoundedRect(matrices, barX, barY, ghostW, barH, 2, 0xFFF2F3F5); // White highlight!
         }
 
-        // 2.5. Electric Neon Green Ghost Heal Bar
-        long healElapsed = now - lastHealTime;
-        if (healElapsed < 900 && healToHp > healFromHp) {
-            float fromX = barX + MathHelper.clamp(healFromHp / maxHp, 0.0f, 1.0f) * barW;
-            float toX = barX + MathHelper.clamp(healToHp / maxHp, 0.0f, 1.0f) * barW;
-            float healW = Math.max(1, toX - fromX);
-
-            float pulse = 0.85f + (float) Math.sin((healElapsed / 75.0f) * Math.PI) * 0.15f;
-            int gCol = (int) (255 * pulse);
-            int neonGreen = (0xFF << 24) | (0x00 << 16) | (gCol << 8) | 0x88;
-            RenderUtils.drawRoundedRect(matrices, (int) fromX, barY, (int) healW, barH, 2, neonGreen);
+        // 2.5. Liquid Ghost Heal Bar (Target zone being filled)
+        if (healTargetHp > animatedHealth + 0.1f && now - lastHealTime < 1500) {
+            float healPct = MathHelper.clamp(healTargetHp / maxHp, 0.0f, 1.0f);
+            float healW = barW * healPct;
+            if (healW > 0) {
+                RenderUtils.drawRoundedRect(matrices, barX, barY, (int) healW, barH, 2, 0xFF57F287);
+            }
         }
 
-        // 3. Actual Health Bar
-        float baseHp = (healElapsed < 900 && healToHp > healFromHp) ? Math.min(animatedHealth, healFromHp) : animatedHealth;
-        float healthPct = MathHelper.clamp(baseHp / maxHp, 0.0f, 1.0f);
+        // 3. Smoothly Rising Main Health Bar
+        float healthPct = MathHelper.clamp(animatedHealth / maxHp, 0.0f, 1.0f);
         float fillW = barW * healthPct;
         if (fillW > 0) {
             float actualPct = MathHelper.clamp(currentHp / maxHp, 0.0f, 1.0f);
