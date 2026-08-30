@@ -11,11 +11,13 @@ import com.nexuspvp.util.Compat;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -36,10 +38,11 @@ public class StunVisuals extends Module {
 
     public static class StunZone {
         public Vec3d center;
-        public double radius; // Half-width of square
+        public double radius;
         public long firstSeen;
         public long lastSeen;
         public int particleCount;
+        public boolean confirmed;
 
         public StunZone(Vec3d center, double radius, long now) {
             this.center = center;
@@ -47,9 +50,9 @@ public class StunVisuals extends Module {
             this.firstSeen = now;
             this.lastSeen = now;
             this.particleCount = 1;
+            this.confirmed = false;
         }
 
-        // Exact square/AABB box collision
         public boolean isInside(Vec3d pos) {
             double dx = Math.abs(pos.x - center.x);
             double dz = Math.abs(pos.z - center.z);
@@ -59,6 +62,7 @@ public class StunVisuals extends Module {
 
     private final List<StunZone> activeZones = new ArrayList<>();
     private float pulseAnim = 0f;
+    private static final int CONFIRMATION_THRESHOLD = 8;
 
     public StunVisuals() {
         super("StunVisuals", "HolyWorld Square Stun Trap / Anti-Pearl Zone continuous neon 3D barrier", Category.VISUAL);
@@ -70,16 +74,27 @@ public class StunVisuals extends Module {
     }
 
     public boolean handleParticle(ParticleEffect parameters, double x, double y, double z) {
-        if (!isEnabled()) return false;
+        if (!isEnabled() || mc.world == null) return false;
         long now = System.currentTimeMillis();
 
-        boolean isStunParticle = (parameters.getType() == ParticleTypes.DUST ||
-                                  parameters.getType() == ParticleTypes.CRIT ||
-                                  parameters.getType() == ParticleTypes.TOTEM_OF_UNDYING ||
-                                  parameters.getType() == ParticleTypes.FLAME ||
-                                  parameters.getType() == ParticleTypes.ENCHANTED_HIT);
+        boolean isStunCandidate = false;
 
-        if (!isStunParticle) return false;
+        if (parameters instanceof DustParticleEffect) {
+            DustParticleEffect dust = (DustParticleEffect) parameters;
+            Vector3f col = dust.getColor();
+            float r = col.x();
+            float g = col.y();
+            float b = col.z();
+            if (r > 0.5f && g > 0.4f && b < 0.6f) {
+                isStunCandidate = true;
+            }
+        } else if (parameters.getType() == ParticleTypes.TOTEM_OF_UNDYING ||
+                   parameters.getType() == ParticleTypes.ENCHANT ||
+                   parameters.getType() == ParticleTypes.ENCHANTED_HIT) {
+            isStunCandidate = true;
+        }
+
+        if (!isStunCandidate) return false;
 
         Vec3d pPos = new Vec3d(x, y, z);
         double rad = defaultRadius.getValue();
@@ -91,19 +106,22 @@ public class StunVisuals extends Module {
                 if (dx <= rad + 2.5 && dz <= rad + 2.5) {
                     zone.lastSeen = now;
                     zone.particleCount++;
-                    if (autoDetect.isEnabled()) {
+                    if (zone.particleCount >= CONFIRMATION_THRESHOLD) {
+                        zone.confirmed = true;
+                    }
+                    if (autoDetect.isEnabled() && zone.confirmed) {
                         double maxOffset = Math.max(dx, dz);
                         if (maxOffset > 2.0 && maxOffset < 15.0) {
                             zone.radius = zone.radius * 0.96 + maxOffset * 0.04;
                         }
                     }
-                    return true;
+                    return zone.confirmed;
                 }
             }
 
             activeZones.add(new StunZone(pPos, rad, now));
         }
-        return true;
+        return false;
     }
 
     @Override
@@ -114,7 +132,8 @@ public class StunVisuals extends Module {
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
-                if (now - z.lastSeen > 7000) {
+                long timeout = z.confirmed ? 6500 : 1500;
+                if (now - z.lastSeen > timeout) {
                     it.remove();
                 }
             }
@@ -148,6 +167,8 @@ public class StunVisuals extends Module {
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
+                if (!zone.confirmed) continue;
+
                 float cx = (float) (zone.center.x - camPos.x);
                 float cy = (float) (zone.center.y - camPos.y);
                 float cz = (float) (zone.center.z - camPos.z);
@@ -160,30 +181,26 @@ public class StunVisuals extends Module {
                 float y1 = cy;
                 float y2 = cy + h;
 
-                // 1. Semi-transparent 4 Vertical Square Walls (Quads)
+                // 1. Semi-transparent 4 Vertical Square Walls
                 if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
                     BufferBuilder buffer = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
                     float wallAlpha = a * 0.35f;
 
-                    // North wall
                     buffer.vertex(mat, x1, y1, z1).color(r, g, b, wallAlpha);
                     buffer.vertex(mat, x2, y1, z1).color(r, g, b, wallAlpha);
                     buffer.vertex(mat, x2, y2, z1).color(r, g, b, 0.0f);
                     buffer.vertex(mat, x1, y2, z1).color(r, g, b, 0.0f);
 
-                    // East wall
                     buffer.vertex(mat, x2, y1, z1).color(r, g, b, wallAlpha);
                     buffer.vertex(mat, x2, y1, z2).color(r, g, b, wallAlpha);
                     buffer.vertex(mat, x2, y2, z2).color(r, g, b, 0.0f);
                     buffer.vertex(mat, x2, y2, z1).color(r, g, b, 0.0f);
 
-                    // South wall
                     buffer.vertex(mat, x2, y1, z2).color(r, g, b, wallAlpha);
                     buffer.vertex(mat, x1, y1, z2).color(r, g, b, wallAlpha);
                     buffer.vertex(mat, x1, y2, z2).color(r, g, b, 0.0f);
                     buffer.vertex(mat, x2, y2, z2).color(r, g, b, 0.0f);
 
-                    // West wall
                     buffer.vertex(mat, x1, y1, z2).color(r, g, b, wallAlpha);
                     buffer.vertex(mat, x1, y1, z1).color(r, g, b, wallAlpha);
                     buffer.vertex(mat, x1, y2, z1).color(r, g, b, 0.0f);
@@ -194,7 +211,6 @@ public class StunVisuals extends Module {
 
                 // 2. Ground & Top Lines
                 BufferBuilder lineBuffer = Tessellator.getInstance().begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
-                // Ground square
                 lineBuffer.vertex(mat, x1, y1 + 0.05f, z1).color(r, g, b, a);
                 lineBuffer.vertex(mat, x2, y1 + 0.05f, z1).color(r, g, b, a);
                 lineBuffer.vertex(mat, x2, y1 + 0.05f, z1).color(r, g, b, a);
@@ -204,7 +220,6 @@ public class StunVisuals extends Module {
                 lineBuffer.vertex(mat, x1, y1 + 0.05f, z2).color(r, g, b, a);
                 lineBuffer.vertex(mat, x1, y1 + 0.05f, z1).color(r, g, b, a);
 
-                // Top square & Corner Pillars
                 if (!curStyle.equals("SquareOutline")) {
                     lineBuffer.vertex(mat, x1, y2, z1).color(r, g, b, a * 0.5f);
                     lineBuffer.vertex(mat, x2, y2, z1).color(r, g, b, a * 0.5f);
@@ -215,15 +230,14 @@ public class StunVisuals extends Module {
                     lineBuffer.vertex(mat, x1, y2, z2).color(r, g, b, a * 0.5f);
                     lineBuffer.vertex(mat, x1, y2, z1).color(r, g, b, a * 0.5f);
 
-                    // Corner pillars
-                    lineBuffer.vertex(mat, x1, y1, z1).color(r, g, b, a);
-                    lineBuffer.vertex(mat, x1, y2, z1).color(r, g, b, 0.0f);
-                    lineBuffer.vertex(mat, x2, y1, z1).color(r, g, b, a);
-                    lineBuffer.vertex(mat, x2, y2, z1).color(r, g, b, 0.0f);
-                    lineBuffer.vertex(mat, x2, y1, z2).color(r, g, b, a);
-                    lineBuffer.vertex(mat, x2, y2, z2).color(r, g, b, 0.0f);
-                    lineBuffer.vertex(mat, x1, y1, z2).color(r, g, b, a);
-                    lineBuffer.vertex(mat, x1, y2, z2).color(r, g, b, 0.0f);
+                    buffer.vertex(mat, x1, y1, z1).color(r, g, b, a);
+                    buffer.vertex(mat, x1, y2, z1).color(r, g, b, 0.0f);
+                    buffer.vertex(mat, x2, y1, z1).color(r, g, b, a);
+                    buffer.vertex(mat, x2, y2, z1).color(r, g, b, 0.0f);
+                    buffer.vertex(mat, x2, y1, z2).color(r, g, b, a);
+                    buffer.vertex(mat, x2, y2, z2).color(r, g, b, 0.0f);
+                    buffer.vertex(mat, x1, y1, z2).color(r, g, b, a);
+                    buffer.vertex(mat, x1, y2, z2).color(r, g, b, 0.0f);
                 }
                 BufferRenderer.drawWithGlobalProgram(lineBuffer.end());
             }
@@ -243,7 +257,7 @@ public class StunVisuals extends Module {
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
-                if (zone.isInside(pPos)) {
+                if (zone.confirmed && zone.isInside(pPos)) {
                     insideAny = true;
                     break;
                 }
