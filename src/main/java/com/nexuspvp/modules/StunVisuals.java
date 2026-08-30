@@ -29,7 +29,7 @@ public class StunVisuals extends Module {
 
     private final ModeSetting style = addSetting(new ModeSetting("Style", "SquareBox", "SquareBox", "SquareOutline", "ForcefieldPrism", "WireframeCube"));
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 220)));
-    private final NumberSetting height = addSetting(new NumberSetting("Height", 14.0, 3.0, 30.0, 1.0));
+    private final NumberSetting height = addSetting(new NumberSetting("Height", 25.0, 5.0, 35.0, 1.0));
     private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 3.5, 1.0, 6.0, 0.5));
     private final BooleanSetting pulse = addSetting(new BooleanSetting("Pulsing", true));
     private final BooleanSetting hideParticles = addSetting(new BooleanSetting("HideParticles", true));
@@ -97,7 +97,7 @@ public class StunVisuals extends Module {
         if (!isEnabled() || mc.world == null || mc.player == null) return false;
         long now = System.currentTimeMillis();
 
-        // Strict signature for real HolyWorld Stun: "minecraft:dust 1.00 1.00 0.00 1.00"
+        // Exact signature for HolyWorld Stun: "minecraft:dust 1.00 1.00 0.00 1.00"
         boolean isExactYellowStunDust = false;
         if (parameters instanceof DustParticleEffect) {
             DustParticleEffect dust = (DustParticleEffect) parameters;
@@ -200,7 +200,7 @@ public class StunVisuals extends Module {
         int a = baseCol.getAlpha();
 
         String curStyle = style.getValue();
-        float userH = height.getFloatValue();
+        float userH = Math.max(22.0f, height.getFloatValue()); // Force full height up to sky
         float lw = lineWidth.getFloatValue();
 
         RenderSystem.enableBlend();
@@ -232,25 +232,45 @@ public class StunVisuals extends Module {
             double z1 = (zone.minZ - pad) - camPos.z;
             double z2 = (zone.maxZ + pad) - camPos.z;
 
-            // Surface Floor Level Snapping: Bottom frame is always at the arena floor surface!
+            // Surface Floor Level Snapping
             double surfaceFloor = getSurfaceFloorY(zone.centerX, zone.centerZ, zone.groundY);
             double y1 = surfaceFloor - camPos.y;
             double y2 = y1 + userH;
 
-            // 1. Semi-transparent 4 Vertical Square Walls
+            // 1. Semi-transparent 4 Vertical Square Walls with vibrant gradient
             if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
                 buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
-                int wallAlpha = Math.min(255, (int) (a * 0.28f));
+                int wallAlphaBottom = Math.min(255, (int) (a * 0.40f));
+                int wallAlphaTop = Math.min(255, (int) (a * 0.15f));
 
-                addWallQuad(buffer, x1, y1, z1, x2, y1, z1, x2, y2, z1, x1, y2, z1, r, g, b, wallAlpha);
-                addWallQuad(buffer, x2, y1, z1, x2, y1, z2, x2, y2, z2, x2, y2, z1, r, g, b, wallAlpha);
-                addWallQuad(buffer, x2, y1, z2, x1, y1, z2, x1, y2, z2, x2, y2, z2, r, g, b, wallAlpha);
-                addWallQuad(buffer, x1, y1, z2, x1, y1, z1, x1, y2, z1, x1, y2, z2, r, g, b, wallAlpha);
+                // North Wall (Z1)
+                buffer.vertex(x1, y1, z1).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(x2, y1, z1).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(x2, y2, z1).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(x1, y2, z1).color(r, g, b, wallAlphaTop).next();
+
+                // East Wall (X2)
+                buffer.vertex(x2, y1, z1).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(x2, y1, z2).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(x2, y2, z2).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(x2, y2, z1).color(r, g, b, wallAlphaTop).next();
+
+                // South Wall (Z2)
+                buffer.vertex(x2, y1, z2).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(x1, y1, z2).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(x1, y2, z2).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(x2, y2, z2).color(r, g, b, wallAlphaTop).next();
+
+                // West Wall (X1)
+                buffer.vertex(x1, y1, z2).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(x1, y1, z1).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(x1, y2, z1).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(x1, y2, z2).color(r, g, b, wallAlphaTop).next();
 
                 tessellator.draw();
             }
 
-            // 2. Thick Glowing Ground Neon Square resting on arena sand surface
+            // 2. Thick Glowing Ground Neon Square
             GL11.glLineWidth(lw);
             buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
             buffer.vertex(x1, y1 + 0.05, z1).color(r, g, b, a).next();
@@ -262,21 +282,21 @@ public class StunVisuals extends Module {
             // 3. Top Rim Square & 4 Vertical Corner Neon Pillars
             if (!curStyle.equals("SquareOutline")) {
                 buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
-                buffer.vertex(x1, y2, z1).color(r, g, b, (int) (a * 0.7f)).next();
-                buffer.vertex(x2, y2, z1).color(r, g, b, (int) (a * 0.7f)).next();
-                buffer.vertex(x2, y2, z2).color(r, g, b, (int) (a * 0.7f)).next();
-                buffer.vertex(x1, y2, z2).color(r, g, b, (int) (a * 0.7f)).next();
+                buffer.vertex(x1, y2, z1).color(r, g, b, a).next();
+                buffer.vertex(x2, y2, z1).color(r, g, b, a).next();
+                buffer.vertex(x2, y2, z2).color(r, g, b, a).next();
+                buffer.vertex(x1, y2, z2).color(r, g, b, a).next();
                 tessellator.draw();
 
                 buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
                 buffer.vertex(x1, y1, z1).color(r, g, b, a).next();
-                buffer.vertex(x1, y2, z1).color(r, g, b, 0).next();
+                buffer.vertex(x1, y2, z1).color(r, g, b, a).next();
                 buffer.vertex(x2, y1, z1).color(r, g, b, a).next();
-                buffer.vertex(x2, y2, z1).color(r, g, b, 0).next();
+                buffer.vertex(x2, y2, z1).color(r, g, b, a).next();
                 buffer.vertex(x2, y1, z2).color(r, g, b, a).next();
-                buffer.vertex(x2, y2, z2).color(r, g, b, 0).next();
+                buffer.vertex(x2, y2, z2).color(r, g, b, a).next();
                 buffer.vertex(x1, y1, z2).color(r, g, b, a).next();
-                buffer.vertex(x1, y2, z2).color(r, g, b, 0).next();
+                buffer.vertex(x1, y2, z2).color(r, g, b, a).next();
                 tessellator.draw();
             }
         }
@@ -285,15 +305,6 @@ public class StunVisuals extends Module {
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
-    }
-
-    private void addWallQuad(BufferBuilder buffer, double x1, double y1, double z1, double x2, double y2, double z2,
-                             double x3, double y3, double z3, double x4, double y4, double z4,
-                             int r, int g, int b, int a) {
-        buffer.vertex(x1, y1, z1).color(r, g, b, a).next();
-        buffer.vertex(x2, y2, z2).color(r, g, b, a).next();
-        buffer.vertex(x3, y3, z3).color(r, g, b, 0).next();
-        buffer.vertex(x4, y4, z4).color(r, g, b, 0).next();
     }
 
     @Override
