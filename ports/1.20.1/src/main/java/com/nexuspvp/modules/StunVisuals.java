@@ -30,39 +30,64 @@ public class StunVisuals extends Module {
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 190)));
     private final NumberSetting defaultRadius = addSetting(new NumberSetting("HalfSize", 7.0, 2.0, 15.0, 0.5));
     private final BooleanSetting autoDetect = addSetting(new BooleanSetting("AutoDetect", true));
-    private final NumberSetting height = addSetting(new NumberSetting("Height", 3.5, 1.0, 8.0, 0.5));
+    private final NumberSetting height = addSetting(new NumberSetting("Height", 4.0, 1.0, 8.0, 0.5));
     private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 2.5, 1.0, 5.0, 0.5));
     private final BooleanSetting pulse = addSetting(new BooleanSetting("Pulsing", true));
     private final BooleanSetting hideParticles = addSetting(new BooleanSetting("HideParticles", true));
     private final BooleanSetting warning = addSetting(new BooleanSetting("Warning", true));
 
     public static class StunZone {
-        public Vec3d center;
-        public double radius;
+        public double minX, maxX;
+        public double minZ, maxZ;
+        public double minY, maxY;
+        public double centerX, centerZ;
         public long firstSeen;
         public long lastSeen;
         public int particleCount;
         public boolean confirmed;
 
-        public StunZone(Vec3d center, double radius, long now) {
-            this.center = center;
-            this.radius = radius;
+        public StunZone(double x, double y, double z, double defaultHalf, long now) {
+            this.minX = x;
+            this.maxX = x;
+            this.minZ = z;
+            this.maxZ = z;
+            this.minY = y;
+            this.maxY = y;
+            this.centerX = x;
+            this.centerZ = z;
             this.firstSeen = now;
             this.lastSeen = now;
             this.particleCount = 1;
             this.confirmed = false;
         }
 
-        public boolean isInside(Vec3d pos) {
-            double dx = Math.abs(pos.x - center.x);
-            double dz = Math.abs(pos.z - center.z);
-            return dx <= radius && dz <= radius;
+        public void addParticle(double x, double y, double z, long now) {
+            this.lastSeen = now;
+            this.particleCount++;
+            this.minX = Math.min(minX, x);
+            this.maxX = Math.max(maxX, x);
+            this.minZ = Math.min(minZ, z);
+            this.maxZ = Math.max(maxZ, z);
+            this.minY = Math.min(minY, y);
+            this.maxY = Math.max(maxY, y);
+
+            this.centerX = (minX + maxX) / 2.0;
+            this.centerZ = (minZ + maxZ) / 2.0;
+
+            if (particleCount >= 15 && (maxX - minX > 3.0 || maxZ - minZ > 3.0)) {
+                this.confirmed = true;
+            }
+        }
+
+        public boolean isInside(Vec3d pos, double fallbackHalf) {
+            double hx = confirmed ? Math.max((maxX - minX) / 2.0, fallbackHalf) : fallbackHalf;
+            double hz = confirmed ? Math.max((maxZ - minZ) / 2.0, fallbackHalf) : fallbackHalf;
+            return Math.abs(pos.x - centerX) <= hx && Math.abs(pos.z - centerZ) <= hz;
         }
     }
 
     private final List<StunZone> activeZones = new ArrayList<>();
     private float pulseAnim = 0f;
-    private static final int CONFIRMATION_THRESHOLD = 8;
 
     public StunVisuals() {
         super("StunVisuals", "HolyWorld Square Stun Trap / Anti-Pearl Zone continuous neon 3D barrier", Category.VISUAL);
@@ -96,30 +121,20 @@ public class StunVisuals extends Module {
 
         if (!isStunCandidate) return false;
 
-        Vec3d pPos = new Vec3d(x, y, z);
-        double rad = defaultRadius.getValue();
+        double defHalf = defaultRadius.getValue();
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
-                double dx = Math.abs(pPos.x - zone.center.x);
-                double dz = Math.abs(pPos.z - zone.center.z);
-                if (dx <= rad + 2.5 && dz <= rad + 2.5) {
-                    zone.lastSeen = now;
-                    zone.particleCount++;
-                    if (zone.particleCount >= CONFIRMATION_THRESHOLD) {
-                        zone.confirmed = true;
-                    }
-                    if (autoDetect.isEnabled() && zone.confirmed) {
-                        double maxOffset = Math.max(dx, dz);
-                        if (maxOffset > 2.0 && maxOffset < 15.0) {
-                            zone.radius = zone.radius * 0.96 + maxOffset * 0.04;
-                        }
-                    }
+                double dist = Math.hypot(x - zone.centerX, z - zone.centerZ);
+                if (dist <= 14.0) {
+                    zone.addParticle(x, y, z, now);
                     return zone.confirmed;
                 }
             }
 
-            activeZones.add(new StunZone(pPos, rad, now));
+            if (activeZones.size() < 4) {
+                activeZones.add(new StunZone(x, y, z, defHalf, now));
+            }
         }
         return false;
     }
@@ -132,7 +147,7 @@ public class StunVisuals extends Module {
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
-                long timeout = z.confirmed ? 6500 : 1500;
+                long timeout = z.confirmed ? 6000 : 1200;
                 if (now - z.lastSeen > timeout) {
                     it.remove();
                 }
@@ -155,6 +170,7 @@ public class StunVisuals extends Module {
 
         String curStyle = style.getValue();
         float h = height.getFloatValue();
+        double defHalf = defaultRadius.getValue();
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -171,17 +187,15 @@ public class StunVisuals extends Module {
             for (StunZone zone : activeZones) {
                 if (!zone.confirmed) continue;
 
-                float cx = (float) (zone.center.x - camPos.x);
-                float cy = (float) (zone.center.y - camPos.y);
-                float cz = (float) (zone.center.z - camPos.z);
-                float rad = (float) zone.radius;
+                double halfX = autoDetect.isEnabled() ? Math.max((zone.maxX - zone.minX) / 2.0, defHalf) : defHalf;
+                double halfZ = autoDetect.isEnabled() ? Math.max((zone.maxZ - zone.minZ) / 2.0, defHalf) : defHalf;
 
-                float x1 = cx - rad;
-                float x2 = cx + rad;
-                float z1 = cz - rad;
-                float z2 = cz + rad;
-                float y1 = cy;
-                float y2 = cy + h;
+                float x1 = (float) (Math.floor(zone.centerX - halfX) - camPos.x);
+                float x2 = (float) (Math.ceil(zone.centerX + halfX) - camPos.x);
+                float z1 = (float) (Math.floor(zone.centerZ - halfZ) - camPos.z);
+                float z2 = (float) (Math.ceil(zone.centerZ + halfZ) - camPos.z);
+                float y1 = (float) (Math.floor(zone.minY) - camPos.y);
+                float y2 = y1 + h;
 
                 // 1. Semi-transparent 4 Vertical Square Walls
                 if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
@@ -256,10 +270,11 @@ public class StunVisuals extends Module {
 
         Vec3d pPos = mc.player.getPos();
         boolean insideAny = false;
+        double defHalf = defaultRadius.getValue();
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
-                if (zone.confirmed && zone.isInside(pPos)) {
+                if (zone.confirmed && zone.isInside(pPos, defHalf)) {
                     insideAny = true;
                     break;
                 }
