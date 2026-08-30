@@ -8,19 +8,19 @@ import com.nexuspvp.setting.ColorSetting;
 import com.nexuspvp.setting.ModeSetting;
 import com.nexuspvp.setting.NumberSetting;
 import com.nexuspvp.util.RenderUtils;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleEffect;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.Color;
-import java.io.FileWriter;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -29,7 +29,7 @@ public class StunVisuals extends Module {
 
     private final ModeSetting style = addSetting(new ModeSetting("Style", "SquareBox", "SquareBox", "SquareOutline", "ForcefieldPrism", "WireframeCube"));
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 220)));
-    private final NumberSetting height = addSetting(new NumberSetting("Height", 16.0, 3.0, 30.0, 1.0));
+    private final NumberSetting height = addSetting(new NumberSetting("Height", 14.0, 3.0, 30.0, 1.0));
     private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 3.5, 1.0, 6.0, 0.5));
     private final BooleanSetting pulse = addSetting(new BooleanSetting("Pulsing", true));
     private final BooleanSetting hideParticles = addSetting(new BooleanSetting("HideParticles", true));
@@ -39,7 +39,7 @@ public class StunVisuals extends Module {
     public static class StunZone {
         public double minX, maxX;
         public double minZ, maxZ;
-        public double groundY, topY;
+        public double groundY;
         public double centerX, centerZ;
         public long firstSeen;
         public long lastSeen;
@@ -51,7 +51,6 @@ public class StunVisuals extends Module {
             this.minZ = z;
             this.maxZ = z;
             this.groundY = y;
-            this.topY = y;
             this.centerX = x;
             this.centerZ = z;
             this.firstSeen = now;
@@ -67,13 +66,11 @@ public class StunVisuals extends Module {
             this.minZ = Math.min(minZ, z);
             this.maxZ = Math.max(maxZ, z);
             this.groundY = Math.min(groundY, y);
-            this.topY = Math.max(topY, y);
             this.centerX = (minX + maxX) / 2.0;
             this.centerZ = (minZ + maxZ) / 2.0;
         }
 
         public boolean isConfirmed() {
-            // Must have received at least 8 yellow dust particles spanning at least 4.0 blocks
             return particleCount >= 8 && ((maxX - minX) >= 4.0 || (maxZ - minZ) >= 4.0);
         }
 
@@ -100,14 +97,13 @@ public class StunVisuals extends Module {
         if (!isEnabled() || mc.world == null || mc.player == null) return false;
         long now = System.currentTimeMillis();
 
-        // 1. EXACT Signature from real HolyWorld server packets: "minecraft:dust 1.00 1.00 0.00 1.00"
+        // Strict signature for real HolyWorld Stun: "minecraft:dust 1.00 1.00 0.00 1.00"
         boolean isExactYellowStunDust = false;
         if (parameters instanceof DustParticleEffect) {
             DustParticleEffect dust = (DustParticleEffect) parameters;
             float r = dust.getRed();
             float g = dust.getGreen();
             float b = dust.getBlue();
-            // Pure Yellow/Gold Dust (r >= 0.85, g >= 0.85, b <= 0.2)
             if (r >= 0.80f && g >= 0.80f && b <= 0.25f) {
                 isExactYellowStunDust = true;
             }
@@ -115,19 +111,17 @@ public class StunVisuals extends Module {
             isExactYellowStunDust = true;
         }
 
-        // Reject all gravel, footsteps, crits, and other non-stun particles
         if (!isExactYellowStunDust) return false;
 
         Vec3d pPos = mc.player.getPos();
         if (Math.hypot(x - pPos.x, z - pPos.z) > 60.0) return false;
 
         synchronized (activeZones) {
-            // Cluster check within 25.0 blocks horizontal (full 30x30 trap bounds)
             for (StunZone zone : activeZones) {
                 double dist = Math.hypot(x - zone.centerX, z - zone.centerZ);
                 if (dist <= 25.0) {
                     zone.addParticle(x, y, z, now);
-                    return true; // 100% Silence ALL server yellow stun particles!
+                    return true; // 100% Silence ALL server yellow stun particles
                 }
             }
 
@@ -151,7 +145,7 @@ public class StunVisuals extends Module {
                 testZone = new StunZone(pPos.x - 15.0, pPos.y, pPos.z - 15.0, now);
                 testZone.maxX = pPos.x + 15.0;
                 testZone.maxZ = pPos.z + 15.0;
-                testZone.topY = pPos.y + 16.0;
+                testZone.groundY = pPos.y;
                 testZone.particleCount = 50;
             }
             testZone.lastSeen = now;
@@ -163,12 +157,10 @@ public class StunVisuals extends Module {
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
-                // Purge false alarms after 1.2s if not confirmed
                 if (!z.isConfirmed() && (now - z.firstSeen > 1200)) {
                     it.remove();
                     continue;
                 }
-                // Confirmed 30x30 Stun Trap lasts exactly 15.5 seconds
                 if (z.isConfirmed() && (now - z.lastSeen > 15500 || now - z.firstSeen > 16000)) {
                     it.remove();
                 }
@@ -176,9 +168,26 @@ public class StunVisuals extends Module {
         }
     }
 
+    private double getSurfaceFloorY(double cx, double cz, double fallbackY) {
+        if (mc.world == null) return fallbackY;
+        int bx = (int) Math.floor(cx);
+        int bz = (int) Math.floor(cz);
+        int startY = (int) Math.floor(mc.player != null ? mc.player.getY() + 3.0 : fallbackY + 3.0);
+        
+        BlockPos.Mutable mPos = new BlockPos.Mutable(bx, startY, bz);
+        while (mPos.getY() > 1) {
+            BlockState state = mc.world.getBlockState(mPos);
+            if (!state.isAir() && !state.getMaterial().isLiquid()) {
+                return mPos.getY() + 1.0;
+            }
+            mPos.setY(mPos.getY() - 1);
+        }
+        return fallbackY;
+    }
+
     @Override
     public void onRender3D(MatrixStack matrices, float tickDelta) {
-        if (mc.player == null) return;
+        if (mc.player == null || mc.world == null) return;
         if (activeZones.isEmpty() && testZone == null) return;
 
         Vec3d camPos = mc.gameRenderer.getCamera().getPos();
@@ -217,13 +226,15 @@ public class StunVisuals extends Module {
         }
 
         for (StunZone zone : toRender) {
-            // Exact perimeter matching the outer coordinates of the yellow dust lines
             double pad = 0.2;
             double x1 = (zone.minX - pad) - camPos.x;
             double x2 = (zone.maxX + pad) - camPos.x;
             double z1 = (zone.minZ - pad) - camPos.z;
             double z2 = (zone.maxZ + pad) - camPos.z;
-            double y1 = (Math.floor(zone.groundY)) - camPos.y;
+
+            // Surface Floor Level Snapping: Bottom frame is always at the arena floor surface!
+            double surfaceFloor = getSurfaceFloorY(zone.centerX, zone.centerZ, zone.groundY);
+            double y1 = surfaceFloor - camPos.y;
             double y2 = y1 + userH;
 
             // 1. Semi-transparent 4 Vertical Square Walls
@@ -239,7 +250,7 @@ public class StunVisuals extends Module {
                 tessellator.draw();
             }
 
-            // 2. Thick Glowing Ground Neon Square
+            // 2. Thick Glowing Ground Neon Square resting on arena sand surface
             GL11.glLineWidth(lw);
             buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
             buffer.vertex(x1, y1 + 0.05, z1).color(r, g, b, a).next();
