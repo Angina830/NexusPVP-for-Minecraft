@@ -29,7 +29,8 @@ public class TargetHUD extends Module {
     // Dota 2 style health bar animation variables
     private float animatedHealth = 20.0f;
     private float damageGhostHealth = 20.0f;
-    private float healGhostHealth = 20.0f;
+    private float healFromHp = 20.0f;
+    private float healToHp = 20.0f;
     private float previousTargetHealth = 20.0f;
     private long lastDamageTime = 0;
     private long lastHealTime = 0;
@@ -114,12 +115,14 @@ public class TargetHUD extends Module {
         float currentAbs = isPreview ? 4.0f : (target != null ? target.getAbsorptionAmount() : 0.0f);
 
         long now = System.currentTimeMillis();
-        if (currentHp < previousTargetHealth) {
+        if (currentHp < previousTargetHealth - 0.1f) {
             damageGhostHealth = previousTargetHealth;
             lastDamageTime = now;
-            healGhostHealth = currentHp;
-        } else if (currentHp > previousTargetHealth) {
-            healGhostHealth = currentHp;
+            healFromHp = currentHp;
+            healToHp = currentHp;
+        } else if (currentHp > previousTargetHealth + 0.1f) {
+            healFromHp = previousTargetHealth;
+            healToHp = currentHp;
             lastHealTime = now;
             damageGhostHealth = currentHp;
         }
@@ -133,9 +136,6 @@ public class TargetHUD extends Module {
         }
         if (currentHp > damageGhostHealth) {
             damageGhostHealth = currentHp;
-        }
-        if (now - lastHealTime > 300) {
-            healGhostHealth = MathHelper.lerp(0.12f, healGhostHealth, animatedHealth);
         }
 
         // Draw Player Head / Avatar
@@ -178,20 +178,26 @@ public class TargetHUD extends Module {
             RenderUtils.drawRoundedRect(matrices, barX, barY, ghostW, barH, 2, 0xFFF2F3F5); // White highlight!
         }
 
-        // Ghost Heal Bar (Bright Emerald Green)
-        if (healGhostHealth > animatedHealth) {
-            float healPct = MathHelper.clamp(healGhostHealth / maxHp, 0.0f, 1.0f);
-            float healW = barW * healPct;
-            if (healW > 0) {
-                RenderUtils.drawRoundedRect(matrices, barX, barY, (int) healW, barH, 2, 0xFF57F287);
-            }
+        // 2.5. Electric Neon Green Ghost Heal Bar
+        long healElapsed = now - lastHealTime;
+        if (healElapsed < 900 && healToHp > healFromHp) {
+            float fromX = barX + MathHelper.clamp(healFromHp / maxHp, 0.0f, 1.0f) * barW;
+            float toX = barX + MathHelper.clamp(healToHp / maxHp, 0.0f, 1.0f) * barW;
+            float healW = Math.max(1, toX - fromX);
+
+            float pulse = 0.85f + (float) Math.sin((healElapsed / 75.0f) * Math.PI) * 0.15f;
+            int gCol = (int) (255 * pulse);
+            int neonGreen = (0xFF << 24) | (0x00 << 16) | (gCol << 8) | 0x88;
+            RenderUtils.drawRoundedRect(matrices, (int) fromX, barY, (int) healW, barH, 2, neonGreen);
         }
 
-        // 3. Actual Health Bar (Green / Yellow / Red)
-        float healthPct = MathHelper.clamp(animatedHealth / maxHp, 0.0f, 1.0f);
+        // 3. Actual Health Bar
+        float baseHp = (healElapsed < 900 && healToHp > healFromHp) ? Math.min(animatedHealth, healFromHp) : animatedHealth;
+        float healthPct = MathHelper.clamp(baseHp / maxHp, 0.0f, 1.0f);
         float fillW = barW * healthPct;
         if (fillW > 0) {
-            int hpColor = healthPct > 0.6f ? 0xFF23A55A : (healthPct > 0.3f ? 0xFFFEE75C : 0xFFED4245);
+            float actualPct = MathHelper.clamp(currentHp / maxHp, 0.0f, 1.0f);
+            int hpColor = actualPct > 0.6f ? 0xFF23A55A : (actualPct > 0.3f ? 0xFFFEE75C : 0xFFED4245);
             RenderUtils.drawRoundedRect(matrices, barX, barY, fillW, barH, 2, hpColor);
         }
 
