@@ -2,8 +2,6 @@ package com.nexuspvp.gui;
 
 import com.nexuspvp.gui.components.*;
 import com.nexuspvp.module.Module;
-import com.nexuspvp.modules.CommandKeybinds;
-import com.nexuspvp.modules.ViewModel;
 import com.nexuspvp.setting.*;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.MinecraftClient;
@@ -22,7 +20,6 @@ public class ModuleButton {
         }
         return false;
     }
-
 
     private final Module module;
     private final CategoryPanel parent;
@@ -114,6 +111,25 @@ public class ModuleButton {
         int textX = x + (int) (8 + 3 * toggleAnim);
         MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, translatedName, textX, y + 4, 0xFFF2F3F5);
         
+        // 1. Legitimacy & Performance Badges
+        int nameW = MinecraftClient.getInstance().textRenderer.getWidth(translatedName);
+        int badgeX = textX + nameW + 6;
+
+        // Legit Badge (🛡 Legit)
+        String legitText = "🛡 Legit";
+        int legitW = MinecraftClient.getInstance().textRenderer.getWidth(legitText) + 4;
+        RenderUtils.drawRoundedRect(matrices, badgeX, y + 3, legitW, 9, 2, 0x3323A55A);
+        MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, legitText, badgeX + 2, y + 4, 0xFF57F287);
+
+        // Performance Impact Tag (⚡ 0.03ms / Low)
+        String perfText = "⚡ " + module.getImpact().getLabel().split(" ")[0];
+        int perfW = MinecraftClient.getInstance().textRenderer.getWidth(perfText) + 4;
+        int perfX = badgeX + legitW + 3;
+        if (perfX + perfW < x + width - 82) {
+            RenderUtils.drawRoundedRect(matrices, perfX, y + 3, perfW, 9, 2, 0x335865F2);
+            MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, perfText, perfX + 2, y + 4, module.getImpact().getColor());
+        }
+
         String desc = LanguageManager.getInstance().get(module.getDescription());
         if (desc != null && !desc.isEmpty()) {
             if (MinecraftClient.getInstance().textRenderer.getWidth(desc) > width - 110) {
@@ -122,7 +138,7 @@ public class ModuleButton {
             MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, desc, textX, y + 15, 0xFF949BA4);
         }
 
-        // 1. In-Card Interactive Keybind Button
+        // 2. In-Card Interactive Keybind Button
         int bindW = 44;
         int bindH = 14;
         int bindX = x + width - 78;
@@ -136,7 +152,7 @@ public class ModuleButton {
         int keyCol = binding ? 0xFFFFFFFF : (module.getKeyBind() > 0 ? accent : 0xFF949BA4);
         MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, keyText, bindX + (bindW - ktw) / 2, bindY + 3, keyCol);
         
-        // 2. Toggle Switch
+        // 3. Toggle Switch
         int toggleW = 20;
         int toggleH = 12;
         int toggleX = x + width - toggleW - 22;
@@ -155,7 +171,7 @@ public class ModuleButton {
         int thumbY = toggleY + 2;
         RenderUtils.drawRoundedRect(matrices, thumbX, thumbY, thumbRadius * 2, thumbRadius * 2, thumbRadius, 0xFFFFFFFF);
         
-        // 3. Settings dropdown chevron
+        // 4. Settings dropdown chevron
         if (!settingComponents.isEmpty()) {
             int chevronX = x + width - 12;
             int chevronY = y + 9;
@@ -164,7 +180,7 @@ public class ModuleButton {
             MinecraftClient.getInstance().textRenderer.drawWithShadow(matrices, chevron, chevronX, chevronY, chCol);
         }
         
-        // 4. Render expanded settings
+        // 5. Render expanded settings
         if (expandAnim > 0.01f && !settingComponents.isEmpty()) {
             int settingsTargetH = 0;
             for (SettingComponent comp : settingComponents) {

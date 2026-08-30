@@ -25,6 +25,7 @@ import java.util.Map;
 public class OverheadHealth extends Module {
 
     private final BooleanSetting playersOnly = addSetting(new BooleanSetting("PlayersOnly", false));
+    private final BooleanSetting hideBehindWalls = addSetting(new BooleanSetting("HideBehindWalls", true));
     private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
     private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 60.0, 1.0));
 
@@ -75,6 +76,23 @@ public class OverheadHealth extends Module {
 
             LivingEntity living = (LivingEntity) entity;
             if (!living.isAlive() || living.isInvisibleTo(mc.player)) continue;
+
+            if (hideBehindWalls.isEnabled()) {
+                if (!mc.player.canSee(living)) continue;
+                Vec3d eyePos = mc.player.getCameraPosVec(tickDelta);
+                Vec3d targetPos = new Vec3d(interpX, interpY + living.getHeight() + 0.35D, interpZ);
+                net.minecraft.world.RaycastContext rayCtx = new net.minecraft.world.RaycastContext(
+                    eyePos,
+                    targetPos,
+                    net.minecraft.world.RaycastContext.ShapeType.COLLIDER,
+                    net.minecraft.world.RaycastContext.FluidHandling.NONE,
+                    mc.player
+                );
+                net.minecraft.util.hit.BlockHitResult hit = mc.world.raycast(rayCtx);
+                if (hit.getType() != net.minecraft.util.hit.HitResult.Type.MISS && hit.getPos().squaredDistanceTo(eyePos) < targetPos.squaredDistanceTo(eyePos) - 0.4) {
+                    continue;
+                }
+            }
 
             double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
             if (distSq > maxDistSq) continue;
