@@ -26,9 +26,10 @@ import java.util.List;
 
 public class StunVisuals extends Module {
 
-    private final ModeSetting style = addSetting(new ModeSetting("Style", "SquareBox", "SquareBox", "SquareOutline", "ForcefieldPrism", "WireframeCube"));
-    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 230)));
+    private final ModeSetting style = addSetting(new ModeSetting("Style", "ForcefieldPrism", "ForcefieldPrism", "GroundSquareOnly", "LaserWalls", "WireframeCube"));
+    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 220)));
     private final NumberSetting height = addSetting(new NumberSetting("Height", 25.0, 5.0, 35.0, 1.0));
+    private final NumberSetting fillAlpha = addSetting(new NumberSetting("FillAlpha", 55, 10, 150, 5));
     private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 3.5, 1.0, 6.0, 0.5));
     private final BooleanSetting pulse = addSetting(new BooleanSetting("Pulsing", true));
     private final BooleanSetting hideParticles = addSetting(new BooleanSetting("HideParticles", true));
@@ -96,7 +97,6 @@ public class StunVisuals extends Module {
         if (!isEnabled() || mc.world == null || mc.player == null) return false;
         long now = System.currentTimeMillis();
 
-        // Strict HolyWorld Stun Particle Signature: "minecraft:dust 1.00 1.00 0.00 1.00"
         boolean isExactYellowStunDust = false;
         if (parameters instanceof DustParticleEffect) {
             DustParticleEffect dust = (DustParticleEffect) parameters;
@@ -201,6 +201,7 @@ public class StunVisuals extends Module {
         String curStyle = style.getValue();
         float userH = Math.max(22.0f, height.getFloatValue());
         float lw = lineWidth.getFloatValue();
+        int fAlpha = fillAlpha.getIntValue();
 
         List<StunZone> toRender = new ArrayList<>();
         if (testZone != null) {
@@ -212,7 +213,6 @@ public class StunVisuals extends Module {
             }
         }
 
-        // Lock rendering firmly to World Coordinates
         RenderUtils.setupBloom3D();
         RenderSystem.pushMatrix();
         RenderSystem.translated(-cam.x, -cam.y, -cam.z);
@@ -231,32 +231,32 @@ public class StunVisuals extends Module {
             float minY = (float) surfaceFloor;
             float maxY = minY + userH;
 
-            // 1. Semi-transparent 4 Vertical Square Walls
-            if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
-                int wallAlphaBottom = Math.min(255, (int) (a * 0.35f));
-                int wallAlphaTop = Math.min(255, (int) (a * 0.12f));
+            // 1. Semi-transparent Glowing Forcefield Walls (Clear 3D Depth)
+            if (!curStyle.equals("GroundSquareOnly") && !curStyle.equals("WireframeCube")) {
+                int wallAlphaBottom = fAlpha;
+                int wallAlphaTop = (int) (fAlpha * 0.25f);
 
                 buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
 
-                // North Wall (Z = minZ)
+                // North Wall
                 buffer.vertex(minX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
                 buffer.vertex(maxX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
                 buffer.vertex(maxX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
                 buffer.vertex(minX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
 
-                // East Wall (X = maxX)
+                // East Wall
                 buffer.vertex(maxX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
                 buffer.vertex(maxX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
                 buffer.vertex(maxX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
                 buffer.vertex(maxX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
 
-                // South Wall (Z = maxZ)
+                // South Wall
                 buffer.vertex(maxX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
                 buffer.vertex(minX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
                 buffer.vertex(minX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
                 buffer.vertex(maxX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
 
-                // West Wall (X = minX)
+                // West Wall
                 buffer.vertex(minX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
                 buffer.vertex(minX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
                 buffer.vertex(minX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
@@ -265,41 +265,39 @@ public class StunVisuals extends Module {
                 tessellator.draw();
             }
 
-            // 2. Exact Outline Box
+            // 2. Thick Glowing Ground Neon Square (On Floor)
             GL11.glLineWidth(lw);
-            buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
-
-            // Ground Floor Rim
-            buffer.vertex(minX, minY + 0.03f, minZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, minY + 0.03f, minZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, minY + 0.03f, minZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, minY + 0.03f, maxZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, minY + 0.03f, maxZ).color(r, g, b, a).next();
-            buffer.vertex(minX, minY + 0.03f, maxZ).color(r, g, b, a).next();
-            buffer.vertex(minX, minY + 0.03f, maxZ).color(r, g, b, a).next();
-            buffer.vertex(minX, minY + 0.03f, minZ).color(r, g, b, a).next();
-
-            // Sky Rim
-            buffer.vertex(minX, maxY, minZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, maxY, minZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, maxY, minZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, maxY, maxZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, maxY, maxZ).color(r, g, b, a).next();
-            buffer.vertex(minX, maxY, maxZ).color(r, g, b, a).next();
-            buffer.vertex(minX, maxY, maxZ).color(r, g, b, a).next();
-            buffer.vertex(minX, maxY, minZ).color(r, g, b, a).next();
-
-            // 4 Vertical Corner Pillars
-            buffer.vertex(minX, minY, minZ).color(r, g, b, a).next();
-            buffer.vertex(minX, maxY, minZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, minY, minZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, maxY, minZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, minY, maxZ).color(r, g, b, a).next();
-            buffer.vertex(maxX, maxY, maxZ).color(r, g, b, a).next();
-            buffer.vertex(minX, minY, maxZ).color(r, g, b, a).next();
-            buffer.vertex(minX, maxY, maxZ).color(r, g, b, a).next();
-
+            buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
+            buffer.vertex(minX, minY + 0.04f, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, minY + 0.04f, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, minY + 0.04f, maxZ).color(r, g, b, a).next();
+            buffer.vertex(minX, minY + 0.04f, maxZ).color(r, g, b, a).next();
             tessellator.draw();
+
+            // 3. Sky Rim & 4 Corner Vertical Laser Pillars (Optional based on style)
+            if (curStyle.equals("ForcefieldPrism") || curStyle.equals("LaserWalls")) {
+                // 4 Vertical Pillars
+                buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
+                buffer.vertex(minX, minY, minZ).color(r, g, b, a).next();
+                buffer.vertex(minX, maxY, minZ).color(r, g, b, (int)(a * 0.4f)).next();
+                buffer.vertex(maxX, minY, minZ).color(r, g, b, a).next();
+                buffer.vertex(maxX, maxY, minZ).color(r, g, b, (int)(a * 0.4f)).next();
+                buffer.vertex(maxX, minY, maxZ).color(r, g, b, a).next();
+                buffer.vertex(maxX, maxY, maxZ).color(r, g, b, (int)(a * 0.4f)).next();
+                buffer.vertex(minX, minY, maxZ).color(r, g, b, a).next();
+                buffer.vertex(minX, maxY, maxZ).color(r, g, b, (int)(a * 0.4f)).next();
+                tessellator.draw();
+
+                // Top Sky Rim (Only in ForcefieldPrism)
+                if (curStyle.equals("ForcefieldPrism")) {
+                    buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
+                    buffer.vertex(minX, maxY, minZ).color(r, g, b, (int)(a * 0.5f)).next();
+                    buffer.vertex(maxX, maxY, minZ).color(r, g, b, (int)(a * 0.5f)).next();
+                    buffer.vertex(maxX, maxY, maxZ).color(r, g, b, (int)(a * 0.5f)).next();
+                    buffer.vertex(minX, maxY, maxZ).color(r, g, b, (int)(a * 0.5f)).next();
+                    tessellator.draw();
+                }
+            }
         }
 
         RenderSystem.popMatrix();
