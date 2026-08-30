@@ -48,6 +48,7 @@ public class ModuleManager {
         register(new TNTTimer());
         register(new ClearWater());
         register(new ChatTweaks());
+        register(new StunVisuals());
         register(new DebugLogger());
     }
 

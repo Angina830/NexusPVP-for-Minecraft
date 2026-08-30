@@ -69,6 +69,7 @@ public class LanguageManager {
         translations.put("SwingAnimations", "Анимации удара");
         translations.put("Zoom", "Приближение");
         translations.put("AttackVignette", "Виньетка готовности удара");
+        translations.put("StunVisuals", "Визуализатор станов (HolyWorld)");
         translations.put("OverheadHealth", "Полоска здоровья над головой");
         translations.put("GalaxySky", "Галактическое небо");
         translations.put("ShulkerPreview", "Просмотр шалкеров");

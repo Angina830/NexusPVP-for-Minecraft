@@ -25,7 +25,8 @@
     "MixinShaderEffect",
     "MixinBackgroundRenderer",
     "MixinChatHud",
-    "MixinEntityRenderDispatcher"
+    "MixinEntityRenderDispatcher",
+    "MixinClientWorld"
   ],
   "injectors": {
     "defaultRequire": 1
