@@ -17,7 +17,6 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -27,11 +26,11 @@ import java.util.List;
 public class StunVisuals extends Module {
 
     private final ModeSetting style = addSetting(new ModeSetting("Style", "SquareBox", "SquareBox", "SquareOutline", "ForcefieldPrism", "WireframeCube"));
-    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 190)));
-    private final NumberSetting defaultRadius = addSetting(new NumberSetting("HalfSize", 7.0, 2.0, 15.0, 0.5));
+    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 220)));
+    private final NumberSetting defaultRadius = addSetting(new NumberSetting("HalfSize", 5.5, 2.0, 15.0, 0.5));
     private final BooleanSetting autoDetect = addSetting(new BooleanSetting("AutoDetect", true));
     private final NumberSetting height = addSetting(new NumberSetting("Height", 4.0, 1.0, 8.0, 0.5));
-    private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 2.5, 1.0, 5.0, 0.5));
+    private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 3.0, 1.0, 6.0, 0.5));
     private final BooleanSetting pulse = addSetting(new BooleanSetting("Pulsing", true));
     private final BooleanSetting hideParticles = addSetting(new BooleanSetting("HideParticles", true));
     private final BooleanSetting warning = addSetting(new BooleanSetting("Warning", true));
@@ -39,50 +38,51 @@ public class StunVisuals extends Module {
     public static class StunZone {
         public double minX, maxX;
         public double minZ, maxZ;
-        public double minY, maxY;
+        public double groundY;
         public double centerX, centerZ;
+        public double halfSize;
         public long firstSeen;
         public long lastSeen;
         public int particleCount;
-        public boolean confirmed;
 
-        public StunZone(double x, double y, double z, double defaultHalf, long now) {
+        public StunZone(double x, double y, double z, double defHalf, long now) {
             this.minX = x;
             this.maxX = x;
             this.minZ = z;
             this.maxZ = z;
-            this.minY = y;
-            this.maxY = y;
+            this.groundY = y;
             this.centerX = x;
             this.centerZ = z;
+            this.halfSize = defHalf;
             this.firstSeen = now;
             this.lastSeen = now;
             this.particleCount = 1;
-            this.confirmed = false;
         }
 
-        public void addParticle(double x, double y, double z, long now) {
+        public void addParticle(double x, double y, double z, double defHalf, boolean auto, long now) {
             this.lastSeen = now;
             this.particleCount++;
             this.minX = Math.min(minX, x);
             this.maxX = Math.max(maxX, x);
             this.minZ = Math.min(minZ, z);
             this.maxZ = Math.max(maxZ, z);
-            this.minY = Math.min(minY, y);
-            this.maxY = Math.max(maxY, y);
+            this.groundY = Math.min(groundY, y);
 
             this.centerX = (minX + maxX) / 2.0;
             this.centerZ = (minZ + maxZ) / 2.0;
 
-            if (particleCount >= 15 && (maxX - minX > 3.0 || maxZ - minZ > 3.0)) {
-                this.confirmed = true;
+            if (auto) {
+                double spanX = (maxX - minX) / 2.0;
+                double spanZ = (maxZ - minZ) / 2.0;
+                double detectedHalf = Math.max(spanX, spanZ);
+                if (detectedHalf >= 2.0 && detectedHalf <= 12.0) {
+                    this.halfSize = Math.max(defHalf, detectedHalf);
+                }
             }
         }
 
-        public boolean isInside(Vec3d pos, double fallbackHalf) {
-            double hx = confirmed ? Math.max((maxX - minX) / 2.0, fallbackHalf) : fallbackHalf;
-            double hz = confirmed ? Math.max((maxZ - minZ) / 2.0, fallbackHalf) : fallbackHalf;
-            return Math.abs(pos.x - centerX) <= hx && Math.abs(pos.z - centerZ) <= hz;
+        public boolean isInside(Vec3d pos) {
+            return Math.abs(pos.x - centerX) <= halfSize && Math.abs(pos.z - centerZ) <= halfSize;
         }
     }
 
@@ -105,35 +105,35 @@ public class StunVisuals extends Module {
         boolean isStunCandidate = false;
 
         if (parameters instanceof DustParticleEffect) {
-            DustParticleEffect dust = (DustParticleEffect) parameters;
-            Vector3f col = dust.getColor();
-            float r = col.x();
-            float g = col.y();
-            float b = col.z();
-            if (r > 0.5f && g > 0.4f && b < 0.6f) {
-                isStunCandidate = true;
-            }
+            isStunCandidate = true;
         } else if (parameters.getType() == ParticleTypes.TOTEM_OF_UNDYING ||
                    parameters.getType() == ParticleTypes.ENCHANT ||
-                   parameters.getType() == ParticleTypes.ENCHANTED_HIT) {
+                   parameters.getType() == ParticleTypes.ENCHANTED_HIT ||
+                   parameters.getType() == ParticleTypes.CRIT ||
+                   parameters.getType() == ParticleTypes.ELECTRIC_SPARK ||
+                   parameters.getType() == ParticleTypes.FALLING_DUST ||
+                   parameters.getType() == ParticleTypes.FLAME ||
+                   parameters.getType() == ParticleTypes.END_ROD) {
             isStunCandidate = true;
         }
 
         if (!isStunCandidate) return false;
 
         double defHalf = defaultRadius.getValue();
+        boolean auto = autoDetect.isEnabled();
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
                 double dist = Math.hypot(x - zone.centerX, z - zone.centerZ);
                 if (dist <= 14.0) {
-                    zone.addParticle(x, y, z, now);
-                    return zone.confirmed;
+                    zone.addParticle(x, y, z, defHalf, auto, now);
+                    return true;
                 }
             }
 
-            if (activeZones.size() < 4) {
+            if (activeZones.size() < 3) {
                 activeZones.add(new StunZone(x, y, z, defHalf, now));
+                return true;
             }
         }
         return false;
@@ -147,8 +147,7 @@ public class StunVisuals extends Module {
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
-                long timeout = z.confirmed ? 6000 : 1200;
-                if (now - z.lastSeen > timeout) {
+                if (now - z.lastSeen > 7000) {
                     it.remove();
                 }
             }
@@ -170,7 +169,6 @@ public class StunVisuals extends Module {
 
         String curStyle = style.getValue();
         float h = height.getFloatValue();
-        double defHalf = defaultRadius.getValue();
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -183,22 +181,20 @@ public class StunVisuals extends Module {
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
-                if (!zone.confirmed) continue;
+                if (zone.particleCount < 2) continue;
 
-                double halfX = autoDetect.isEnabled() ? Math.max((zone.maxX - zone.minX) / 2.0, defHalf) : defHalf;
-                double halfZ = autoDetect.isEnabled() ? Math.max((zone.maxZ - zone.minZ) / 2.0, defHalf) : defHalf;
-
-                float x1 = (float) (Math.floor(zone.centerX - halfX) - camPos.x);
-                float x2 = (float) (Math.ceil(zone.centerX + halfX) - camPos.x);
-                float z1 = (float) (Math.floor(zone.centerZ - halfZ) - camPos.z);
-                float z2 = (float) (Math.ceil(zone.centerZ + halfZ) - camPos.z);
-                float y1 = (float) (Math.floor(zone.minY) - camPos.y);
+                double half = zone.halfSize;
+                float x1 = (float) (Math.floor(zone.centerX - half) - camPos.x);
+                float x2 = (float) (Math.ceil(zone.centerX + half) - camPos.x);
+                float z1 = (float) (Math.floor(zone.centerZ - half) - camPos.z);
+                float z2 = (float) (Math.ceil(zone.centerZ + half) - camPos.z);
+                float y1 = (float) (Math.floor(zone.groundY) - camPos.y);
                 float y2 = y1 + h;
 
                 // 1. Semi-transparent 4 Vertical Square Walls
                 if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
                     BufferBuilder buffer = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-                    float wallAlpha = a * 0.35f;
+                    float wallAlpha = a * 0.32f;
 
                     buffer.vertex(mat, x1, y1, z1).color(r, g, b, wallAlpha);
                     buffer.vertex(mat, x2, y1, z1).color(r, g, b, wallAlpha);
@@ -235,14 +231,14 @@ public class StunVisuals extends Module {
                 lineBuffer.vertex(mat, x1, y1 + 0.05f, z1).color(r, g, b, a);
 
                 if (!curStyle.equals("SquareOutline")) {
-                    lineBuffer.vertex(mat, x1, y2, z1).color(r, g, b, a * 0.5f);
-                    lineBuffer.vertex(mat, x2, y2, z1).color(r, g, b, a * 0.5f);
-                    lineBuffer.vertex(mat, x2, y2, z1).color(r, g, b, a * 0.5f);
-                    lineBuffer.vertex(mat, x2, y2, z2).color(r, g, b, a * 0.5f);
-                    lineBuffer.vertex(mat, x2, y2, z2).color(r, g, b, a * 0.5f);
-                    lineBuffer.vertex(mat, x1, y2, z2).color(r, g, b, a * 0.5f);
-                    lineBuffer.vertex(mat, x1, y2, z2).color(r, g, b, a * 0.5f);
-                    lineBuffer.vertex(mat, x1, y2, z1).color(r, g, b, a * 0.5f);
+                    lineBuffer.vertex(mat, x1, y2, z1).color(r, g, b, a * 0.6f);
+                    lineBuffer.vertex(mat, x2, y2, z1).color(r, g, b, a * 0.6f);
+                    lineBuffer.vertex(mat, x2, y2, z1).color(r, g, b, a * 0.6f);
+                    lineBuffer.vertex(mat, x2, y2, z2).color(r, g, b, a * 0.6f);
+                    lineBuffer.vertex(mat, x2, y2, z2).color(r, g, b, a * 0.6f);
+                    lineBuffer.vertex(mat, x1, y2, z2).color(r, g, b, a * 0.6f);
+                    lineBuffer.vertex(mat, x1, y2, z2).color(r, g, b, a * 0.6f);
+                    lineBuffer.vertex(mat, x1, y2, z1).color(r, g, b, a * 0.6f);
 
                     lineBuffer.vertex(mat, x1, y1, z1).color(r, g, b, a);
                     lineBuffer.vertex(mat, x1, y2, z1).color(r, g, b, 0.0f);
@@ -268,11 +264,10 @@ public class StunVisuals extends Module {
 
         Vec3d pPos = mc.player.getPos();
         boolean insideAny = false;
-        double defHalf = defaultRadius.getValue();
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
-                if (zone.confirmed && zone.isInside(pPos, defHalf)) {
+                if (zone.particleCount >= 2 && zone.isInside(pPos)) {
                     insideAny = true;
                     break;
                 }

@@ -22,7 +22,8 @@
     "MixinDrawContext",
     "MixinHandledScreen",
     "MixinEntityRenderDispatcher",
-    "MixinClientWorld"
+    "MixinClientWorld",
+    "MixinParticleManager"
   ],
   "injectors": {
     "defaultRequire": 1
