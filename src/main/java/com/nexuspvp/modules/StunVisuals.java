@@ -16,7 +16,8 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
 
@@ -28,7 +29,7 @@ import java.util.List;
 public class StunVisuals extends Module {
 
     private final ModeSetting style = addSetting(new ModeSetting("Style", "SquareBox", "SquareBox", "SquareOutline", "ForcefieldPrism", "WireframeCube"));
-    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 220)));
+    private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 230)));
     private final NumberSetting height = addSetting(new NumberSetting("Height", 25.0, 5.0, 35.0, 1.0));
     private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 3.5, 1.0, 6.0, 0.5));
     private final BooleanSetting pulse = addSetting(new BooleanSetting("Pulsing", true));
@@ -97,7 +98,7 @@ public class StunVisuals extends Module {
         if (!isEnabled() || mc.world == null || mc.player == null) return false;
         long now = System.currentTimeMillis();
 
-        // Exact signature for HolyWorld Stun: "minecraft:dust 1.00 1.00 0.00 1.00"
+        // 100% Strict HolyWorld Stun Signature: "minecraft:dust 1.00 1.00 0.00 1.00"
         boolean isExactYellowStunDust = false;
         if (parameters instanceof DustParticleEffect) {
             DustParticleEffect dust = (DustParticleEffect) parameters;
@@ -187,10 +188,10 @@ public class StunVisuals extends Module {
 
     @Override
     public void onRender3D(MatrixStack matrices, float tickDelta) {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.world == null || matrices == null) return;
         if (activeZones.isEmpty() && testZone == null) return;
 
-        Vec3d camPos = mc.gameRenderer.getCamera().getPos();
+        Vec3d cam = mc.gameRenderer.getCamera().getPos();
         Color baseCol = color.getColor();
         float pulseMul = pulse.isEnabled() ? (0.85f + (float) Math.sin(pulseAnim * 3.5f) * 0.15f) : 1.0f;
         
@@ -200,20 +201,8 @@ public class StunVisuals extends Module {
         int a = baseCol.getAlpha();
 
         String curStyle = style.getValue();
-        float userH = Math.max(22.0f, height.getFloatValue()); // Force full height up to sky
+        float userH = Math.max(22.0f, height.getFloatValue());
         float lw = lineWidth.getFloatValue();
-
-        RenderSystem.enableBlend();
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.depthMask(false);
-        RenderSystem.disableCull();
-        RenderSystem.disableTexture();
-        RenderSystem.color4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
 
         List<StunZone> toRender = new ArrayList<>();
         if (testZone != null) {
@@ -225,86 +214,100 @@ public class StunVisuals extends Module {
             }
         }
 
+        matrices.push();
+        matrices.translate(-cam.x, -cam.y, -cam.z);
+
+        RenderUtils.setup3D();
+        Matrix4f matrix = matrices.peek().getModel();
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+
         for (StunZone zone : toRender) {
             double pad = 0.2;
-            double x1 = (zone.minX - pad) - camPos.x;
-            double x2 = (zone.maxX + pad) - camPos.x;
-            double z1 = (zone.minZ - pad) - camPos.z;
-            double z2 = (zone.maxZ + pad) - camPos.z;
+            float minX = (float) (zone.minX - pad);
+            float maxX = (float) (zone.maxX + pad);
+            float minZ = (float) (zone.minZ - pad);
+            float maxZ = (float) (zone.maxZ + pad);
 
-            // Surface Floor Level Snapping
             double surfaceFloor = getSurfaceFloorY(zone.centerX, zone.centerZ, zone.groundY);
-            double y1 = surfaceFloor - camPos.y;
-            double y2 = y1 + userH;
+            float minY = (float) surfaceFloor;
+            float maxY = minY + userH;
 
-            // 1. Semi-transparent 4 Vertical Square Walls with vibrant gradient
+            // 1. Semi-transparent Vertical Walls with Matrix4f projection
             if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
+                int wallAlphaBottom = Math.min(255, (int) (a * 0.35f));
+                int wallAlphaTop = Math.min(255, (int) (a * 0.12f));
+
                 buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
-                int wallAlphaBottom = Math.min(255, (int) (a * 0.40f));
-                int wallAlphaTop = Math.min(255, (int) (a * 0.15f));
 
-                // North Wall (Z1)
-                buffer.vertex(x1, y1, z1).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(x2, y1, z1).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(x2, y2, z1).color(r, g, b, wallAlphaTop).next();
-                buffer.vertex(x1, y2, z1).color(r, g, b, wallAlphaTop).next();
+                // North Wall (Z = minZ)
+                buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
 
-                // East Wall (X2)
-                buffer.vertex(x2, y1, z1).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(x2, y1, z2).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(x2, y2, z2).color(r, g, b, wallAlphaTop).next();
-                buffer.vertex(x2, y2, z1).color(r, g, b, wallAlphaTop).next();
+                // East Wall (X = maxX)
+                buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
 
-                // South Wall (Z2)
-                buffer.vertex(x2, y1, z2).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(x1, y1, z2).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(x1, y2, z2).color(r, g, b, wallAlphaTop).next();
-                buffer.vertex(x2, y2, z2).color(r, g, b, wallAlphaTop).next();
+                // South Wall (Z = maxZ)
+                buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
 
-                // West Wall (X1)
-                buffer.vertex(x1, y1, z2).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(x1, y1, z1).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(x1, y2, z1).color(r, g, b, wallAlphaTop).next();
-                buffer.vertex(x1, y2, z2).color(r, g, b, wallAlphaTop).next();
+                // West Wall (X = minX)
+                buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
 
                 tessellator.draw();
             }
 
-            // 2. Thick Glowing Ground Neon Square
+            // 2. Exact Outline Box & 4 Vertical Pillars
             GL11.glLineWidth(lw);
-            buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
-            buffer.vertex(x1, y1 + 0.05, z1).color(r, g, b, a).next();
-            buffer.vertex(x2, y1 + 0.05, z1).color(r, g, b, a).next();
-            buffer.vertex(x2, y1 + 0.05, z2).color(r, g, b, a).next();
-            buffer.vertex(x1, y1 + 0.05, z2).color(r, g, b, a).next();
-            tessellator.draw();
+            buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
 
-            // 3. Top Rim Square & 4 Vertical Corner Neon Pillars
+            // Ground Square (Floor rim)
+            buffer.vertex(matrix, minX, minY + 0.03f, minZ).color(r, g, b, a).next();
+            buffer.vertex(matrix, maxX, minY + 0.03f, minZ).color(r, g, b, a).next();
+            buffer.vertex(matrix, maxX, minY + 0.03f, minZ).color(r, g, b, a).next();
+            buffer.vertex(matrix, maxX, minY + 0.03f, maxZ).color(r, g, b, a).next();
+            buffer.vertex(matrix, maxX, minY + 0.03f, maxZ).color(r, g, b, a).next();
+            buffer.vertex(matrix, minX, minY + 0.03f, maxZ).color(r, g, b, a).next();
+            buffer.vertex(matrix, minX, minY + 0.03f, maxZ).color(r, g, b, a).next();
+            buffer.vertex(matrix, minX, minY + 0.03f, minZ).color(r, g, b, a).next();
+
+            // Top Square (Sky rim)
             if (!curStyle.equals("SquareOutline")) {
-                buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
-                buffer.vertex(x1, y2, z1).color(r, g, b, a).next();
-                buffer.vertex(x2, y2, z1).color(r, g, b, a).next();
-                buffer.vertex(x2, y2, z2).color(r, g, b, a).next();
-                buffer.vertex(x1, y2, z2).color(r, g, b, a).next();
-                tessellator.draw();
+                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a).next();
 
-                buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
-                buffer.vertex(x1, y1, z1).color(r, g, b, a).next();
-                buffer.vertex(x1, y2, z1).color(r, g, b, a).next();
-                buffer.vertex(x2, y1, z1).color(r, g, b, a).next();
-                buffer.vertex(x2, y2, z1).color(r, g, b, a).next();
-                buffer.vertex(x2, y1, z2).color(r, g, b, a).next();
-                buffer.vertex(x2, y2, z2).color(r, g, b, a).next();
-                buffer.vertex(x1, y1, z2).color(r, g, b, a).next();
-                buffer.vertex(x1, y2, z2).color(r, g, b, a).next();
-                tessellator.draw();
+                // 4 Vertical Corner Pillars
+                buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a).next();
+                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a).next();
             }
+
+            tessellator.draw();
         }
 
-        RenderSystem.enableTexture();
-        RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
-        RenderSystem.enableDepthTest();
+        RenderUtils.cleanup3D();
+        matrices.pop();
     }
 
     @Override
