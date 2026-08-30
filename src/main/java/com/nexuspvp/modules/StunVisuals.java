@@ -83,6 +83,7 @@ public class StunVisuals extends Module {
     private final List<StunZone> activeZones = new ArrayList<>();
     private float pulseAnim = 0f;
     private StunZone testZone = null;
+    private Vec3d lastPlayerPos = null;
 
     public StunVisuals() {
         super("StunVisuals", "HolyWorld 30x30 Square Stun Trap / Anti-Pearl Zone continuous neon 3D barrier", Category.VISUAL);
@@ -114,10 +115,11 @@ public class StunVisuals extends Module {
         if (!isExactYellowStunDust) return false;
 
         Vec3d pPos = mc.player.getPos();
-        // Ignore any particles beyond local arena radius (35 blocks)
-        if (Math.hypot(x - pPos.x, z - pPos.z) > 35.0) return false;
+        // Track stuns anywhere across the battlefield (up to 120 blocks)
+        if (Math.hypot(x - pPos.x, z - pPos.z) > 120.0) return false;
 
         synchronized (activeZones) {
+            // Cluster check per trap (radius 25.0 blocks)
             for (StunZone zone : activeZones) {
                 double dist = Math.hypot(x - zone.centerX, z - zone.centerZ);
                 if (dist <= 25.0) {
@@ -126,7 +128,8 @@ public class StunVisuals extends Module {
                 }
             }
 
-            if (activeZones.size() < 2) {
+            // Support up to 16 simultaneous stun traps across the battlefield!
+            if (activeZones.size() < 16) {
                 activeZones.add(new StunZone(x, y, z, now));
                 return true; // Silence initial particle
             }
@@ -140,6 +143,14 @@ public class StunVisuals extends Module {
         if (mc.world == null || mc.player == null) return;
         long now = System.currentTimeMillis();
         Vec3d pPos = mc.player.getPos();
+
+        // Only clear zones on massive match/world teleport (> 400 blocks in a single tick)
+        if (lastPlayerPos != null && pPos.distanceTo(lastPlayerPos) > 400.0) {
+            synchronized (activeZones) {
+                activeZones.clear();
+            }
+        }
+        lastPlayerPos = pPos;
 
         if (testMode.isEnabled()) {
             if (testZone == null) {
@@ -158,16 +169,11 @@ public class StunVisuals extends Module {
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
-                // Purge immediately if player teleported to another arena (> 35 blocks away)
-                double distToPlayer = Math.hypot(z.centerX - pPos.x, z.centerZ - pPos.z);
-                if (distToPlayer > 35.0) {
-                    it.remove();
-                    continue;
-                }
                 if (!z.isConfirmed() && (now - z.firstSeen > 1200)) {
                     it.remove();
                     continue;
                 }
+                // Each stun trap lives for its full 15.5-second official duration
                 if (z.isConfirmed() && (now - z.lastSeen > 15500 || now - z.firstSeen > 16000)) {
                     it.remove();
                 }
@@ -198,7 +204,6 @@ public class StunVisuals extends Module {
         if (activeZones.isEmpty() && testZone == null) return;
 
         Vec3d cam = mc.gameRenderer.getCamera().getPos();
-        Vec3d pPos = mc.player.getPos();
         Color baseCol = color.getColor();
         float pulseMul = pulse.isEnabled() ? (0.85f + (float) Math.sin(pulseAnim * 3.5f) * 0.15f) : 1.0f;
         
@@ -218,8 +223,7 @@ public class StunVisuals extends Module {
         }
         synchronized (activeZones) {
             for (StunZone z : activeZones) {
-                // Strictly render ONLY the current local stun in this arena
-                if (z.isConfirmed() && Math.hypot(z.centerX - pPos.x, z.centerZ - pPos.z) <= 35.0) {
+                if (z.isConfirmed()) {
                     toRender.add(z);
                 }
             }
