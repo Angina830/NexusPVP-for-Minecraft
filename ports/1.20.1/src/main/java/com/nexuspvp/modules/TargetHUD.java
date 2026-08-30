@@ -37,6 +37,9 @@ public class TargetHUD extends Module {
     private long lastDamageTime = 0;
     private float animatedAbsorption = 0.0f;
 
+    // Zero-allocation armor cache
+    private final ItemStack[] armorCache = new ItemStack[4];
+
     public TargetHUD() {
         super("TargetHUD", "Discord-styled target health and armor info", Category.PVP);
         setEnabled(true);
@@ -62,17 +65,17 @@ public class TargetHUD extends Module {
     public void onTick() {
         if (mc.world == null || mc.player == null) return;
 
-        if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
+        if (mc.targetedEntity instanceof LivingEntity && mc.targetedEntity != mc.player) {
+            setTarget((LivingEntity) mc.targetedEntity);
+        } else if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
             Entity ent = ((EntityHitResult) mc.crosshairTarget).getEntity();
             if (ent instanceof LivingEntity && ent != mc.player) {
                 setTarget((LivingEntity) ent);
             }
-        } else if (mc.targetedEntity instanceof LivingEntity && mc.targetedEntity != mc.player) {
-            setTarget((LivingEntity) mc.targetedEntity);
         }
 
         if (target != null) {
-            if (!target.isAlive() || System.currentTimeMillis() - lastTargetTime > 6000) {
+            if (!target.isAlive() || System.currentTimeMillis() - lastTargetTime > 5000) {
                 target = null;
             }
         }
@@ -149,12 +152,12 @@ public class TargetHUD extends Module {
         renderTargetFace(matrices, headX + 1, headY + 1, headSize - 2);
 
         int textX = headX + headSize + 6;
-        if (mc.textRenderer.getWidth(name) > cardW - headSize - 18) {
-            name = name.substring(0, Math.min(name.length(), 14)) + "...";
+        if (name.length() > 14) {
+            name = name.substring(0, 12) + "..";
         }
         Compat.drawText(matrices, name, textX, headY, 0xFFF2F3F5);
 
-        String hpText = String.format("%.1f", currentHp) + " / " + String.format("%.0f", maxHp) + " ❤";
+        String hpText = String.format("%.1f", currentHp) + " / " + String.format("%.0f", maxHp) + " \u2764";
         if (currentAbs > 0) {
             hpText += " (+" + String.format("%.1f", currentAbs) + ")";
         }
@@ -186,19 +189,23 @@ public class TargetHUD extends Module {
             RenderUtils.drawRoundedRect(matrices, barX, barY + barH - 2, absW, 2, 1, 0xFFFFD700);
         }
 
+        // Equipped Armor Icons Row (Zero-allocation reverse array: Helmet -> Chest -> Legs -> Boots)
         if (target != null || isPreview) {
             LivingEntity entity = isPreview ? mc.player : target;
             if (entity != null) {
                 int itemX = cardX + cardW - 55;
                 int itemY = cardY + 5;
-                java.util.List<ItemStack> armorList = new java.util.ArrayList<>();
+                int slotIdx = 0;
                 for (ItemStack stack : entity.getArmorItems()) {
-                    armorList.add(stack);
+                    if (slotIdx < 4) {
+                        armorCache[slotIdx] = stack;
+                        slotIdx++;
+                    }
                 }
-                java.util.Collections.reverse(armorList);
-                for (ItemStack stack : armorList) {
-                    if (!stack.isEmpty()) {
-                        Compat.drawItem(matrices, stack, itemX, itemY);
+                for (int i = slotIdx - 1; i >= 0; i--) {
+                    ItemStack st = armorCache[i];
+                    if (st != null && !st.isEmpty()) {
+                        Compat.drawItem(matrices, st, itemX, itemY);
                         itemX += 13;
                     }
                 }
