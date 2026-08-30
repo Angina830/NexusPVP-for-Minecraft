@@ -19,23 +19,29 @@ public class CrosshairHealth extends Module {
     private final NumberSetting height = addSetting(new NumberSetting("Height", 4, 2, 10, 1));
     private final BooleanSetting showNumbers = addSetting(new BooleanSetting("ShowNumbers", true));
     private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
+    private final BooleanSetting ghostHeal = addSetting(new BooleanSetting("GhostHeal", true));
     private final BooleanSetting preview = addSetting(new BooleanSetting("Preview", false));
 
     private LivingEntity target = null;
     private long lastTargetTime = 0;
     private float fadeAlpha = 0.0f;
 
-    // Dota 2 style health bar animation
+    // Dota 2 style health bar animation (Damage Ghost & Heal Ghost)
     private float animatedHealth = 20.0f;
     private float damageGhostHealth = 20.0f;
+    private float healGhostHealth = 20.0f;
     private float previousTargetHealth = 20.0f;
     private long lastDamageTime = 0;
+    private long lastHealTime = 0;
     private float animatedAbsorption = 0.0f;
 
     public CrosshairHealth() {
-        super("CrosshairHealth", "Minimalistic under-crosshair health bar with Dota ghost damage & golden absorption", Category.PVP);
+        super("CrosshairHealth", "Minimalistic under-crosshair health bar with Dota ghost damage, ghost heal & gold absorption", Category.PVP);
         setEnabled(true);
     }
+
+    public NumberSetting getPosX() { return posX; }
+    public NumberSetting getPosY() { return posY; }
 
     public void setTarget(LivingEntity entity) {
         if (entity != null && entity != mc.player) {
@@ -43,6 +49,7 @@ public class CrosshairHealth extends Module {
                 this.target = entity;
                 this.animatedHealth = entity.getHealth();
                 this.damageGhostHealth = entity.getHealth();
+                this.healGhostHealth = entity.getHealth();
                 this.previousTargetHealth = entity.getHealth();
                 this.animatedAbsorption = entity.getAbsorptionAmount();
             }
@@ -91,29 +98,43 @@ public class CrosshairHealth extends Module {
         float maxHp = isPreview ? 20.0f : (target != null ? target.getMaxHealth() : 20.0f);
         float currentHp;
         if (isPreview) {
-            long cycle = (System.currentTimeMillis() / 1600) % 3;
-            currentHp = cycle == 0 ? 20.0f : (cycle == 1 ? 13.5f : 6.0f);
+            long cycle = (System.currentTimeMillis() / 1600) % 4;
+            currentHp = cycle == 0 ? 20.0f : (cycle == 1 ? 12.0f : (cycle == 2 ? 18.0f : 6.0f));
         } else {
             currentHp = target != null ? target.getHealth() : 20.0f;
         }
 
         float currentAbs = isPreview ? 4.0f : (target != null ? target.getAbsorptionAmount() : 0.0f);
+        long now = System.currentTimeMillis();
 
-        // Dota 2 damage tracking
+        // 1. Detect Damage
         if (currentHp < previousTargetHealth) {
             damageGhostHealth = previousTargetHealth;
-            lastDamageTime = System.currentTimeMillis();
+            lastDamageTime = now;
+            healGhostHealth = currentHp;
+        }
+        // 2. Detect Heal
+        else if (currentHp > previousTargetHealth) {
+            healGhostHealth = currentHp;
+            lastHealTime = now;
+            damageGhostHealth = currentHp;
         }
         previousTargetHealth = currentHp;
 
-        animatedHealth = MathHelper.lerp(0.20f, animatedHealth, currentHp);
-        animatedAbsorption = MathHelper.lerp(0.20f, animatedAbsorption, currentAbs);
+        animatedHealth = MathHelper.lerp(0.18f, animatedHealth, currentHp);
+        animatedAbsorption = MathHelper.lerp(0.18f, animatedAbsorption, currentAbs);
 
-        if (System.currentTimeMillis() - lastDamageTime > 260) {
+        // Melt Damage Ghost (White)
+        if (now - lastDamageTime > 260) {
             damageGhostHealth = MathHelper.lerp(0.08f, damageGhostHealth, currentHp);
         }
         if (currentHp > damageGhostHealth) {
             damageGhostHealth = currentHp;
+        }
+
+        // Melt Heal Ghost (Green)
+        if (now - lastHealTime > 300) {
+            healGhostHealth = MathHelper.lerp(0.12f, healGhostHealth, animatedHealth);
         }
 
         int globalAlpha = (int) (255 * fadeAlpha);
@@ -141,7 +162,7 @@ public class CrosshairHealth extends Module {
         // 3. Main Health Bar Groove
         RenderUtils.drawRoundedRect(matrices, barX, barY, barW, barH, 2, (globalAlpha << 24) | 0x2B2D31);
 
-        // 4. Dota 2 Ghost Bar (Lost health highlighted in white/light grey)
+        // 4. Ghost Damage Bar (White highlight)
         if (ghostDamage.isEnabled()) {
             float ghostPct = MathHelper.clamp(damageGhostHealth / maxHp, 0.0f, 1.0f);
             float ghostW = barW * ghostPct;
@@ -150,7 +171,16 @@ public class CrosshairHealth extends Module {
             }
         }
 
-        // 5. Active Health Bar Fill (Green / Yellow / Red)
+        // 5. Ghost Heal Bar (Bright Emerald Green highlight showing healed amount)
+        if (ghostHeal.isEnabled() && healGhostHealth > animatedHealth) {
+            float healPct = MathHelper.clamp(healGhostHealth / maxHp, 0.0f, 1.0f);
+            float healW = barW * healPct;
+            if (healW > 0) {
+                RenderUtils.drawRoundedRect(matrices, barX, barY, (int) healW, barH, 2, (globalAlpha << 24) | 0x57F287);
+            }
+        }
+
+        // 6. Active Health Bar Fill (Green / Yellow / Red)
         float healthPct = MathHelper.clamp(animatedHealth / maxHp, 0.0f, 1.0f);
         float fillW = barW * healthPct;
         if (fillW > 0) {
@@ -158,7 +188,7 @@ public class CrosshairHealth extends Module {
             RenderUtils.drawRoundedRect(matrices, barX, barY, (int) fillW, barH, 2, (globalAlpha << 24) | hpColor);
         }
 
-        // 6. SEPARATE GOLDEN ABSORPTION BAR (Slightly below the main bar)
+        // 7. SEPARATE GOLDEN ABSORPTION BAR (Slightly below the main bar)
         if (animatedAbsorption > 0.1f) {
             int absY = barY + barH + 2;
             int absH = Math.max(2, barH - 2);

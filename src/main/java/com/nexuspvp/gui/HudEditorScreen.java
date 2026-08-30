@@ -2,6 +2,7 @@ package com.nexuspvp.gui;
 
 import com.nexuspvp.NexusPVP;
 import com.nexuspvp.modules.*;
+import com.nexuspvp.modules.CrosshairHealth;
 import com.nexuspvp.util.RenderUtils;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
@@ -102,6 +103,19 @@ public class HudEditorScreen extends Screen {
             }, (newX, newY) -> {
                 totemPop.getPosX().setValue((double) newX);
                 totemPop.getPosY().setValue((double) newY);
+            }));
+        }
+
+        // 7. CrosshairHealth (Under-Crosshair Mini Bar)
+        CrosshairHealth chHealth = NexusPVP.getInstance().getModuleManager().getModule(CrosshairHealth.class);
+        if (chHealth != null) {
+            hudBoxes.add(new HudBox("Crosshair HP", 80, 16, true, () -> {
+                int x = screenW / 2 + chHealth.getPosX().getIntValue() - 40;
+                int y = screenH / 2 + chHealth.getPosY().getIntValue();
+                return new int[]{x, y};
+            }, (newX, newY) -> {
+                chHealth.getPosX().setValue((double) (newX + 40 - screenW / 2));
+                chHealth.getPosY().setValue((double) (newY - screenH / 2));
             }));
         }
     }

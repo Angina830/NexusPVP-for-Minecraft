@@ -35,7 +35,9 @@ public class OverheadHealth extends Module {
     private static class HealthTracker {
         float animatedHealth;
         float damageGhostHealth;
+        float healGhostHealth;
         float previousHealth;
+        long lastHealTime;
         float animatedAbsorption;
         long lastDamageTime;
         long lastSeenTime;
@@ -140,6 +142,11 @@ public class OverheadHealth extends Module {
         if (currentHp < tracker.previousHealth) {
             tracker.damageGhostHealth = tracker.previousHealth;
             tracker.lastDamageTime = now;
+            tracker.healGhostHealth = currentHp;
+        } else if (currentHp > tracker.previousHealth) {
+            tracker.healGhostHealth = currentHp;
+            tracker.lastHealTime = now;
+            tracker.damageGhostHealth = currentHp;
         }
         tracker.previousHealth = currentHp;
 
@@ -151,6 +158,9 @@ public class OverheadHealth extends Module {
         }
         if (currentHp > tracker.damageGhostHealth) {
             tracker.damageGhostHealth = currentHp;
+        }
+        if (now - tracker.lastHealTime > 300) {
+            tracker.healGhostHealth = MathHelper.lerp(0.12f, tracker.healGhostHealth, tracker.animatedHealth);
         }
 
         String name = entity.getName().getString();
@@ -208,6 +218,13 @@ public class OverheadHealth extends Module {
         if (ghostDamage.isEnabled() && ghostPct > 0) {
             float ghostWidth = barW * ghostPct;
             addQuad(buffer, barX, barY, ghostWidth, barH, 0xFFF2F3F5);
+        }
+
+        // 4.5. Ghost Heal Bar (Bright Emerald Green)
+        if (tracker.healGhostHealth > tracker.animatedHealth) {
+            float healPct = MathHelper.clamp(tracker.healGhostHealth / maxHp, 0.0f, 1.0f);
+            float healWidth = barW * healPct;
+            addQuad(buffer, barX, barY, healWidth, barH, 0xFF57F287);
         }
 
         // 5. Active health bar (Green / Yellow / Red) from left to right

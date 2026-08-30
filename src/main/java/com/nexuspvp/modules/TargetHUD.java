@@ -28,8 +28,10 @@ public class TargetHUD extends Module {
     // Dota 2 style health bar animation variables
     private float animatedHealth = 20.0f;
     private float damageGhostHealth = 20.0f;
+    private float healGhostHealth = 20.0f;
     private float previousTargetHealth = 20.0f;
     private long lastDamageTime = 0;
+    private long lastHealTime = 0;
     private float animatedAbsorption = 0.0f;
 
     public TargetHUD() {
@@ -107,23 +109,29 @@ public class TargetHUD extends Module {
 
         float currentAbs = isPreview ? 4.0f : (target != null ? target.getAbsorptionAmount() : 0.0f);
 
-        // Track damage event for Dota 2 ghost bar
+        long now = System.currentTimeMillis();
         if (currentHp < previousTargetHealth) {
             damageGhostHealth = previousTargetHealth;
-            lastDamageTime = System.currentTimeMillis();
+            lastDamageTime = now;
+            healGhostHealth = currentHp;
+        } else if (currentHp > previousTargetHealth) {
+            healGhostHealth = currentHp;
+            lastHealTime = now;
+            damageGhostHealth = currentHp;
         }
         previousTargetHealth = currentHp;
 
-        // Main health bar catches up quickly
         animatedHealth = MathHelper.lerp(0.18f, animatedHealth, currentHp);
         animatedAbsorption = MathHelper.lerp(0.18f, animatedAbsorption, currentAbs);
 
-        // Dota 2 Ghost bar waits 280ms then smoothly melts down to actual health!
-        if (System.currentTimeMillis() - lastDamageTime > 280) {
+        if (now - lastDamageTime > 280) {
             damageGhostHealth = MathHelper.lerp(0.08f, damageGhostHealth, currentHp);
         }
         if (currentHp > damageGhostHealth) {
             damageGhostHealth = currentHp;
+        }
+        if (now - lastHealTime > 300) {
+            healGhostHealth = MathHelper.lerp(0.12f, healGhostHealth, animatedHealth);
         }
 
         // Draw Player Head / Avatar
@@ -164,6 +172,15 @@ public class TargetHUD extends Module {
         float ghostW = barW * ghostPct;
         if (ghostW > 0) {
             RenderUtils.drawRoundedRect(matrices, barX, barY, ghostW, barH, 2, 0xFFF2F3F5); // White highlight!
+        }
+
+        // Ghost Heal Bar (Bright Emerald Green)
+        if (healGhostHealth > animatedHealth) {
+            float healPct = MathHelper.clamp(healGhostHealth / maxHp, 0.0f, 1.0f);
+            float healW = barW * healPct;
+            if (healW > 0) {
+                RenderUtils.drawRoundedRect(matrices, barX, barY, (int) healW, barH, 2, 0xFF57F287);
+            }
         }
 
         // 3. Actual Health Bar (Green / Yellow / Red)
