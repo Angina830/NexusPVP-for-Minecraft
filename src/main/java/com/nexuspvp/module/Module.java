@@ -17,6 +17,13 @@ public abstract class Module {
     private boolean enabled;
     private final List<Setting<?>> settings = new ArrayList<>();
 
+    // Realtime nanosecond profiling metrics
+    private long lastRender2DTimeNanos = 0;
+    private long lastRender3DTimeNanos = 0;
+    private long lastTickTimeNanos = 0;
+    private float avgRenderMicros = 0;
+    private float peakRenderMicros = 0;
+
     public Module(String name, String description, Category category, int keyBind) {
         this.name = name;
         this.description = description;
@@ -57,8 +64,37 @@ public abstract class Module {
         return setting;
     }
 
-    // Getters/setters
+    // Profiling methods
+    public void recordRender2DTime(long nanos) {
+        this.lastRender2DTimeNanos = nanos;
+        updateRenderMetrics(nanos);
+    }
 
+    public void recordRender3DTime(long nanos) {
+        this.lastRender3DTimeNanos = nanos;
+        updateRenderMetrics(nanos);
+    }
+
+    public void recordTickTime(long nanos) {
+        this.lastTickTimeNanos = nanos;
+    }
+
+    private void updateRenderMetrics(long nanos) {
+        float micros = nanos / 1000.0f;
+        this.avgRenderMicros = this.avgRenderMicros * 0.90f + micros * 0.10f;
+        if (micros > this.peakRenderMicros) {
+            this.peakRenderMicros = micros;
+        } else {
+            this.peakRenderMicros = Math.max(0, this.peakRenderMicros * 0.992f);
+        }
+    }
+
+    public float getAvgRenderMicros() { return avgRenderMicros; }
+    public float getPeakRenderMicros() { return peakRenderMicros; }
+    public long getLastTotalRenderNanos() { return lastRender2DTimeNanos + lastRender3DTimeNanos; }
+    public long getLastTickTimeNanos() { return lastTickTimeNanos; }
+
+    // Getters/setters
     public String getName() {
         return name;
     }
