@@ -87,7 +87,9 @@ public class StunVisuals extends Module {
             boolean isStunParticle = (parameters instanceof DustParticleEffect) ||
                                      (parameters.getType() == ParticleTypes.TOTEM_OF_UNDYING) ||
                                      (parameters.getType() == ParticleTypes.ENCHANT) ||
-                                     (parameters.getType() == ParticleTypes.ELECTRIC_SPARK);
+                                     (parameters.getType() == ParticleTypes.CRIT) ||
+                                     (parameters.getType() == ParticleTypes.FALLING_DUST) ||
+                                     (parameters.getType() == ParticleTypes.FLAME);
 
             if (isStunParticle && activeZones.size() < 4) {
                 activeZones.add(new StunZone(x, y, z, defHalf, false, now));
