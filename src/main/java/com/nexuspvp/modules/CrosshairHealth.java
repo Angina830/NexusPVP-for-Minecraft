@@ -17,6 +17,7 @@ public class CrosshairHealth extends Module {
     private final NumberSetting posY = addSetting(new NumberSetting("PosY", 26, -400, 400, 2));
     private final NumberSetting width = addSetting(new NumberSetting("Width", 72, 30, 160, 2));
     private final NumberSetting height = addSetting(new NumberSetting("Height", 4, 2, 10, 1));
+    private final NumberSetting opacity = addSetting(new NumberSetting("Opacity", 1.0, 0.1, 1.0, 0.05));
     private final BooleanSetting showNumbers = addSetting(new BooleanSetting("ShowNumbers", true));
     private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
     private final BooleanSetting ghostHeal = addSetting(new BooleanSetting("GhostHeal", true));
@@ -83,6 +84,10 @@ public class CrosshairHealth extends Module {
         fadeAlpha += (targetFade - fadeAlpha) * 0.20f;
         if (fadeAlpha <= 0.01f) return;
 
+        float op = opacity.getFloatValue();
+        int globalAlpha = (int) (255 * fadeAlpha * op);
+        if (globalAlpha <= 3) return;
+
         int screenW = mc.getWindow().getScaledWidth();
         int screenH = mc.getWindow().getScaledHeight();
 
@@ -137,15 +142,16 @@ public class CrosshairHealth extends Module {
             healGhostHealth = MathHelper.lerp(0.12f, healGhostHealth, animatedHealth);
         }
 
-        int globalAlpha = (int) (255 * fadeAlpha);
-
         // 1. Sleek Background Track
         int pad = 2;
         int totalCardH = barH + (animatedAbsorption > 0.1f ? 5 : 0) + (showNumbers.isEnabled() ? 10 : 0);
         int bgY = showNumbers.isEnabled() ? barY - 9 : barY - pad;
         
-        RenderUtils.drawRoundedRect(matrices, barX - pad - 1, bgY - 1, barW + (pad * 2) + 2, totalCardH + (pad * 2) + 2, 4, (0xAA << 24) | 0x1E1F22);
-        RenderUtils.drawRoundedRect(matrices, barX - pad, bgY, barW + (pad * 2), totalCardH + (pad * 2), 3, (0xDD << 24) | 0x16171A);
+        int bgBorderA = (int) (0xAA * fadeAlpha * op);
+        int bgInnerA = (int) (0xDD * fadeAlpha * op);
+
+        RenderUtils.drawRoundedRect(matrices, barX - pad - 1, bgY - 1, barW + (pad * 2) + 2, totalCardH + (pad * 2) + 2, 4, (bgBorderA << 24) | 0x1E1F22);
+        RenderUtils.drawRoundedRect(matrices, barX - pad, bgY, barW + (pad * 2), totalCardH + (pad * 2), 3, (bgInnerA << 24) | 0x16171A);
 
         // 2. Optional Compact Numeric Text
         if (showNumbers.isEnabled()) {
@@ -171,7 +177,7 @@ public class CrosshairHealth extends Module {
             }
         }
 
-        // 5. Ghost Heal Bar (Bright Emerald Green highlight showing healed amount)
+        // 5. Ghost Heal Bar (Bright Emerald Green highlight)
         if (ghostHeal.isEnabled() && healGhostHealth > animatedHealth) {
             float healPct = MathHelper.clamp(healGhostHealth / maxHp, 0.0f, 1.0f);
             float healW = barW * healPct;

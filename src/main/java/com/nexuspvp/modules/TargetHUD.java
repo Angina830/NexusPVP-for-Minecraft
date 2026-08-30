@@ -20,6 +20,7 @@ public class TargetHUD extends Module {
     private final NumberSetting posX = addSetting(new NumberSetting("PosX", 0, -500, 500, 5));
     private final NumberSetting posY = addSetting(new NumberSetting("PosY", 60, -400, 400, 5));
     private final NumberSetting scale = addSetting(new NumberSetting("Scale", 1.0, 0.5, 2.0, 0.05));
+    private final NumberSetting opacity = addSetting(new NumberSetting("Opacity", 1.0, 0.1, 1.0, 0.05));
     private final BooleanSetting preview = addSetting(new BooleanSetting("Preview", false));
 
     private LivingEntity target = null;
@@ -92,8 +93,11 @@ public class TargetHUD extends Module {
         int cardY = centerY;
 
         // Card background (Discord dark theme)
-        RenderUtils.drawRoundedRect(matrices, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 6, 0xEE5865F2);
-        RenderUtils.drawRoundedRect(matrices, cardX, cardY, cardW, cardH, 5, 0xFA1E1F22);
+        float op = opacity.getFloatValue();
+        int borderCol = ((int)(0xEE * op) << 24) | 0x5865F2;
+        int bgCol = ((int)(0xFA * op) << 24) | 0x1E1F22;
+        RenderUtils.drawRoundedRect(matrices, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 6, borderCol);
+        RenderUtils.drawRoundedRect(matrices, cardX, cardY, cardW, cardH, 5, bgCol);
 
         String name = isPreview ? (mc.player != null ? mc.player.getName().getString() : "PlayerTarget") : (target != null ? target.getName().getString() : "Target");
         float maxHp = isPreview ? 20.0f : (target != null ? target.getMaxHealth() : 20.0f);

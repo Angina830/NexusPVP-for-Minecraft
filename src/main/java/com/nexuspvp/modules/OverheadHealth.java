@@ -31,6 +31,7 @@ public class OverheadHealth extends Module {
     private final BooleanSetting hideBehindWalls = addSetting(new BooleanSetting("HideBehindWalls", true));
     private final BooleanSetting ghostDamage = addSetting(new BooleanSetting("GhostDamage", true));
     private final NumberSetting range = addSetting(new NumberSetting("Range", 35.0, 5.0, 60.0, 1.0));
+    private final NumberSetting opacity = addSetting(new NumberSetting("Opacity", 1.0, 0.1, 1.0, 0.05));
 
     private static class HealthTracker {
         float animatedHealth;
@@ -206,10 +207,13 @@ public class OverheadHealth extends Module {
         buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
 
         // 1. Blurple border
-        addQuad(buffer, cardX - 1, cardY - 1, cardW + 2, cardH + 2, 0xEE5865F2);
+        float op = opacity.getFloatValue();
+        int borderCol = ((int)(0xEE * op) << 24) | 0x5865F2;
+        int bgCol = ((int)(0xFA * op) << 24) | 0x1E1F22;
+        addQuad(buffer, cardX - 1, cardY - 1, cardW + 2, cardH + 2, borderCol);
 
         // 2. Dark Discord background
-        addQuad(buffer, cardX, cardY, cardW, cardH, 0xFA1E1F22);
+        addQuad(buffer, cardX, cardY, cardW, cardH, bgCol);
 
         // 3. Health bar track
         addQuad(buffer, barX, barY, barW, barH, 0xFF2B2D31);
