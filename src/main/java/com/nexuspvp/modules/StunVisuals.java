@@ -70,6 +70,19 @@ public class StunVisuals extends Module {
             this.centerZ = (minZ + maxZ) / 2.0;
         }
 
+        public void mergeWith(StunZone other) {
+            this.minX = Math.min(this.minX, other.minX);
+            this.maxX = Math.max(this.maxX, other.maxX);
+            this.minZ = Math.min(this.minZ, other.minZ);
+            this.maxZ = Math.max(this.maxZ, other.maxZ);
+            this.groundY = Math.min(this.groundY, other.groundY);
+            this.centerX = (minX + maxX) / 2.0;
+            this.centerZ = (minZ + maxZ) / 2.0;
+            this.particleCount += other.particleCount;
+            this.lastSeen = Math.max(this.lastSeen, other.lastSeen);
+            this.firstSeen = Math.min(this.firstSeen, other.firstSeen);
+        }
+
         public boolean isConfirmed() {
             return particleCount >= 6 && ((maxX - minX) >= 3.0 || (maxZ - minZ) >= 3.0);
         }
@@ -115,20 +128,18 @@ public class StunVisuals extends Module {
         if (!isExactYellowStunDust) return false;
 
         Vec3d pPos = mc.player.getPos();
-        // Track stuns anywhere across the battlefield (up to 120 blocks)
         if (Math.hypot(x - pPos.x, z - pPos.z) > 120.0) return false;
 
         synchronized (activeZones) {
-            // Cluster check per trap (radius 25.0 blocks)
+            // Cluster check within 32.0 blocks (covers entire 30x30 trap diagonal)
             for (StunZone zone : activeZones) {
                 double dist = Math.hypot(x - zone.centerX, z - zone.centerZ);
-                if (dist <= 25.0) {
+                if (dist <= 32.0) {
                     zone.addParticle(x, y, z, now);
-                    return true; // 100% Silence ALL server yellow stun particles
+                    return true; // Silence particle
                 }
             }
 
-            // Support up to 16 simultaneous stun traps across the battlefield!
             if (activeZones.size() < 16) {
                 activeZones.add(new StunZone(x, y, z, now));
                 return true; // Silence initial particle
@@ -144,7 +155,7 @@ public class StunVisuals extends Module {
         long now = System.currentTimeMillis();
         Vec3d pPos = mc.player.getPos();
 
-        // Only clear zones on massive match/world teleport (> 400 blocks in a single tick)
+        // Clear only on massive match/world teleport (> 400 blocks)
         if (lastPlayerPos != null && pPos.distanceTo(lastPlayerPos) > 400.0) {
             synchronized (activeZones) {
                 activeZones.clear();
@@ -166,6 +177,20 @@ public class StunVisuals extends Module {
         }
 
         synchronized (activeZones) {
+            // 1. AUTOMATIC ZONE MERGING: Merge any zones closer than 26 blocks (eliminates nested/duplicate boxes!)
+            for (int i = 0; i < activeZones.size(); i++) {
+                StunZone a = activeZones.get(i);
+                for (int j = i + 1; j < activeZones.size(); j++) {
+                    StunZone b = activeZones.get(j);
+                    if (Math.hypot(a.centerX - b.centerX, a.centerZ - b.centerZ) <= 26.0) {
+                        a.mergeWith(b);
+                        activeZones.remove(j);
+                        j--;
+                    }
+                }
+            }
+
+            // 2. Timeout cleanup
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
@@ -173,7 +198,6 @@ public class StunVisuals extends Module {
                     it.remove();
                     continue;
                 }
-                // Each stun trap lives for its full 15.5-second official duration
                 if (z.isConfirmed() && (now - z.lastSeen > 15500 || now - z.firstSeen > 16000)) {
                     it.remove();
                 }
