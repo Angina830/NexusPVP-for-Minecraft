@@ -17,7 +17,6 @@ import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3f;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.Color;
@@ -31,41 +30,66 @@ public class StunVisuals extends Module {
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 190)));
     private final NumberSetting defaultRadius = addSetting(new NumberSetting("HalfSize", 7.0, 2.0, 15.0, 0.5));
     private final BooleanSetting autoDetect = addSetting(new BooleanSetting("AutoDetect", true));
-    private final NumberSetting height = addSetting(new NumberSetting("Height", 3.5, 1.0, 8.0, 0.5));
+    private final NumberSetting height = addSetting(new NumberSetting("Height", 4.0, 1.0, 8.0, 0.5));
     private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 2.5, 1.0, 5.0, 0.5));
     private final BooleanSetting pulse = addSetting(new BooleanSetting("Pulsing", true));
     private final BooleanSetting hideParticles = addSetting(new BooleanSetting("HideParticles", true));
     private final BooleanSetting warning = addSetting(new BooleanSetting("Warning", true));
 
     public static class StunZone {
-        public Vec3d center;
-        public double radius; // Half-width of square (e.g. 7.0 blocks)
+        public double minX, maxX;
+        public double minZ, maxZ;
+        public double minY, maxY;
+        public double centerX, centerZ;
         public long firstSeen;
         public long lastSeen;
         public int particleCount;
-        public boolean confirmed; // Only renders when confirmed by high particle density
+        public boolean confirmed;
 
-        public StunZone(Vec3d center, double radius, long now) {
-            this.center = center;
-            this.radius = radius;
+        public StunZone(double x, double y, double z, double defaultHalf, long now) {
+            this.minX = x;
+            this.maxX = x;
+            this.minZ = z;
+            this.maxZ = z;
+            this.minY = y;
+            this.maxY = y;
+            this.centerX = x;
+            this.centerZ = z;
             this.firstSeen = now;
             this.lastSeen = now;
             this.particleCount = 1;
             this.confirmed = false;
         }
 
-        public boolean isInside(Vec3d pos) {
-            double dx = Math.abs(pos.x - center.x);
-            double dz = Math.abs(pos.z - center.z);
-            return dx <= radius && dz <= radius;
+        public void addParticle(double x, double y, double z, long now) {
+            this.lastSeen = now;
+            this.particleCount++;
+            this.minX = Math.min(minX, x);
+            this.maxX = Math.max(maxX, x);
+            this.minZ = Math.min(minZ, z);
+            this.maxZ = Math.max(maxZ, z);
+            this.minY = Math.min(minY, y);
+            this.maxY = Math.max(maxY, y);
+
+            // Compute true geometrical center of all particles
+            this.centerX = (minX + maxX) / 2.0;
+            this.centerZ = (minZ + maxZ) / 2.0;
+
+            // Confirm when at least 15 perimeter particles have been received
+            if (particleCount >= 15 && (maxX - minX > 3.0 || maxZ - minZ > 3.0)) {
+                this.confirmed = true;
+            }
+        }
+
+        public boolean isInside(Vec3d pos, double fallbackHalf) {
+            double hx = confirmed ? Math.max((maxX - minX) / 2.0, fallbackHalf) : fallbackHalf;
+            double hz = confirmed ? Math.max((maxZ - minZ) / 2.0, fallbackHalf) : fallbackHalf;
+            return Math.abs(pos.x - centerX) <= hx && Math.abs(pos.z - centerZ) <= hz;
         }
     }
 
     private final List<StunZone> activeZones = new ArrayList<>();
     private float pulseAnim = 0f;
-
-    // Minimum particles in a cluster required to confirm a real HolyWorld Stun (avoids crits/torches)
-    private static final int CONFIRMATION_THRESHOLD = 8;
 
     public StunVisuals() {
         super("StunVisuals", "HolyWorld Square Stun Trap / Anti-Pearl Zone continuous neon 3D barrier", Category.VISUAL);
@@ -82,14 +106,12 @@ public class StunVisuals extends Module {
 
         boolean isStunCandidate = false;
 
-        // 1. Check for Dust particles with yellow/gold/amber or red/orange hue
         if (parameters instanceof DustParticleEffect) {
             DustParticleEffect dust = (DustParticleEffect) parameters;
-            Vec3f col = dust.getColor();
-            float r = col.getX();
-            float g = col.getY();
-            float b = col.getZ();
-            // Yellow / Gold / Amber / Flame dust check
+            float r = dust.getRed();
+            float g = dust.getGreen();
+            float b = dust.getBlue();
+            // Yellow / Gold / Amber / Orange Dust
             if (r > 0.5f && g > 0.4f && b < 0.6f) {
                 isStunCandidate = true;
             }
@@ -99,38 +121,24 @@ public class StunVisuals extends Module {
             isStunCandidate = true;
         }
 
-        // Ignore ordinary water, smoke, heart, portal, or sword crit particles!
         if (!isStunCandidate) return false;
 
-        Vec3d pPos = new Vec3d(x, y, z);
-        double rad = defaultRadius.getValue();
+        double defHalf = defaultRadius.getValue();
 
         synchronized (activeZones) {
+            // Check if particle falls within 14 blocks of an existing stun trap zone
             for (StunZone zone : activeZones) {
-                double dx = Math.abs(pPos.x - zone.center.x);
-                double dz = Math.abs(pPos.z - zone.center.z);
-                if (dx <= rad + 2.5 && dz <= rad + 2.5) {
-                    zone.lastSeen = now;
-                    zone.particleCount++;
-
-                    // Once threshold is reached, zone is confirmed as a HolyWorld Stun!
-                    if (zone.particleCount >= CONFIRMATION_THRESHOLD) {
-                        zone.confirmed = true;
-                    }
-
-                    if (autoDetect.isEnabled() && zone.confirmed) {
-                        double maxOffset = Math.max(dx, dz);
-                        if (maxOffset > 2.0 && maxOffset < 15.0) {
-                            zone.radius = zone.radius * 0.96 + maxOffset * 0.04;
-                        }
-                    }
-                    // Only hide particle if zone is confirmed
+                double dist = Math.hypot(x - zone.centerX, z - zone.centerZ);
+                if (dist <= 14.0) {
+                    zone.addParticle(x, y, z, now);
                     return zone.confirmed;
                 }
             }
 
-            // Only track candidate cluster if close to ground (stuns are placed on blocks)
-            activeZones.add(new StunZone(pPos, rad, now));
+            // Create new candidate trap (capped at 4 active zones max)
+            if (activeZones.size() < 4) {
+                activeZones.add(new StunZone(x, y, z, defHalf, now));
+            }
         }
         return false;
     }
@@ -143,8 +151,7 @@ public class StunVisuals extends Module {
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
-                // Unconfirmed clusters die after 1.5 seconds; confirmed stuns die after 6.5s without particles
-                long timeout = z.confirmed ? 6500 : 1500;
+                long timeout = z.confirmed ? 6000 : 1200;
                 if (now - z.lastSeen > timeout) {
                     it.remove();
                 }
@@ -168,6 +175,7 @@ public class StunVisuals extends Module {
         String curStyle = style.getValue();
         float h = height.getFloatValue();
         float lw = lineWidth.getFloatValue();
+        double defHalf = defaultRadius.getValue();
 
         RenderSystem.enableBlend();
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
@@ -182,20 +190,18 @@ public class StunVisuals extends Module {
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
-                // ONLY RENDER CONFIRMED STUN ZONES!
                 if (!zone.confirmed) continue;
 
-                double cx = zone.center.x - camPos.x;
-                double cy = zone.center.y - camPos.y;
-                double cz = zone.center.z - camPos.z;
-                double rad = zone.radius;
+                // Snap to clean integer block boundaries
+                double halfX = autoDetect.isEnabled() ? Math.max((zone.maxX - zone.minX) / 2.0, defHalf) : defHalf;
+                double halfZ = autoDetect.isEnabled() ? Math.max((zone.maxZ - zone.minZ) / 2.0, defHalf) : defHalf;
 
-                double x1 = cx - rad;
-                double x2 = cx + rad;
-                double z1 = cz - rad;
-                double z2 = cz + rad;
-                double y1 = cy;
-                double y2 = cy + h;
+                double x1 = Math.floor(zone.centerX - halfX) - camPos.x;
+                double x2 = Math.ceil(zone.centerX + halfX) - camPos.x;
+                double z1 = Math.floor(zone.centerZ - halfZ) - camPos.z;
+                double z2 = Math.ceil(zone.centerZ + halfZ) - camPos.z;
+                double y1 = Math.floor(zone.minY) - camPos.y;
+                double y2 = y1 + h;
 
                 // 1. Semi-transparent 4 Vertical Square Walls
                 if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
@@ -263,10 +269,11 @@ public class StunVisuals extends Module {
 
         Vec3d pPos = mc.player.getPos();
         boolean insideAny = false;
+        double defHalf = defaultRadius.getValue();
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
-                if (zone.confirmed && zone.isInside(pPos)) {
+                if (zone.confirmed && zone.isInside(pPos, defHalf)) {
                     insideAny = true;
                     break;
                 }
