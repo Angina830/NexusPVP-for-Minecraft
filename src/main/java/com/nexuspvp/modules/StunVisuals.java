@@ -16,8 +16,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
 
@@ -98,7 +96,7 @@ public class StunVisuals extends Module {
         if (!isEnabled() || mc.world == null || mc.player == null) return false;
         long now = System.currentTimeMillis();
 
-        // 100% Strict HolyWorld Stun Signature: "minecraft:dust 1.00 1.00 0.00 1.00"
+        // Strict HolyWorld Stun Particle Signature: "minecraft:dust 1.00 1.00 0.00 1.00"
         boolean isExactYellowStunDust = false;
         if (parameters instanceof DustParticleEffect) {
             DustParticleEffect dust = (DustParticleEffect) parameters;
@@ -188,7 +186,7 @@ public class StunVisuals extends Module {
 
     @Override
     public void onRender3D(MatrixStack matrices, float tickDelta) {
-        if (mc.player == null || mc.world == null || matrices == null) return;
+        if (mc.player == null || mc.world == null) return;
         if (activeZones.isEmpty() && testZone == null) return;
 
         Vec3d cam = mc.gameRenderer.getCamera().getPos();
@@ -214,11 +212,11 @@ public class StunVisuals extends Module {
             }
         }
 
-        matrices.push();
-        matrices.translate(-cam.x, -cam.y, -cam.z);
+        // Lock rendering firmly to World Coordinates
+        RenderUtils.setupBloom3D();
+        RenderSystem.pushMatrix();
+        RenderSystem.translated(-cam.x, -cam.y, -cam.z);
 
-        RenderUtils.setup3D();
-        Matrix4f matrix = matrices.peek().getModel();
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
 
@@ -233,7 +231,7 @@ public class StunVisuals extends Module {
             float minY = (float) surfaceFloor;
             float maxY = minY + userH;
 
-            // 1. Semi-transparent Vertical Walls with Matrix4f projection
+            // 1. Semi-transparent 4 Vertical Square Walls
             if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
                 int wallAlphaBottom = Math.min(255, (int) (a * 0.35f));
                 int wallAlphaTop = Math.min(255, (int) (a * 0.12f));
@@ -241,73 +239,71 @@ public class StunVisuals extends Module {
                 buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
 
                 // North Wall (Z = minZ)
-                buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
-                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(minX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(maxX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(maxX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(minX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
 
                 // East Wall (X = maxX)
-                buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
-                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(maxX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(maxX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(maxX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(maxX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
 
                 // South Wall (Z = maxZ)
-                buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
-                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(maxX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(minX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(minX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(maxX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
 
                 // West Wall (X = minX)
-                buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
-                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
-                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(minX, minY, maxZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(minX, minY, minZ).color(r, g, b, wallAlphaBottom).next();
+                buffer.vertex(minX, maxY, minZ).color(r, g, b, wallAlphaTop).next();
+                buffer.vertex(minX, maxY, maxZ).color(r, g, b, wallAlphaTop).next();
 
                 tessellator.draw();
             }
 
-            // 2. Exact Outline Box & 4 Vertical Pillars
+            // 2. Exact Outline Box
             GL11.glLineWidth(lw);
             buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
 
-            // Ground Square (Floor rim)
-            buffer.vertex(matrix, minX, minY + 0.03f, minZ).color(r, g, b, a).next();
-            buffer.vertex(matrix, maxX, minY + 0.03f, minZ).color(r, g, b, a).next();
-            buffer.vertex(matrix, maxX, minY + 0.03f, minZ).color(r, g, b, a).next();
-            buffer.vertex(matrix, maxX, minY + 0.03f, maxZ).color(r, g, b, a).next();
-            buffer.vertex(matrix, maxX, minY + 0.03f, maxZ).color(r, g, b, a).next();
-            buffer.vertex(matrix, minX, minY + 0.03f, maxZ).color(r, g, b, a).next();
-            buffer.vertex(matrix, minX, minY + 0.03f, maxZ).color(r, g, b, a).next();
-            buffer.vertex(matrix, minX, minY + 0.03f, minZ).color(r, g, b, a).next();
+            // Ground Floor Rim
+            buffer.vertex(minX, minY + 0.03f, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, minY + 0.03f, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, minY + 0.03f, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, minY + 0.03f, maxZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, minY + 0.03f, maxZ).color(r, g, b, a).next();
+            buffer.vertex(minX, minY + 0.03f, maxZ).color(r, g, b, a).next();
+            buffer.vertex(minX, minY + 0.03f, maxZ).color(r, g, b, a).next();
+            buffer.vertex(minX, minY + 0.03f, minZ).color(r, g, b, a).next();
 
-            // Top Square (Sky rim)
-            if (!curStyle.equals("SquareOutline")) {
-                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a).next();
+            // Sky Rim
+            buffer.vertex(minX, maxY, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, maxY, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, maxY, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, maxY, maxZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, maxY, maxZ).color(r, g, b, a).next();
+            buffer.vertex(minX, maxY, maxZ).color(r, g, b, a).next();
+            buffer.vertex(minX, maxY, maxZ).color(r, g, b, a).next();
+            buffer.vertex(minX, maxY, minZ).color(r, g, b, a).next();
 
-                // 4 Vertical Corner Pillars
-                buffer.vertex(matrix, minX, minY, minZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, minX, maxY, minZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, maxX, minY, minZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, maxX, maxY, minZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, maxX, minY, maxZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, maxX, maxY, maxZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, minX, minY, maxZ).color(r, g, b, a).next();
-                buffer.vertex(matrix, minX, maxY, maxZ).color(r, g, b, a).next();
-            }
+            // 4 Vertical Corner Pillars
+            buffer.vertex(minX, minY, minZ).color(r, g, b, a).next();
+            buffer.vertex(minX, maxY, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, minY, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, maxY, minZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, minY, maxZ).color(r, g, b, a).next();
+            buffer.vertex(maxX, maxY, maxZ).color(r, g, b, a).next();
+            buffer.vertex(minX, minY, maxZ).color(r, g, b, a).next();
+            buffer.vertex(minX, maxY, maxZ).color(r, g, b, a).next();
 
             tessellator.draw();
         }
 
-        RenderUtils.cleanup3D();
-        matrices.pop();
+        RenderSystem.popMatrix();
+        RenderUtils.cleanupBloom3D();
     }
 
     @Override
