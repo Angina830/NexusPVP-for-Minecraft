@@ -26,7 +26,7 @@ import java.util.List;
 
 public class StunVisuals extends Module {
 
-    private final ModeSetting style = addSetting(new ModeSetting("Style", "ForcefieldPrism", "ForcefieldPrism", "GroundSquareOnly", "LaserWalls", "WireframeCube"));
+    private final ModeSetting style = addSetting(new ModeSetting("Style", "LaserWalls", "LaserWalls", "ForcefieldPrism", "GroundSquareOnly", "WireframeCube"));
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 220)));
     private final NumberSetting height = addSetting(new NumberSetting("Height", 25.0, 5.0, 35.0, 1.0));
     private final NumberSetting fillAlpha = addSetting(new NumberSetting("FillAlpha", 55, 10, 150, 5));
@@ -71,7 +71,7 @@ public class StunVisuals extends Module {
         }
 
         public boolean isConfirmed() {
-            return particleCount >= 8 && ((maxX - minX) >= 4.0 || (maxZ - minZ) >= 4.0);
+            return particleCount >= 6 && ((maxX - minX) >= 3.0 || (maxZ - minZ) >= 3.0);
         }
 
         public boolean isInside(Vec3d pos) {
@@ -97,6 +97,7 @@ public class StunVisuals extends Module {
         if (!isEnabled() || mc.world == null || mc.player == null) return false;
         long now = System.currentTimeMillis();
 
+        // 100% Strict HolyWorld Stun Signature: "minecraft:dust 1.00 1.00 0.00 1.00"
         boolean isExactYellowStunDust = false;
         if (parameters instanceof DustParticleEffect) {
             DustParticleEffect dust = (DustParticleEffect) parameters;
@@ -113,7 +114,8 @@ public class StunVisuals extends Module {
         if (!isExactYellowStunDust) return false;
 
         Vec3d pPos = mc.player.getPos();
-        if (Math.hypot(x - pPos.x, z - pPos.z) > 60.0) return false;
+        // Ignore any particles beyond local arena radius (35 blocks)
+        if (Math.hypot(x - pPos.x, z - pPos.z) > 35.0) return false;
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
@@ -124,7 +126,7 @@ public class StunVisuals extends Module {
                 }
             }
 
-            if (activeZones.size() < 4) {
+            if (activeZones.size() < 2) {
                 activeZones.add(new StunZone(x, y, z, now));
                 return true; // Silence initial particle
             }
@@ -137,10 +139,10 @@ public class StunVisuals extends Module {
         pulseAnim += 0.04f;
         if (mc.world == null || mc.player == null) return;
         long now = System.currentTimeMillis();
+        Vec3d pPos = mc.player.getPos();
 
         if (testMode.isEnabled()) {
             if (testZone == null) {
-                Vec3d pPos = mc.player.getPos();
                 testZone = new StunZone(pPos.x - 15.0, pPos.y, pPos.z - 15.0, now);
                 testZone.maxX = pPos.x + 15.0;
                 testZone.maxZ = pPos.z + 15.0;
@@ -156,6 +158,12 @@ public class StunVisuals extends Module {
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
+                // Purge immediately if player teleported to another arena (> 35 blocks away)
+                double distToPlayer = Math.hypot(z.centerX - pPos.x, z.centerZ - pPos.z);
+                if (distToPlayer > 35.0) {
+                    it.remove();
+                    continue;
+                }
                 if (!z.isConfirmed() && (now - z.firstSeen > 1200)) {
                     it.remove();
                     continue;
@@ -190,6 +198,7 @@ public class StunVisuals extends Module {
         if (activeZones.isEmpty() && testZone == null) return;
 
         Vec3d cam = mc.gameRenderer.getCamera().getPos();
+        Vec3d pPos = mc.player.getPos();
         Color baseCol = color.getColor();
         float pulseMul = pulse.isEnabled() ? (0.85f + (float) Math.sin(pulseAnim * 3.5f) * 0.15f) : 1.0f;
         
@@ -209,7 +218,10 @@ public class StunVisuals extends Module {
         }
         synchronized (activeZones) {
             for (StunZone z : activeZones) {
-                if (z.isConfirmed()) toRender.add(z);
+                // Strictly render ONLY the current local stun in this arena
+                if (z.isConfirmed() && Math.hypot(z.centerX - pPos.x, z.centerZ - pPos.z) <= 35.0) {
+                    toRender.add(z);
+                }
             }
         }
 
@@ -231,7 +243,7 @@ public class StunVisuals extends Module {
             float minY = (float) surfaceFloor;
             float maxY = minY + userH;
 
-            // 1. Semi-transparent Glowing Forcefield Walls (Clear 3D Depth)
+            // 1. Semi-transparent Glowing Forcefield Walls
             if (!curStyle.equals("GroundSquareOnly") && !curStyle.equals("WireframeCube")) {
                 int wallAlphaBottom = fAlpha;
                 int wallAlphaTop = (int) (fAlpha * 0.25f);
@@ -265,7 +277,7 @@ public class StunVisuals extends Module {
                 tessellator.draw();
             }
 
-            // 2. Thick Glowing Ground Neon Square (On Floor)
+            // 2. Thick Glowing Ground Neon Square (Floor Rim)
             GL11.glLineWidth(lw);
             buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
             buffer.vertex(minX, minY + 0.04f, minZ).color(r, g, b, a).next();
@@ -274,7 +286,7 @@ public class StunVisuals extends Module {
             buffer.vertex(minX, minY + 0.04f, maxZ).color(r, g, b, a).next();
             tessellator.draw();
 
-            // 3. Sky Rim & 4 Corner Vertical Laser Pillars (Optional based on style)
+            // 3. 4 Corner Vertical Laser Pillars & Sky Rim
             if (curStyle.equals("ForcefieldPrism") || curStyle.equals("LaserWalls")) {
                 // 4 Vertical Pillars
                 buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
