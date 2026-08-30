@@ -24,9 +24,9 @@ import java.util.List;
 
 public class StunVisuals extends Module {
 
-    private final ModeSetting style = addSetting(new ModeSetting("Style", "Cylinder", "Cylinder", "Ring", "Forcefield", "Wireframe"));
+    private final ModeSetting style = addSetting(new ModeSetting("Style", "SquareBox", "SquareBox", "SquareOutline", "ForcefieldPrism", "WireframeCube"));
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 190)));
-    private final NumberSetting defaultRadius = addSetting(new NumberSetting("Radius", 7.0, 3.0, 15.0, 0.5));
+    private final NumberSetting defaultRadius = addSetting(new NumberSetting("HalfSize", 7.0, 2.0, 15.0, 0.5));
     private final BooleanSetting autoDetect = addSetting(new BooleanSetting("AutoDetect", true));
     private final NumberSetting height = addSetting(new NumberSetting("Height", 3.5, 1.0, 8.0, 0.5));
     private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 2.5, 1.0, 5.0, 0.5));
@@ -36,7 +36,7 @@ public class StunVisuals extends Module {
 
     public static class StunZone {
         public Vec3d center;
-        public double radius;
+        public double radius; // Half-width of square
         public long firstSeen;
         public long lastSeen;
         public int particleCount;
@@ -49,10 +49,11 @@ public class StunVisuals extends Module {
             this.particleCount = 1;
         }
 
+        // Exact square/AABB box collision
         public boolean isInside(Vec3d pos) {
-            double dx = pos.x - center.x;
-            double dz = pos.z - center.z;
-            return Math.sqrt(dx * dx + dz * dz) <= radius;
+            double dx = Math.abs(pos.x - center.x);
+            double dz = Math.abs(pos.z - center.z);
+            return dx <= radius && dz <= radius;
         }
     }
 
@@ -60,7 +61,7 @@ public class StunVisuals extends Module {
     private float pulseAnim = 0f;
 
     public StunVisuals() {
-        super("StunVisuals", "HolyWorld Stun Trap / Anti-Pearl Zone continuous neon 3D barrier", Category.VISUAL);
+        super("StunVisuals", "HolyWorld Square Stun Trap / Anti-Pearl Zone continuous neon 3D barrier", Category.VISUAL);
         setEnabled(true);
     }
 
@@ -85,12 +86,16 @@ public class StunVisuals extends Module {
 
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
-                double dist = Math.hypot(pPos.x - zone.center.x, pPos.z - zone.center.z);
-                if (dist <= rad + 2.5) {
+                double dx = Math.abs(pPos.x - zone.center.x);
+                double dz = Math.abs(pPos.z - zone.center.z);
+                if (dx <= rad + 2.5 && dz <= rad + 2.5) {
                     zone.lastSeen = now;
                     zone.particleCount++;
-                    if (autoDetect.isEnabled() && dist > 2.0 && dist < 12.0) {
-                        zone.radius = zone.radius * 0.95 + dist * 0.05;
+                    if (autoDetect.isEnabled()) {
+                        double maxOffset = Math.max(dx, dz);
+                        if (maxOffset > 2.0 && maxOffset < 15.0) {
+                            zone.radius = zone.radius * 0.96 + maxOffset * 0.04;
+                        }
                     }
                     return true;
                 }
@@ -150,61 +155,77 @@ public class StunVisuals extends Module {
                 float cz = (float) (zone.center.z - camPos.z);
                 float rad = (float) zone.radius;
 
-                int segments = 64;
+                float x1 = cx - rad;
+                float x2 = cx + rad;
+                float z1 = cz - rad;
+                float z2 = cz + rad;
+                float y1 = cy;
+                float y2 = cy + h;
 
-                // 1. Semi-transparent forcefield cylinder wall (Quads)
-                if (curStyle.equals("Cylinder") || curStyle.equals("Forcefield")) {
+                // 1. Semi-transparent 4 Vertical Square Walls
+                if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
                     buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
                     float wallAlpha = a * 0.35f;
 
-                    for (int i = 0; i < segments; i++) {
-                        double a1 = 2 * Math.PI * i / segments;
-                        double a2 = 2 * Math.PI * (i + 1) / segments;
+                    // North wall
+                    buffer.vertex(mat, x1, y1, z1).color(r, g, b, wallAlpha).next();
+                    buffer.vertex(mat, x2, y1, z1).color(r, g, b, wallAlpha).next();
+                    buffer.vertex(mat, x2, y2, z1).color(r, g, b, 0.0f).next();
+                    buffer.vertex(mat, x1, y2, z1).color(r, g, b, 0.0f).next();
 
-                        float x1 = cx + (float) (Math.cos(a1) * rad);
-                        float z1 = cz + (float) (Math.sin(a1) * rad);
-                        float x2 = cx + (float) (Math.cos(a2) * rad);
-                        float z2 = cz + (float) (Math.sin(a2) * rad);
+                    // East wall
+                    buffer.vertex(mat, x2, y1, z1).color(r, g, b, wallAlpha).next();
+                    buffer.vertex(mat, x2, y1, z2).color(r, g, b, wallAlpha).next();
+                    buffer.vertex(mat, x2, y2, z2).color(r, g, b, 0.0f).next();
+                    buffer.vertex(mat, x2, y2, z1).color(r, g, b, 0.0f).next();
 
-                        buffer.vertex(mat, x1, cy, z1).color(r, g, b, wallAlpha).next();
-                        buffer.vertex(mat, x2, cy, z2).color(r, g, b, wallAlpha).next();
-                        buffer.vertex(mat, x2, cy + h, z2).color(r, g, b, 0.0f).next();
-                        buffer.vertex(mat, x1, cy + h, z1).color(r, g, b, 0.0f).next();
-                    }
+                    // South wall
+                    buffer.vertex(mat, x2, y1, z2).color(r, g, b, wallAlpha).next();
+                    buffer.vertex(mat, x1, y1, z2).color(r, g, b, wallAlpha).next();
+                    buffer.vertex(mat, x1, y2, z2).color(r, g, b, 0.0f).next();
+                    buffer.vertex(mat, x2, y2, z2).color(r, g, b, 0.0f).next();
+
+                    // West wall
+                    buffer.vertex(mat, x1, y1, z2).color(r, g, b, wallAlpha).next();
+                    buffer.vertex(mat, x1, y1, z1).color(r, g, b, wallAlpha).next();
+                    buffer.vertex(mat, x1, y2, z1).color(r, g, b, 0.0f).next();
+                    buffer.vertex(mat, x1, y2, z2).color(r, g, b, 0.0f).next();
+
                     tessellator.draw();
                 }
 
-                // 2. Ground and Top Lines
+                // 2. Ground & Top Lines
                 buffer.begin(VertexFormat.DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR);
-                for (int i = 0; i < segments; i++) {
-                    double a1 = 2 * Math.PI * i / segments;
-                    double a2 = 2 * Math.PI * (i + 1) / segments;
+                // Ground square
+                buffer.vertex(mat, x1, y1 + 0.05f, z1).color(r, g, b, a).next();
+                buffer.vertex(mat, x2, y1 + 0.05f, z1).color(r, g, b, a).next();
+                buffer.vertex(mat, x2, y1 + 0.05f, z1).color(r, g, b, a).next();
+                buffer.vertex(mat, x2, y1 + 0.05f, z2).color(r, g, b, a).next();
+                buffer.vertex(mat, x2, y1 + 0.05f, z2).color(r, g, b, a).next();
+                buffer.vertex(mat, x1, y1 + 0.05f, z2).color(r, g, b, a).next();
+                buffer.vertex(mat, x1, y1 + 0.05f, z2).color(r, g, b, a).next();
+                buffer.vertex(mat, x1, y1 + 0.05f, z1).color(r, g, b, a).next();
 
-                    float x1 = cx + (float) (Math.cos(a1) * rad);
-                    float z1 = cz + (float) (Math.sin(a1) * rad);
-                    float x2 = cx + (float) (Math.cos(a2) * rad);
-                    float z2 = cz + (float) (Math.sin(a2) * rad);
+                // Top square & Vertical Corner Pillars
+                if (!curStyle.equals("SquareOutline")) {
+                    buffer.vertex(mat, x1, y2, z1).color(r, g, b, a * 0.5f).next();
+                    buffer.vertex(mat, x2, y2, z1).color(r, g, b, a * 0.5f).next();
+                    buffer.vertex(mat, x2, y2, z1).color(r, g, b, a * 0.5f).next();
+                    buffer.vertex(mat, x2, y2, z2).color(r, g, b, a * 0.5f).next();
+                    buffer.vertex(mat, x2, y2, z2).color(r, g, b, a * 0.5f).next();
+                    buffer.vertex(mat, x1, y2, z2).color(r, g, b, a * 0.5f).next();
+                    buffer.vertex(mat, x1, y2, z2).color(r, g, b, a * 0.5f).next();
+                    buffer.vertex(mat, x1, y2, z1).color(r, g, b, a * 0.5f).next();
 
-                    // Ground ring
-                    buffer.vertex(mat, x1, cy + 0.05f, z1).color(r, g, b, a).next();
-                    buffer.vertex(mat, x2, cy + 0.05f, z2).color(r, g, b, a).next();
-
-                    // Waist ring
-                    if (!curStyle.equals("Ring")) {
-                        buffer.vertex(mat, x1, cy + h * 0.5f, z1).color(r, g, b, a * 0.6f).next();
-                        buffer.vertex(mat, x2, cy + h * 0.5f, z2).color(r, g, b, a * 0.6f).next();
-                    }
-                }
-
-                // Wireframe vertical pillars
-                if (curStyle.equals("Wireframe") || curStyle.equals("Forcefield")) {
-                    for (int i = 0; i < 16; i++) {
-                        double ang = 2 * Math.PI * i / 16;
-                        float px = cx + (float) (Math.cos(ang) * rad);
-                        float pz = cz + (float) (Math.sin(ang) * rad);
-                        buffer.vertex(mat, px, cy, pz).color(r, g, b, a * 0.7f).next();
-                        buffer.vertex(mat, px, cy + h, pz).color(r, g, b, 0.0f).next();
-                    }
+                    // Corner pillars
+                    buffer.vertex(mat, x1, y1, z1).color(r, g, b, a).next();
+                    buffer.vertex(mat, x1, y2, z1).color(r, g, b, 0.0f).next();
+                    buffer.vertex(mat, x2, y1, z1).color(r, g, b, a).next();
+                    buffer.vertex(mat, x2, y2, z1).color(r, g, b, 0.0f).next();
+                    buffer.vertex(mat, x2, y1, z2).color(r, g, b, a).next();
+                    buffer.vertex(mat, x2, y2, z2).color(r, g, b, 0.0f).next();
+                    buffer.vertex(mat, x1, y1, z2).color(r, g, b, a).next();
+                    buffer.vertex(mat, x1, y2, z2).color(r, g, b, 0.0f).next();
                 }
                 tessellator.draw();
             }
@@ -234,7 +255,7 @@ public class StunVisuals extends Module {
         if (insideAny) {
             int screenW = Compat.getScaledWidth();
             int screenH = Compat.getScaledHeight();
-            String text = "§e§l⚠ STUN ZONE - NO PEARLS! ⚠";
+            String text = "§e§l⚠ SQUARE STUN ZONE - NO PEARLS! ⚠";
             int textW = mc.textRenderer.getWidth(text);
             int x = screenW / 2 - textW / 2;
             int y = screenH / 2 + 35;
