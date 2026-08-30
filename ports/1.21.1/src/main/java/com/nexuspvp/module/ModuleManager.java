@@ -98,7 +98,9 @@ public class ModuleManager {
     public void onTick() {
         for (Module module : modules) {
             if (module.isEnabled()) {
+                long start = System.nanoTime();
                 module.onTick();
+                module.recordTickTime(System.nanoTime() - start);
             }
         }
     }
@@ -106,7 +108,9 @@ public class ModuleManager {
     public void onRender2D(net.minecraft.client.util.math.MatrixStack matrices, float tickDelta) {
         for (Module module : modules) {
             if (module.isEnabled()) {
+                long start = System.nanoTime();
                 module.onRender2D(matrices, tickDelta);
+                module.recordRender2DTime(System.nanoTime() - start);
             }
         }
     }
@@ -114,7 +118,9 @@ public class ModuleManager {
     public void onRender3D(net.minecraft.client.util.math.MatrixStack matrices, float tickDelta) {
         for (Module module : modules) {
             if (module.isEnabled()) {
+                long start = System.nanoTime();
                 module.onRender3D(matrices, tickDelta);
+                module.recordRender3DTime(System.nanoTime() - start);
             }
         }
     }
