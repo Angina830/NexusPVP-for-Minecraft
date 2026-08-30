@@ -203,6 +203,22 @@ public class ClickGui extends Screen {
         return false;
     }
 
+    public List<ModuleButton> getCardsForTab(Tab tab) {
+        List<ModuleButton> cards = new ArrayList<>();
+        if (tab == Tab.PVP) {
+            if (moduleCards.get(Category.PVP) != null) cards.addAll(moduleCards.get(Category.PVP));
+            if (moduleCards.get(Category.MISC) != null) cards.addAll(moduleCards.get(Category.MISC));
+        } else if (tab == Tab.HUD) {
+            if (moduleCards.get(Category.HUD) != null) cards.addAll(moduleCards.get(Category.HUD));
+        } else if (tab == Tab.PLAYER) {
+            if (moduleCards.get(Category.PLAYER) != null) cards.addAll(moduleCards.get(Category.PLAYER));
+        } else if (tab == Tab.VISUAL) {
+            if (moduleCards.get(Category.VISUAL) != null) cards.addAll(moduleCards.get(Category.VISUAL));
+            if (moduleCards.get(Category.RENDER) != null) cards.addAll(moduleCards.get(Category.RENDER));
+        }
+        return cards;
+    }
+
     @Override
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
         fill(matrices, 0, 0, this.width, this.height, applyAlpha(0xC0111214, menuAlpha));
@@ -333,18 +349,7 @@ public class ClickGui extends Screen {
             }
             RenderUtils.endScissor();
         } else if (currentTab == Tab.PVP || currentTab == Tab.HUD || currentTab == Tab.PLAYER || currentTab == Tab.VISUAL) {
-            List<ModuleButton> cards = new ArrayList<>();
-            if (currentTab == Tab.PVP) {
-                if (moduleCards.get(Category.PVP) != null) cards.addAll(moduleCards.get(Category.PVP));
-                if (moduleCards.get(Category.MISC) != null) cards.addAll(moduleCards.get(Category.MISC));
-            } else if (currentTab == Tab.HUD) {
-                if (moduleCards.get(Category.HUD) != null) cards.addAll(moduleCards.get(Category.HUD));
-            } else if (currentTab == Tab.PLAYER) {
-                if (moduleCards.get(Category.PLAYER) != null) cards.addAll(moduleCards.get(Category.PLAYER));
-            } else if (currentTab == Tab.VISUAL) {
-                if (moduleCards.get(Category.VISUAL) != null) cards.addAll(moduleCards.get(Category.VISUAL));
-                if (moduleCards.get(Category.RENDER) != null) cards.addAll(moduleCards.get(Category.RENDER));
-            }
+            List<ModuleButton> cards = getCardsForTab(currentTab);
             if (cards != null) {
                 RenderUtils.startScissor(contentX, contentBodyY, contentW, contentBodyH);
                 int cardY = contentBodyY + 4 - scrollY;
@@ -750,13 +755,7 @@ public class ClickGui extends Screen {
                 }
             }
 
-            Category cat;
-            if (currentTab == Tab.PVP) cat = Category.PVP;
-            else if (currentTab == Tab.HUD) cat = Category.HUD;
-            else if (currentTab == Tab.PLAYER) cat = Category.PLAYER;
-            else cat = Category.VISUAL;
-
-            List<ModuleButton> cards = moduleCards.get(cat);
+            List<ModuleButton> cards = getCardsForTab(currentTab);
             if (cards != null) {
                 for (ModuleButton card : cards) {
                     if (card.mouseClicked(mouseX, mouseY, button)) {
@@ -998,7 +997,13 @@ public class ClickGui extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (currentTab == Tab.PVP || currentTab == Tab.HUD || currentTab == Tab.PLAYER || currentTab == Tab.VISUAL) {
-            scrollY = Math.max(0, scrollY - (int) (amount * 20));
+            List<ModuleButton> cards = getCardsForTab(currentTab);
+            int totalH = 0;
+            for (ModuleButton card : cards) {
+                totalH += card.getHeight() + 6;
+            }
+            int maxScroll = Math.max(0, totalH - 180);
+            scrollY = Math.min(maxScroll, Math.max(0, scrollY - (int) (amount * 20)));
             savedScrollY = scrollY;
             return true;
         } else if (currentTab == Tab.RADIO) {
