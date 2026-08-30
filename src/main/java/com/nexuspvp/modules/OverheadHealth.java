@@ -13,9 +13,12 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
@@ -77,29 +80,30 @@ public class OverheadHealth extends Module {
             LivingEntity living = (LivingEntity) entity;
             if (!living.isAlive() || living.isInvisibleTo(mc.player)) continue;
 
-            if (hideBehindWalls.isEnabled()) {
-                if (!mc.player.canSee(living)) continue;
-                Vec3d eyePos = mc.player.getCameraPosVec(tickDelta);
-                Vec3d targetPos = new Vec3d(interpX, interpY + living.getHeight() + 0.35D, interpZ);
-                net.minecraft.world.RaycastContext rayCtx = new net.minecraft.world.RaycastContext(
-                    eyePos,
-                    targetPos,
-                    net.minecraft.world.RaycastContext.ShapeType.COLLIDER,
-                    net.minecraft.world.RaycastContext.FluidHandling.NONE,
-                    mc.player
-                );
-                net.minecraft.util.hit.BlockHitResult hit = mc.world.raycast(rayCtx);
-                if (hit.getType() != net.minecraft.util.hit.HitResult.Type.MISS && hit.getPos().squaredDistanceTo(eyePos) < targetPos.squaredDistanceTo(eyePos) - 0.4) {
-                    continue;
-                }
-            }
-
             double distSq = living.squaredDistanceTo(camPos.x, camPos.y, camPos.z);
             if (distSq > maxDistSq) continue;
 
             double interpX = MathHelper.lerp((double) tickDelta, living.lastRenderX, living.getX());
             double interpY = MathHelper.lerp((double) tickDelta, living.lastRenderY, living.getY());
             double interpZ = MathHelper.lerp((double) tickDelta, living.lastRenderZ, living.getZ());
+
+            // Strict Wall Occlusion Check: Hide health bar if entity or head is blocked by blocks
+            if (hideBehindWalls.isEnabled()) {
+                if (!mc.player.canSee(living)) continue;
+                Vec3d eyePos = mc.player.getCameraPosVec(tickDelta);
+                Vec3d targetPos = new Vec3d(interpX, interpY + living.getHeight() + 0.35D, interpZ);
+                RaycastContext rayCtx = new RaycastContext(
+                    eyePos,
+                    targetPos,
+                    RaycastContext.ShapeType.COLLIDER,
+                    RaycastContext.FluidHandling.NONE,
+                    mc.player
+                );
+                BlockHitResult hit = mc.world.raycast(rayCtx);
+                if (hit.getType() != HitResult.Type.MISS && hit.getPos().squaredDistanceTo(eyePos) < targetPos.squaredDistanceTo(eyePos) - 0.4) {
+                    continue;
+                }
+            }
 
             RenderSystem.pushMatrix();
             RenderSystem.translated(interpX - camPos.x, interpY - camPos.y + living.getHeight() + 0.55D, interpZ - camPos.z);
