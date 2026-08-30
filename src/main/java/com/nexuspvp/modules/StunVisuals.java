@@ -12,9 +12,7 @@ import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
@@ -65,7 +63,8 @@ public class StunVisuals extends Module {
         }
 
         public boolean isConfirmed() {
-            return particleCount >= 4 && ((maxX - minX) >= 1.5 || (maxZ - minZ) >= 1.5);
+            // Must have at least 8 particles spanning at least 3.5 blocks (real server stun trap)
+            return particleCount >= 8 && ((maxX - minX) >= 3.5 || (maxZ - minZ) >= 3.5);
         }
 
         public boolean isInside(Vec3d pos) {
@@ -91,29 +90,19 @@ public class StunVisuals extends Module {
         if (!isEnabled() || mc.world == null) return false;
         long now = System.currentTimeMillis();
 
-        boolean isStunParticle = (parameters instanceof DustParticleEffect) ||
-                                 (parameters.getType() == ParticleTypes.TOTEM_OF_UNDYING) ||
-                                 (parameters.getType() == ParticleTypes.ENCHANT) ||
-                                 (parameters.getType() == ParticleTypes.CRIT) ||
-                                 (parameters.getType() == ParticleTypes.FALLING_DUST) ||
-                                 (parameters.getType() == ParticleTypes.FLAME);
-
-        if (!isStunParticle) return false;
-
         synchronized (activeZones) {
             for (StunZone zone : activeZones) {
                 double cx = (zone.minX + zone.maxX) / 2.0;
                 double cz = (zone.minZ + zone.maxZ) / 2.0;
                 double dist = Math.hypot(x - cx, z - cz);
-                if (dist <= 25.0) {
+                if (dist <= 20.0) {
                     zone.addParticle(x, y, z, now);
-                    return true;
+                    return zone.isConfirmed();
                 }
             }
 
-            if (activeZones.size() < 2) {
+            if (activeZones.size() < 3) {
                 activeZones.add(new StunZone(x, y, z, now));
-                return true;
             }
         }
         return false;
@@ -125,7 +114,6 @@ public class StunVisuals extends Module {
         if (mc.world == null || mc.player == null) return;
         long now = System.currentTimeMillis();
 
-        // Offline Test Mode Spawner (Spawns a full 10x10 Stun Trap in front of player for testing)
         if (testMode.isEnabled()) {
             if (testZone == null) {
                 Vec3d pPos = mc.player.getPos();
