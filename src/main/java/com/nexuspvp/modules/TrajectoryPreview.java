@@ -102,7 +102,7 @@ public class TrajectoryPreview extends Module {
         while (it.hasNext()) {
             FlyingProjectile fp = it.next();
             Entity ent = mc.world.getEntityById(fp.entityId);
-            if (ent == null || !ent.isAlive() || ent.isRemoved() || (now - fp.spawnTime > 15000)) {
+            if (ent == null || !ent.isAlive() || ent.removed || (now - fp.spawnTime > 15000)) {
                 it.remove();
             }
         }
@@ -189,7 +189,7 @@ public class TrajectoryPreview extends Module {
         if (inFlightTracking.isEnabled() && !flyingProjectiles.isEmpty()) {
             for (FlyingProjectile fp : flyingProjectiles) {
                 Entity ent = mc.world.getEntityById(fp.entityId);
-                if (ent != null && ent.isAlive() && !ent.isRemoved()) {
+                if (ent != null && ent.isAlive() && !ent.removed) {
                     Vec3d pearlPos = new Vec3d(
                         MathHelper.lerp(tickDelta, ent.prevX, ent.getX()),
                         MathHelper.lerp(tickDelta, ent.prevY, ent.getY()),
