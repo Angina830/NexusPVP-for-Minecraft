@@ -33,6 +33,7 @@ public class StunVisuals extends Module {
     private final BooleanSetting pulse = addSetting(new BooleanSetting("Pulsing", true));
     private final BooleanSetting hideParticles = addSetting(new BooleanSetting("HideParticles", true));
     private final BooleanSetting warning = addSetting(new BooleanSetting("Warning", true));
+    private final BooleanSetting testMode = addSetting(new BooleanSetting("TestMode", false));
 
     public static class StunZone {
         public double minX, maxX;
@@ -75,6 +76,7 @@ public class StunVisuals extends Module {
 
     private final List<StunZone> activeZones = new ArrayList<>();
     private float pulseAnim = 0f;
+    private StunZone testZone = null;
 
     public StunVisuals() {
         super("StunVisuals", "HolyWorld Square Stun Trap / Anti-Pearl Zone continuous neon 3D barrier", Category.VISUAL);
@@ -99,21 +101,19 @@ public class StunVisuals extends Module {
         if (!isStunParticle) return false;
 
         synchronized (activeZones) {
-            // Check if particle belongs to an existing stun trap within 25 blocks
             for (StunZone zone : activeZones) {
                 double cx = (zone.minX + zone.maxX) / 2.0;
                 double cz = (zone.minZ + zone.maxZ) / 2.0;
                 double dist = Math.hypot(x - cx, z - cz);
                 if (dist <= 25.0) {
                     zone.addParticle(x, y, z, now);
-                    return true; // Cancel particle
+                    return true;
                 }
             }
 
-            // Create new stun zone (max 2 active stun zones)
             if (activeZones.size() < 2) {
                 activeZones.add(new StunZone(x, y, z, now));
-                return true; // Cancel particle immediately
+                return true;
             }
         }
         return false;
@@ -124,6 +124,20 @@ public class StunVisuals extends Module {
         pulseAnim += 0.04f;
         if (mc.world == null || mc.player == null) return;
         long now = System.currentTimeMillis();
+
+        // Offline Test Mode Spawner (Spawns a full 10x10 Stun Trap in front of player for testing)
+        if (testMode.isEnabled()) {
+            if (testZone == null) {
+                Vec3d pPos = mc.player.getPos();
+                testZone = new StunZone(pPos.x - 5, pPos.y, pPos.z - 5, now);
+                testZone.maxX = pPos.x + 5;
+                testZone.maxZ = pPos.z + 5;
+                testZone.particleCount = 50;
+            }
+            testZone.lastSeen = now;
+        } else {
+            testZone = null;
+        }
 
         synchronized (activeZones) {
             Iterator<StunZone> it = activeZones.iterator();
@@ -139,7 +153,8 @@ public class StunVisuals extends Module {
 
     @Override
     public void onRender3D(MatrixStack matrices, float tickDelta) {
-        if (mc.player == null || activeZones.isEmpty()) return;
+        if (mc.player == null) return;
+        if (activeZones.isEmpty() && testZone == null) return;
 
         Vec3d camPos = mc.gameRenderer.getCamera().getPos();
         Color baseCol = color.getColor();
@@ -166,60 +181,65 @@ public class StunVisuals extends Module {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
 
+        List<StunZone> toRender = new ArrayList<>();
+        if (testZone != null) {
+            toRender.add(testZone);
+        }
         synchronized (activeZones) {
-            for (StunZone zone : activeZones) {
-                if (!zone.isConfirmed()) continue;
+            for (StunZone z : activeZones) {
+                if (z.isConfirmed()) toRender.add(z);
+            }
+        }
 
-                // Exact outer bounding box covering all particles of the stun trap
-                double x1 = zone.minX - camPos.x;
-                double x2 = zone.maxX - camPos.x;
-                double z1 = zone.minZ - camPos.z;
-                double z2 = zone.maxZ - camPos.z;
-                double y1 = zone.groundY - camPos.y;
-                double y2 = y1 + h;
+        for (StunZone zone : toRender) {
+            double x1 = zone.minX - camPos.x;
+            double x2 = zone.maxX - camPos.x;
+            double z1 = zone.minZ - camPos.z;
+            double z2 = zone.maxZ - camPos.z;
+            double y1 = zone.groundY - camPos.y;
+            double y2 = y1 + h;
 
-                // 1. Semi-transparent 4 Vertical Square Walls
-                if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
-                    buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
-                    int wallAlpha = Math.min(255, (int) (a * 0.32f));
+            // 1. Semi-transparent 4 Vertical Square Walls
+            if (curStyle.equals("SquareBox") || curStyle.equals("ForcefieldPrism")) {
+                buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
+                int wallAlpha = Math.min(255, (int) (a * 0.32f));
 
-                    addWallQuad(buffer, x1, y1, z1, x2, y1, z1, x2, y2, z1, x1, y2, z1, r, g, b, wallAlpha);
-                    addWallQuad(buffer, x2, y1, z1, x2, y1, z2, x2, y2, z2, x2, y2, z1, r, g, b, wallAlpha);
-                    addWallQuad(buffer, x2, y1, z2, x1, y1, z2, x1, y2, z2, x2, y2, z2, r, g, b, wallAlpha);
-                    addWallQuad(buffer, x1, y1, z2, x1, y1, z1, x1, y2, z1, x1, y2, z2, r, g, b, wallAlpha);
+                addWallQuad(buffer, x1, y1, z1, x2, y1, z1, x2, y2, z1, x1, y2, z1, r, g, b, wallAlpha);
+                addWallQuad(buffer, x2, y1, z1, x2, y1, z2, x2, y2, z2, x2, y2, z1, r, g, b, wallAlpha);
+                addWallQuad(buffer, x2, y1, z2, x1, y1, z2, x1, y2, z2, x2, y2, z2, r, g, b, wallAlpha);
+                addWallQuad(buffer, x1, y1, z2, x1, y1, z1, x1, y2, z1, x1, y2, z2, r, g, b, wallAlpha);
 
-                    tessellator.draw();
-                }
+                tessellator.draw();
+            }
 
-                // 2. Thick Glowing Ground Neon Square
-                GL11.glLineWidth(lw);
+            // 2. Thick Glowing Ground Neon Square
+            GL11.glLineWidth(lw);
+            buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
+            buffer.vertex(x1, y1 + 0.05, z1).color(r, g, b, a).next();
+            buffer.vertex(x2, y1 + 0.05, z1).color(r, g, b, a).next();
+            buffer.vertex(x2, y1 + 0.05, z2).color(r, g, b, a).next();
+            buffer.vertex(x1, y1 + 0.05, z2).color(r, g, b, a).next();
+            tessellator.draw();
+
+            // 3. Top Rim Square & 4 Vertical Corner Pillars
+            if (!curStyle.equals("SquareOutline")) {
                 buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
-                buffer.vertex(x1, y1 + 0.05, z1).color(r, g, b, a).next();
-                buffer.vertex(x2, y1 + 0.05, z1).color(r, g, b, a).next();
-                buffer.vertex(x2, y1 + 0.05, z2).color(r, g, b, a).next();
-                buffer.vertex(x1, y1 + 0.05, z2).color(r, g, b, a).next();
+                buffer.vertex(x1, y2, z1).color(r, g, b, (int) (a * 0.6f)).next();
+                buffer.vertex(x2, y2, z1).color(r, g, b, (int) (a * 0.6f)).next();
+                buffer.vertex(x2, y2, z2).color(r, g, b, (int) (a * 0.6f)).next();
+                buffer.vertex(x1, y2, z2).color(r, g, b, (int) (a * 0.6f)).next();
                 tessellator.draw();
 
-                // 3. Top Rim Square & 4 Vertical Corner Pillars
-                if (!curStyle.equals("SquareOutline")) {
-                    buffer.begin(GL11.GL_LINE_LOOP, VertexFormats.POSITION_COLOR);
-                    buffer.vertex(x1, y2, z1).color(r, g, b, (int) (a * 0.6f)).next();
-                    buffer.vertex(x2, y2, z1).color(r, g, b, (int) (a * 0.6f)).next();
-                    buffer.vertex(x2, y2, z2).color(r, g, b, (int) (a * 0.6f)).next();
-                    buffer.vertex(x1, y2, z2).color(r, g, b, (int) (a * 0.6f)).next();
-                    tessellator.draw();
-
-                    buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
-                    buffer.vertex(x1, y1, z1).color(r, g, b, a).next();
-                    buffer.vertex(x1, y2, z1).color(r, g, b, 0).next();
-                    buffer.vertex(x2, y1, z1).color(r, g, b, a).next();
-                    buffer.vertex(x2, y2, z1).color(r, g, b, 0).next();
-                    buffer.vertex(x2, y1, z2).color(r, g, b, a).next();
-                    buffer.vertex(x2, y2, z2).color(r, g, b, 0).next();
-                    buffer.vertex(x1, y1, z2).color(r, g, b, a).next();
-                    buffer.vertex(x1, y2, z2).color(r, g, b, 0).next();
-                    tessellator.draw();
-                }
+                buffer.begin(GL11.GL_LINES, VertexFormats.POSITION_COLOR);
+                buffer.vertex(x1, y1, z1).color(r, g, b, a).next();
+                buffer.vertex(x1, y2, z1).color(r, g, b, 0).next();
+                buffer.vertex(x2, y1, z1).color(r, g, b, a).next();
+                buffer.vertex(x2, y2, z1).color(r, g, b, 0).next();
+                buffer.vertex(x2, y1, z2).color(r, g, b, a).next();
+                buffer.vertex(x2, y2, z2).color(r, g, b, 0).next();
+                buffer.vertex(x1, y1, z2).color(r, g, b, a).next();
+                buffer.vertex(x1, y2, z2).color(r, g, b, 0).next();
+                tessellator.draw();
             }
         }
 
@@ -240,16 +260,18 @@ public class StunVisuals extends Module {
 
     @Override
     public void onRender2D(MatrixStack matrices, float tickDelta) {
-        if (!warning.isEnabled() || mc.player == null || activeZones.isEmpty()) return;
+        if (!warning.isEnabled() || mc.player == null) return;
 
         Vec3d pPos = mc.player.getPos();
-        boolean insideAny = false;
+        boolean insideAny = (testZone != null && testZone.isInside(pPos));
 
-        synchronized (activeZones) {
-            for (StunZone zone : activeZones) {
-                if (zone.isConfirmed() && zone.isInside(pPos)) {
-                    insideAny = true;
-                    break;
+        if (!insideAny) {
+            synchronized (activeZones) {
+                for (StunZone zone : activeZones) {
+                    if (zone.isConfirmed() && zone.isInside(pPos)) {
+                        insideAny = true;
+                        break;
+                    }
                 }
             }
         }
