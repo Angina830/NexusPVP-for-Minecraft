@@ -5,6 +5,7 @@ import com.nexuspvp.modules.Crosshair;
 import com.nexuspvp.modules.DamageIndicator;
 import com.nexuspvp.modules.HitSounds;
 import com.nexuspvp.modules.TargetHUD;
+import com.nexuspvp.modules.CrosshairHealth;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -32,6 +33,10 @@ public class MixinClientPlayerInteractionManager {
                     TargetHUD th = instance.getModuleManager().getModule(TargetHUD.class);
                     if (th != null) {
                         th.setTarget((LivingEntity) target);
+                    }
+                    CrosshairHealth ch = instance.getModuleManager().getModule(CrosshairHealth.class);
+                    if (ch != null) {
+                        ch.setTarget((LivingEntity) target);
                     }
                 }
             }

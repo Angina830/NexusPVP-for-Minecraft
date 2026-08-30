@@ -28,6 +28,7 @@ public class ModuleManager {
         register(new NoSlowFOV());
         register(new NoHurtCam());
         register(new TargetHUD());
+        register(new CrosshairHealth());
         register(new ArmorHUD());
         register(new PotionHUD());
         register(new Crosshair());
