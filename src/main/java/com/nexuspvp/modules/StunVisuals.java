@@ -12,7 +12,9 @@ import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleEffect;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
@@ -41,6 +43,7 @@ public class StunVisuals extends Module {
         public long firstSeen;
         public long lastSeen;
         public int particleCount;
+        public boolean confirmed;
 
         public StunZone(double x, double y, double z, long now) {
             this.minX = x;
@@ -53,6 +56,7 @@ public class StunVisuals extends Module {
             this.firstSeen = now;
             this.lastSeen = now;
             this.particleCount = 1;
+            this.confirmed = false;
         }
 
         public void addParticle(double x, double y, double z, long now) {
@@ -65,11 +69,15 @@ public class StunVisuals extends Module {
             this.groundY = Math.min(groundY, y);
             this.centerX = (minX + maxX) / 2.0;
             this.centerZ = (minZ + maxZ) / 2.0;
+
+            // Instant confirmation: Burst of at least 8 yellow particles in < 800ms spanning at least 2.0 blocks
+            if (!confirmed && particleCount >= 8 && (now - firstSeen <= 800) && ((maxX - minX) >= 2.0 || (maxZ - minZ) >= 2.0)) {
+                this.confirmed = true;
+            }
         }
 
         public boolean isConfirmed() {
-            // Confirmed when it has accumulated at least 4 particles spanning at least 1.5 blocks
-            return particleCount >= 4 && ((maxX - minX) >= 1.5 || (maxZ - minZ) >= 1.5);
+            return confirmed;
         }
 
         public boolean isInside(Vec3d pos) {
@@ -95,23 +103,41 @@ public class StunVisuals extends Module {
         if (!isEnabled() || mc.world == null || mc.player == null) return false;
         long now = System.currentTimeMillis();
 
+        boolean isYellowStunDust = false;
+
+        // Strict yellow / gold dust filter
+        if (parameters instanceof DustParticleEffect) {
+            DustParticleEffect dust = (DustParticleEffect) parameters;
+            float r = dust.getRed();
+            float g = dust.getGreen();
+            float b = dust.getBlue();
+            // Yellow, Gold, Amber, Orange Dust
+            if (r > 0.50f && g > 0.35f && b < 0.45f) {
+                isYellowStunDust = true;
+            }
+        } else if (parameters.getType() == ParticleTypes.TOTEM_OF_UNDYING ||
+                   parameters.getType() == ParticleTypes.ENCHANT) {
+            isYellowStunDust = true;
+        }
+
+        if (!isYellowStunDust) return false;
+
         Vec3d pPos = mc.player.getPos();
-        if (Math.hypot(x - pPos.x, z - pPos.z) > 50.0) return false;
+        if (Math.hypot(x - pPos.x, z - pPos.z) > 40.0) return false;
 
         synchronized (activeZones) {
-            // 1. Check if particle belongs to an existing stun trap (cluster radius = 6.5 blocks)
+            // Check if particle belongs to an existing stun trap
             for (StunZone zone : activeZones) {
                 double dist = Math.hypot(x - zone.centerX, z - zone.centerZ);
-                if (dist <= 6.5 && Math.abs(y - zone.groundY) <= 3.5) {
+                if (dist <= 7.0 && Math.abs(y - zone.groundY) <= 3.0) {
                     zone.addParticle(x, y, z, now);
-                    return true; // Silence particle
+                    return zone.confirmed;
                 }
             }
 
-            // 2. Otherwise spawn a separate independent Stun Trap (support up to 8 simultaneous traps!)
+            // Create new candidate stun trap (max 8 simultaneous traps)
             if (activeZones.size() < 8) {
                 activeZones.add(new StunZone(x, y, z, now));
-                return true; // Silence particle
             }
         }
         return false;
@@ -129,6 +155,7 @@ public class StunVisuals extends Module {
                 testZone = new StunZone(pPos.x - 4.0, pPos.y, pPos.z - 4.0, now);
                 testZone.maxX = pPos.x + 4.0;
                 testZone.maxZ = pPos.z + 4.0;
+                testZone.confirmed = true;
                 testZone.particleCount = 50;
             }
             testZone.lastSeen = now;
@@ -140,9 +167,13 @@ public class StunVisuals extends Module {
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
-                // 15 seconds lifetime per stun trap
-                long timeout = z.isConfirmed() ? 15500 : 1500;
-                if (now - z.lastSeen > timeout || now - z.firstSeen > 16000) {
+                // Purge unconfirmed candidate zones after 800ms (eliminates all slow lobby ambient particles)
+                if (!z.confirmed && (now - z.firstSeen > 800)) {
+                    it.remove();
+                    continue;
+                }
+                // Confirmed real stun lasts 15 seconds
+                if (z.confirmed && (now - z.lastSeen > 15500 || now - z.firstSeen > 16000)) {
                     it.remove();
                 }
             }
@@ -170,7 +201,7 @@ public class StunVisuals extends Module {
         RenderSystem.enableBlend();
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest(); // Visible clearly above and through ground
+        RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.disableTexture();
@@ -195,7 +226,6 @@ public class StunVisuals extends Module {
             double x2 = (zone.maxX + pad) - camPos.x;
             double z1 = (zone.minZ - pad) - camPos.z;
             double z2 = (zone.maxZ + pad) - camPos.z;
-            // Extend slightly below ground surface for slope compensation
             double y1 = (Math.floor(zone.groundY)) - camPos.y;
             double y2 = y1 + h;
 
