@@ -27,7 +27,8 @@
     "MixinChatHud",
     "MixinEntityRenderDispatcher",
     "MixinClientWorld",
-    "MixinParticleManager"
+    "MixinParticleManager",
+    "MixinClientPlayNetworkHandler"
   ],
   "injectors": {
     "defaultRequire": 1
