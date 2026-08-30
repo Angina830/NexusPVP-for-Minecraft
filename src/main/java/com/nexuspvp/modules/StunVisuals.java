@@ -26,7 +26,7 @@ public class StunVisuals extends Module {
 
     private final ModeSetting style = addSetting(new ModeSetting("Style", "SquareBox", "SquareBox", "SquareOutline", "ForcefieldPrism", "WireframeCube"));
     private final ColorSetting color = addSetting(new ColorSetting("Color", new Color(255, 215, 0, 220)));
-    private final NumberSetting height = addSetting(new NumberSetting("Height", 4.0, 1.0, 15.0, 0.5));
+    private final NumberSetting height = addSetting(new NumberSetting("Height", 4.5, 1.0, 15.0, 0.5));
     private final NumberSetting lineWidth = addSetting(new NumberSetting("LineWidth", 3.5, 1.0, 6.0, 0.5));
     private final BooleanSetting pulse = addSetting(new BooleanSetting("Pulsing", true));
     private final BooleanSetting hideParticles = addSetting(new BooleanSetting("HideParticles", true));
@@ -68,12 +68,13 @@ public class StunVisuals extends Module {
         }
 
         public boolean isConfirmed() {
-            return particleCount >= 4 && ((maxX - minX) >= 2.0 || (maxZ - minZ) >= 2.0);
+            // Confirmed when it has accumulated at least 4 particles spanning at least 1.5 blocks
+            return particleCount >= 4 && ((maxX - minX) >= 1.5 || (maxZ - minZ) >= 1.5);
         }
 
         public boolean isInside(Vec3d pos) {
-            return pos.x >= minX - 0.5 && pos.x <= maxX + 0.5 &&
-                   pos.z >= minZ - 0.5 && pos.z <= maxZ + 0.5;
+            return pos.x >= (minX - 0.4) && pos.x <= (maxX + 0.4) &&
+                   pos.z >= (minZ - 0.4) && pos.z <= (maxZ + 0.4);
         }
     }
 
@@ -94,22 +95,23 @@ public class StunVisuals extends Module {
         if (!isEnabled() || mc.world == null || mc.player == null) return false;
         long now = System.currentTimeMillis();
 
-        // Must be within reasonable horizontal distance and near ground level
         Vec3d pPos = mc.player.getPos();
-        if (Math.hypot(x - pPos.x, z - pPos.z) > 40.0) return false;
+        if (Math.hypot(x - pPos.x, z - pPos.z) > 50.0) return false;
 
         synchronized (activeZones) {
+            // 1. Check if particle belongs to an existing stun trap (cluster radius = 6.5 blocks)
             for (StunZone zone : activeZones) {
                 double dist = Math.hypot(x - zone.centerX, z - zone.centerZ);
-                if (dist <= 14.0 && Math.abs(y - zone.groundY) <= 2.5) {
+                if (dist <= 6.5 && Math.abs(y - zone.groundY) <= 3.5) {
                     zone.addParticle(x, y, z, now);
-                    return true; // Cancel particle inside stun trap
+                    return true; // Silence particle
                 }
             }
 
-            if (activeZones.size() < 3) {
+            // 2. Otherwise spawn a separate independent Stun Trap (support up to 8 simultaneous traps!)
+            if (activeZones.size() < 8) {
                 activeZones.add(new StunZone(x, y, z, now));
-                return true; // Cancel initial particle
+                return true; // Silence particle
             }
         }
         return false;
@@ -138,6 +140,7 @@ public class StunVisuals extends Module {
             Iterator<StunZone> it = activeZones.iterator();
             while (it.hasNext()) {
                 StunZone z = it.next();
+                // 15 seconds lifetime per stun trap
                 long timeout = z.isConfirmed() ? 15500 : 1500;
                 if (now - z.lastSeen > timeout || now - z.firstSeen > 16000) {
                     it.remove();
@@ -167,7 +170,7 @@ public class StunVisuals extends Module {
         RenderSystem.enableBlend();
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
+        RenderSystem.disableDepthTest(); // Visible clearly above and through ground
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.disableTexture();
@@ -187,13 +190,13 @@ public class StunVisuals extends Module {
         }
 
         for (StunZone zone : toRender) {
-            // Exact bounds matching the outer lines of the server stun trap
-            double pad = 0.2;
+            double pad = 0.25;
             double x1 = (zone.minX - pad) - camPos.x;
             double x2 = (zone.maxX + pad) - camPos.x;
             double z1 = (zone.minZ - pad) - camPos.z;
             double z2 = (zone.maxZ + pad) - camPos.z;
-            double y1 = zone.groundY - camPos.y;
+            // Extend slightly below ground surface for slope compensation
+            double y1 = (Math.floor(zone.groundY)) - camPos.y;
             double y2 = y1 + h;
 
             // 1. Semi-transparent 4 Vertical Square Walls
